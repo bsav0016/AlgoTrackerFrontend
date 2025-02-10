@@ -23,4 +23,22 @@ export const Colors = {
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
   },
+  button: {
+    text: 'white',
+    background: '#007bff'
+  },
+  board: {
+    background: '#0000aa',
+    player1: 'red',//'#d96c6c',
+    player2: 'yellow',//'#27b84d',
+    valid: '#9127b8',
+    empty: '#007bff',
+    borderColor: '#0000dd'
+  },
+  onlinePlay: {
+    general: '#9127b8',
+    loss: '#de3c3c',
+    win: '#49de60',
+    text: 'black'
+  }
 };
