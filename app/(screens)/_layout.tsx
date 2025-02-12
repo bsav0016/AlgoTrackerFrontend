@@ -19,6 +19,10 @@ export default function PagesLayout() {
                             <SafeAreaView style={styles.safeArea}>
                                 <Stack screenOptions={{ headerShown: false }}>
                                     <Stack.Screen name={Routes.Login} options={{ headerShown: false }} />
+                                    <Stack.Screen name={Routes.Home} options={{ headerShown: false }} />
+                                    <Stack.Screen name={Routes.DepositFunds} options={{ headerShown: false }} />
+                                    <Stack.Screen name={Routes.StrategySelection} options={{ headerShown: false }} />
+                                    <Stack.Screen name={Routes.HowItWorks} options={{ headerShown: false }} />
                                 </Stack>
                             </SafeAreaView>
                         </ThemedView>

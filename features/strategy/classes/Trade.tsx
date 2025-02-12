@@ -1,4 +1,9 @@
-import { StockValue } from "./StockValue";
+import { StockValue, StockValueData } from "./StockValue";
+
+export interface TradeData {
+    stock_value: StockValueData;
+    is_buy: boolean;
+}
 
 export class Trade {
     stockValue: StockValue;
@@ -10,5 +15,12 @@ export class Trade {
     ) {
         this.stockValue = stockValue;
         this.isBuy = isBuy;
+    }
+
+    static fromData(data: TradeData): Trade {
+        return new Trade(
+            StockValue.fromData(data.stock_value),
+            data.is_buy
+        )
     }
 }

@@ -20,6 +20,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const ACCESS_TOKEN_STRING = "accessToken";
+const REFRESH_TOKEN_STRING = "refreshToken";
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const { setUser } = useUser();
     const tokenRef = useRef<string | null>(null);
@@ -39,8 +42,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     useEffect(() => {
         const setStoredAuthData = async () => {
-            const storedToken = await AsyncStorage.getItem('token');
-            const storedRefreshToken = await AsyncStorage.getItem('refreshToken');
+            const storedToken = await AsyncStorage.getItem(ACCESS_TOKEN_STRING);
+            const storedRefreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_STRING);
             if (storedToken && storedRefreshToken) {
                 setToken(storedToken);
                 setRefreshToken(storedRefreshToken);
@@ -56,8 +59,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setUser(user);
             setToken(access);
             setRefreshToken(refresh);
-            await AsyncStorage.setItem('token', access);
-            await AsyncStorage.setItem('refreshToken', refresh);
+            await AsyncStorage.setItem(ACCESS_TOKEN_STRING, access);
+            await AsyncStorage.setItem(REFRESH_TOKEN_STRING, refresh);
             setUserTokenWarned([false, false, false]);
             return true;
         } catch (error) {

@@ -8,5 +8,5 @@ export default function Index() {
   if (!rootNavigationState?.key) return null;
 
 
-  return <Redirect href="/(screens)/homescreen" />
+  return <Redirect href="/(screens)/login-screen" />
 }

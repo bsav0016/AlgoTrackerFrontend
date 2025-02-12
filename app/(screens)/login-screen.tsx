@@ -25,7 +25,7 @@ interface Field<T> {
 export default function LoginScreen() {
     const { auth } = useAuth();
     const { addToast } = useToast();
-    const { routeTo, routeReplace } = useRouteTo();
+    const { routeReplace } = useRouteTo();
     const color = useThemeColor({}, 'text');
     const [formFields, setFormFields] = useState<AuthFields>({
         username: "",
@@ -40,6 +40,8 @@ export default function LoginScreen() {
     const passwordRef = React.createRef<TextInput>();
     const confirmPasswordRef = React.createRef<TextInput>();
     const emailRef = React.createRef<TextInput>();
+    const firstNameRef = React.createRef<TextInput>();
+    const lastNameRef = React.createRef<TextInput>();
 
     const focusNextField = (nextField: React.RefObject<TextInput>) => {
         nextField.current?.focus();
@@ -60,6 +62,8 @@ export default function LoginScreen() {
     const registerFields: Field<AuthFields>[] = [
         ...loginFields,
         { field: "confirmPassword", text: "Confirm Password", value: formFields.confirmPassword, ref: confirmPasswordRef },
+        { field: "firstName", text: "First Name", value: formFields.firstName, ref: firstNameRef },
+        { field: "lastName", text: "Last Name", value: formFields.lastName, ref: lastNameRef },
         { field: "email", text: "Email", value: formFields.email, ref: emailRef },
     ];
 
@@ -68,7 +72,7 @@ export default function LoginScreen() {
         try {
             const response = await auth(formFields, type);
             if (response) {
-                routeTo(Routes.Home);
+                routeReplace(Routes.Home);
             } else {
                 addToast("Invalid username and password");
             }
@@ -106,7 +110,7 @@ export default function LoginScreen() {
     const bottomButtom: string = type === AuthType.Login ? "Register Here" : "Login Here"
 
     return (
-        <CustomHeaderView header={header}>
+        <CustomHeaderView header={header} canGoBack={false}>
             <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
 
             <KeyboardAvoidingView

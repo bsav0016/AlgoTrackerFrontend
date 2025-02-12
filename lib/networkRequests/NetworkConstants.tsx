@@ -1,4 +1,4 @@
-const DEV_ENV: Boolean = false
+const DEV_ENV: Boolean = true
 
 const URL: string = DEV_ENV 
     ? "http://192.168.1.144:8000/"
