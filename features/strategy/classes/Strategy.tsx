@@ -8,7 +8,6 @@ export interface StrategyData {
     candle_length: string;
     buy_signals: SignalData[];
     sell_signals: SignalData[];
-    initial_investment: number;
     trades: TradeData[];
     estimated_return: number;
 }
@@ -19,7 +18,6 @@ export class Strategy {
     candleLength: CandleLength;
     buySignals: Signal[];
     sellSignals: Signal[];
-    initialInvestment: number;
     trades: Trade[];
     estimatedReturn: number;
     
@@ -29,7 +27,6 @@ export class Strategy {
         candleLength: CandleLength,
         buySignals: Signal[],
         sellSignals: Signal[],
-        initialInvestment: number,
         trades: Trade[],
         estimatedReturn: number
     ) {
@@ -38,7 +35,6 @@ export class Strategy {
         this.candleLength = candleLength;
         this.buySignals = buySignals;
         this.sellSignals = sellSignals;
-        this.initialInvestment = initialInvestment;
         this.trades = trades;
         this.estimatedReturn = estimatedReturn;
     }
@@ -74,7 +70,6 @@ export class Strategy {
             candleLength,
             buySignals,
             sellSignals,
-            data.initial_investment,
             trades,
             data.estimated_return
         )

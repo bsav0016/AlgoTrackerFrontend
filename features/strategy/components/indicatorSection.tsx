@@ -1,8 +1,8 @@
 import { ThemedText } from "@/components/ThemedText";
 import { Signal } from "../classes/Signal";
 import { ThemedView } from "@/components/ThemedView";
-import { Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
-import { Indicator } from "../enums/Indicator";
+import { Button, Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import { Indicator, defaultParams } from "../enums/Indicator";
 import { GeneralButton } from "@/components/GeneralButton";
 import { useState } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -27,6 +27,11 @@ export function IndicatorSection({
 
     const openModal = (index: number) => setActiveModal(index);
     const closeModal = () => setActiveModal(null);
+
+    const deleteIndicator = (index: number) => {
+        const newSignals: Signal[] = signals.filter((_, i) => i !== index);
+        setSignals(newSignals);
+    }
     
     return (
         <>
@@ -58,8 +63,13 @@ export function IndicatorSection({
                                         key={key}
                                         style={styles.modalOption}
                                         onPress={() => {
-                                            const newSignal = new Signal(value as Indicator, signal.targetValue, signal.aboveTarget);
-                                            const newSignals = [...signals]
+                                            const newSignal = new Signal(
+                                                value as Indicator, 
+                                                signal.targetValue, 
+                                                signal.aboveTarget, 
+                                                defaultParams[value as Indicator] || {}
+                                            );
+                                            const newSignals = [...signals];
                                             newSignals[index] = newSignal;
                                             setSignals(newSignals);
                                             closeModal();
@@ -73,6 +83,32 @@ export function IndicatorSection({
                     </TouchableWithoutFeedback>
                 </Modal>
 
+                {Object.entries(signal.parameters).map(([paramName, paramValue]) => (
+                    <ThemedView key={paramName} style={styles.symbolContainer}>
+                        <ThemedText>{paramName}:</ThemedText>
+                        <TextInput
+                            style={[styles.input, { color: textInputColor }]}
+                            keyboardType="numeric"
+                            returnKeyType="done"
+                            value={paramValue.toString()}
+                            onChangeText={(text) => {
+                                const cleanedText = text.replace(/[^-.\d]/g, '');
+                                const validText = cleanedText
+                                    .replace(/^(-?)(.*)-/g, '$1$2')
+                                    .replace(/(\..*)\./g, '$1');
+                
+
+                                const newNumber = validText === '' || validText === '-' || validText === '.' ? 0 : parseFloat(validText);
+                                const newParameters = { ...signal.parameters, [paramName]: newNumber };
+                                const newSignal = new Signal(signal.indicator, signal.targetValue, signal.aboveTarget, newParameters);
+                                const newSignals = [...signals];
+                                newSignals[index] = newSignal;
+                                setSignals(newSignals);
+                            }}
+                        />
+                    </ThemedView>
+                ))}
+
                 <ThemedView style={styles.symbolContainer}>
                     <ThemedText>Target Value:</ThemedText>
                     <TextInput
@@ -82,13 +118,14 @@ export function IndicatorSection({
                         value={signal.targetValue.toString()}
                         onChangeText={(text) => {
                             const newNumber = text === "" ? 0 : parseFloat(text);
-                            const newSignal = new Signal(signal.indicator, newNumber, signal.aboveTarget);
+                            const newSignal = new Signal(signal.indicator, newNumber, signal.aboveTarget, signal.parameters);
                             const newSignals = [...signals];
                             newSignals[index] = newSignal;
                             setSignals(newSignals);
                         }}
                     />
                 </ThemedView>
+
 
                 <ThemedView style={{maxWidth: '80%', alignSelf: 'center'}}>
                     <ThemedText>Trigger when signal greater than or less than target?</ThemedText>
@@ -98,7 +135,7 @@ export function IndicatorSection({
                     <ThemedView style={styles.symbolContainer}>
                         <ThemedText>Greater</ThemedText>
                         <Switch value={signal.aboveTarget} onValueChange={(value) => {
-                            const newSignal = new Signal(signal.indicator, signal.targetValue, value);
+                            const newSignal = new Signal(signal.indicator, signal.targetValue, value, signal.parameters);
                             const newSignals = [...signals];
                             newSignals[index] = newSignal;
                             setSignals(newSignals);
@@ -108,13 +145,20 @@ export function IndicatorSection({
                     <ThemedView style={styles.symbolContainer}>
                         <ThemedText>Less</ThemedText>
                         <Switch value={!signal.aboveTarget} onValueChange={(value) => {
-                            const newSignal = new Signal(signal.indicator, signal.targetValue, !value);
+                            const newSignal = new Signal(signal.indicator, signal.targetValue, !value, signal.parameters);
                             const newSignals = [...signals];
                             newSignals[index] = newSignal;
                             setSignals(newSignals);
                         }}/>
                     </ThemedView>
                 </ThemedView>
+
+                <TouchableOpacity 
+                    onPress={() => deleteIndicator(index)} 
+                    style={styles.deleteButton}
+                >
+                    <ThemedText>Delete</ThemedText>
+                </TouchableOpacity>
                 
             </ThemedView>
         ))}
@@ -130,7 +174,17 @@ const styles = StyleSheet.create({
     strategyView: {
         flex: 1,
         flexDirection: 'column',
-        gap: 15
+        gap: 15,
+        borderWidth: 1,
+        borderColor: '#aaa',
+        borderRadius: 5,
+        margin: 10,
+        padding: 5,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: -2, height: 4},
+        shadowOpacity: 0.3,
+        shadowRadius: 5
     },
 
     firstContainer: {
@@ -195,5 +249,14 @@ const styles = StyleSheet.create({
         padding: 10,
         borderBottomWidth: 1,
         borderColor: "#ccc",
+    },
+
+    deleteButton: {
+        borderWidth: 1,
+        borderRadius: 5,
+        width: 'auto',
+        alignSelf: 'center',
+        padding: 5,
+        backgroundColor: 'red'
     },
 })

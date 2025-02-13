@@ -4,7 +4,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { useUser } from "@/contexts/UserContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useState, useRef } from "react";
-import { Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { Keyboard, Modal, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 
 interface BacktestModalProps {
     backtestModal: boolean;
@@ -192,7 +192,12 @@ export function BacktestModal({ backtestModal, setBacktestModal, runBacktest }: 
             transparent={true}
             onRequestClose={() => setBacktestModal(false)}
         >
-            <ThemedView style={styles.modalOverlay}>
+            <View style={styles.modalOverlay}>
+
+            <TouchableWithoutFeedback onPress={() => setBacktestModal(false)} accessible={false}>
+                <ThemedView style={styles.overlay} />
+            </TouchableWithoutFeedback>
+            
                 { errorMessage ?
                     <ThemedView style={styles.modalContainer}>
                         <ThemedText style={{textAlign: 'center'}}>{errorMessage}</ThemedText>
@@ -200,6 +205,8 @@ export function BacktestModal({ backtestModal, setBacktestModal, runBacktest }: 
                     </ThemedView>
                     :
                     <ThemedView style={styles.modalContainer}>
+                        
+
                         <ThemedText style={styles.modalTitle}>Set Backtest Date Range</ThemedText>
 
                         {/* Start Date */}
@@ -302,7 +309,8 @@ export function BacktestModal({ backtestModal, setBacktestModal, runBacktest }: 
                         </TouchableOpacity>
                     </ThemedView>
                 }
-            </ThemedView>
+            </View>
+
         </Modal>
     );
 }
@@ -312,9 +320,18 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        paddingBottom: 80,
+        paddingBottom: 100,
     },
+
+    overlay: {
+        flex: 1,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      },
 
     modalContainer: {
         padding: 20,

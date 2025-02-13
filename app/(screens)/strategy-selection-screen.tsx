@@ -1,13 +1,13 @@
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { CandleLength } from "@/features/strategy/enums/CandleLength";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
-import { Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, Text, Switch, View } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
 import { useEffect, useState } from 'react';
 import { Signal } from "@/features/strategy/classes/Signal";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { Indicator } from "@/features/strategy/enums/Indicator";
+import { defaultParams, Indicator } from "@/features/strategy/enums/Indicator";
 import { GeneralButton } from "@/components/GeneralButton";
 import { useLocalSearchParams } from "expo-router";
 import { BacktestModal } from "@/features/strategy/components/backtestModal";
@@ -26,7 +26,6 @@ export default function StrategySelectionScreen() {
     const textInputColor = useThemeColor({}, 'text');
     
     const [symbol, setSymbol] = useState<string>('');
-    const [initialInvestment, setInitialInvestment] = useState<string>();
     const [candleLength, setCandleLength] = useState<CandleLength>(CandleLength.D1);
     const [buySignals, setBuySignals] = useState<Signal[]>([]);
     const [sellSignals, setSellSignals] = useState<Signal[]>([]);
@@ -44,14 +43,26 @@ export default function StrategySelectionScreen() {
     }, []);
 
     const addBuyIndicator = () => {
-        const additionalBuySignal = new Signal(Indicator.RSI, 50, true);
+        const additionalIndicator = Indicator.RSI;
+        const additionalBuySignal = new Signal(
+            additionalIndicator, 
+            50, 
+            true,
+            defaultParams[additionalIndicator] || {}
+        );
         const prevBuySignals = [...buySignals]
         prevBuySignals.push(additionalBuySignal);
         setBuySignals(prevBuySignals);
     }
 
     const addSellIndicator = () => {
-        const additionalSellSignal = new Signal(Indicator.RSI, 50, false);
+        const additionalIndicator = Indicator.RSI;
+        const additionalSellSignal = new Signal(
+            additionalIndicator, 
+            50, 
+            false,
+            defaultParams[additionalIndicator] || {}
+        );
         const prevSellSignals = [...sellSignals]
         prevSellSignals.push(additionalSellSignal);
         setSellSignals(prevSellSignals);
@@ -73,36 +84,23 @@ export default function StrategySelectionScreen() {
     return (
         <CustomHeaderView header="Build Your Strategy">
             <ThemedView style={{ flex: 1 }}>
-                <ScrollView>
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
                         <KeyboardAvoidingView
                             behavior={Platform.OS === "ios" ? "padding" : "height"}
                             style={{ flex: 1 }}
                         >                        
                             <ThemedView style={styles.strategyView}>
-                                <ThemedView style={styles.firstContainer}>
-                                    <ThemedView style={styles.symbolContainer}>
-                                        <ThemedText>Symbol:</ThemedText>
-                                        <TextInput
-                                            style={[styles.input, { color: textInputColor }]}
-                                            returnKeyType="done"
-                                            value={symbol}
-                                            onChangeText={setSymbol}
-                                        />
-                                    </ThemedView>
-                                    
-                                    <ThemedView style={styles.symbolContainer}>
-                                        <ThemedText>Start Val:</ThemedText>
-                                        <TextInput
-                                            style={[styles.input, { color: textInputColor }]}
-                                            keyboardType="numeric"
-                                            returnKeyType="done"
-                                            value={initialInvestment}
-                                            onChangeText={setInitialInvestment}
-                                        />
-                                    </ThemedView>
-                                    
+                                <ThemedView style={styles.symbolContainer}>
+                                    <ThemedText>Symbol:</ThemedText>
+                                    <TextInput
+                                        style={[styles.input, { color: textInputColor }]}
+                                        returnKeyType="done"
+                                        value={symbol}
+                                        onChangeText={setSymbol}
+                                    />
                                 </ThemedView>
+                                    
 
                                 <ThemedView style={styles.symbolContainer}>
                                     <ThemedText>Candle Length:</ThemedText>
@@ -129,12 +127,12 @@ export default function StrategySelectionScreen() {
                                     buttonAction={addSellIndicator}
                                 />
 
-                                <View>
+                                <ThemedView>
                                     <GeneralButton
                                         title={parsedStrategyType === StrategyType.Backtest ? "Set Date Parameters" : "Subscribe to Strategy"}
                                         onPress={clickedNext}
                                     />
-                                </View>
+                                </ThemedView>
                                 
                             </ThemedView> 
 
@@ -153,12 +151,6 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'column',
         gap: 15
-    },
-
-    firstContainer: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'center',
     },
 
     symbolContainer: {
