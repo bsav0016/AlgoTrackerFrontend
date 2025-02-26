@@ -1,11 +1,11 @@
-import { CandleLength } from "../enums/CandleLength";
+import { Interval } from "../enums/Interval";
 import { Signal, SignalData } from "./Signal";
 import { Trade, TradeData } from "./Trade";
 
 export interface StrategyData {
     id: number;
     symbol: string;
-    candle_length: string;
+    interval: string;
     buy_signals: SignalData[];
     sell_signals: SignalData[];
     trades: TradeData[];
@@ -15,7 +15,7 @@ export interface StrategyData {
 export class Strategy {
     id: number;
     symbol: string;
-    candleLength: CandleLength;
+    interval: Interval;
     buySignals: Signal[];
     sellSignals: Signal[];
     trades: Trade[];
@@ -24,7 +24,7 @@ export class Strategy {
     constructor(
         id: number,
         symbol: string,
-        candleLength: CandleLength,
+        interval: Interval,
         buySignals: Signal[],
         sellSignals: Signal[],
         trades: Trade[],
@@ -32,18 +32,59 @@ export class Strategy {
     ) {
         this.id = id;
         this.symbol = symbol;
-        this.candleLength = candleLength;
+        this.interval = interval;
         this.buySignals = buySignals;
         this.sellSignals = sellSignals;
         this.trades = trades;
         this.estimatedReturn = estimatedReturn;
     }
 
+    toNavigationJSON(): string {
+        return JSON.stringify({
+            id: this.id,
+            symbol: this.symbol,
+            interval: this.interval,
+            buySignals: this.buySignals.map((signal) => signal.toNavigationJSON()),
+            sellSignals: this.sellSignals.map((signal) => signal.toNavigationJSON()),
+            trades: this.trades.map((trade) => trade.toNavigationJSON()),
+            estimatedReturn: this.estimatedReturn,
+        });
+    }
+
+    static fromNavigationJSON(jsonString: string): Strategy {
+        const data = JSON.parse(jsonString);
+        return new Strategy(
+            data.id,
+            data.symbol,
+            data.interval as Interval,
+            data.buySignals.map((signalData: string) => Signal.fromNavigationJSON(signalData)),
+            data.sellSignals.map((signalData: string) => Signal.fromNavigationJSON(signalData)),
+            data.trades.map((tradeData: string) => Trade.fromNavigationJSON(tradeData)),
+            data.estimatedReturn
+        );
+    }
+
+    toSubscribeJSON() {
+        let signals = []
+        for (let buySignal of this.buySignals) {
+            signals.push(buySignal.toJSON(true));
+        }
+        for (let sellSignal of this.sellSignals) {
+            signals.push(sellSignal.toJSON(false));
+        }
+
+        return JSON.stringify({
+            symbol: this.symbol,
+            interval: this.interval,
+            signals: signals
+        })
+    }
+
     static fromData(data: StrategyData): Strategy {
-        const candleLength = Object.values(CandleLength).includes(data.candle_length as CandleLength)
-                    ? (data.candle_length as CandleLength)
+        const interval = Object.values(Interval).includes(data.interval as Interval)
+                    ? (data.interval as Interval)
                     : (() => {
-                        throw new Error(`Invalid candle length value: ${data.candle_length}`);
+                        throw new Error(`Invalid interval value: ${data.interval}`);
                     })();
         let buySignals: Signal[] = [];
         let sellSignals: Signal[] = [];
@@ -67,7 +108,7 @@ export class Strategy {
         return new Strategy(
             data.id,
             data.symbol,
-            candleLength,
+            interval,
             buySignals,
             sellSignals,
             trades,

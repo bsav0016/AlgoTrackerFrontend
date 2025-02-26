@@ -18,4 +18,6 @@ export const URL_EXT = {
     LOGIN: 'login/',
     REGISTER: 'register/',
     LOGOUT: 'logout/',
+    BACKTEST: 'backtest/',
+    STRATEGY: 'strategy/'
 }

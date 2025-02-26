@@ -3,5 +3,6 @@ export enum Routes {
     Home = 'home-screen',
     StrategySelection = 'strategy-selection-screen',
     DepositFunds = 'deposit-funds-screen',
-    HowItWorks = 'how-it-works-screen'
+    HowItWorks = 'how-it-works-screen',
+    BacktestResults = 'backtest-results-screen'
 }

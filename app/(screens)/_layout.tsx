@@ -23,6 +23,7 @@ export default function PagesLayout() {
                                     <Stack.Screen name={Routes.DepositFunds} options={{ headerShown: false }} />
                                     <Stack.Screen name={Routes.StrategySelection} options={{ headerShown: false }} />
                                     <Stack.Screen name={Routes.HowItWorks} options={{ headerShown: false }} />
+                                    <Stack.Screen name={Routes.BacktestResults} options={{ headerShown: false }} />
                                 </Stack>
                             </SafeAreaView>
                         </ThemedView>

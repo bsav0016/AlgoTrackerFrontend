@@ -1,32 +1,32 @@
 import { ThemedView } from "@/components/ThemedView";
 import { Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
-import { CandleLength } from "../enums/CandleLength";
+import { Interval } from "../enums/Interval";
 
 
-interface CandleModalProps {
-    setCandleLength: (candle: CandleLength) => void;
-    candleModal: boolean;
-    setCandleModal: (value: boolean) => void;
+interface IntervalModalProps {
+    setIntervalLength: (interval: Interval) => void;
+    intervalModal: boolean;
+    setIntervalModal: (value: boolean) => void;
 }
 
-export function CandleModal({ setCandleLength, candleModal, setCandleModal }: CandleModalProps) {
+export function IntervalModal({ setIntervalLength, intervalModal, setIntervalModal }: IntervalModalProps) {
     return (
         <Modal
-            visible={candleModal}
+            visible={intervalModal}
             animationType="fade"
             transparent={true}
-            onRequestClose={() => setCandleModal(false)}
+            onRequestClose={() => setIntervalModal(false)}
         >
-            <TouchableWithoutFeedback onPress={() => setCandleModal(false)}>
+            <TouchableWithoutFeedback onPress={() => setIntervalModal(false)}>
                 <ThemedView style={styles.modalOverlay}>
                     <ThemedView style={styles.modalContainer}>
-                        {Object.entries(CandleLength).map(([key, value]) => (
+                        {Object.entries(Interval).map(([key, value]) => (
                             <TouchableOpacity
                                 key={key}
                                 style={styles.modalOption}
                                 onPress={() => {
-                                    setCandleLength(value as CandleLength);
-                                    setCandleModal(false);
+                                    setIntervalLength(value as Interval);
+                                    setIntervalModal(false);
                                 }}
                             >
                                 <Text>{value}</Text>

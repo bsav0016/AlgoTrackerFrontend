@@ -17,6 +17,21 @@ export class Trade {
         this.isBuy = isBuy;
     }
 
+    toNavigationJSON(): string {
+        return JSON.stringify({
+            stockValue: this.stockValue.toNavigationJSON(),
+            isBuy: this.isBuy
+        });
+    }
+    
+    static fromNavigationJSON(jsonString: string): Trade {
+        const data = JSON.parse(jsonString);
+        return new Trade(
+            StockValue.fromNavigationJSON(data.stockValue),
+            data.isBuy
+        );
+    }
+
     static fromData(data: TradeData): Trade {
         return new Trade(
             StockValue.fromData(data.stock_value),

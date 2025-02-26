@@ -1,5 +1,5 @@
 import { CustomHeaderView } from "@/components/CustomHeaderView";
-import { CandleLength } from "@/features/strategy/enums/CandleLength";
+import { Interval } from "@/features/strategy/enums/Interval";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
 import { useEffect, useState } from 'react';
@@ -10,13 +10,22 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { defaultParams, Indicator } from "@/features/strategy/enums/Indicator";
 import { GeneralButton } from "@/components/GeneralButton";
 import { useLocalSearchParams } from "expo-router";
-import { BacktestModal } from "@/features/strategy/components/backtestModal";
-import { CandleModal } from "@/features/strategy/components/candleModal";
+import { DateInput } from "@/features/strategy/components/dateInput";
+import { IntervalModal } from "@/features/strategy/components/intervalModal";
 import { IndicatorSection } from "@/features/strategy/components/indicatorSection";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import { Backtest } from "@/features/strategy/classes/Backtest";
+import { Strategy } from "@/features/strategy/classes/Strategy";
+import { useAuth } from "@/contexts/AuthContext";
+import { StrategyService } from "@/features/strategy/StrategyService";
+import { useRouteTo } from "@/contexts/RouteContext";
+import { Routes } from "./Routes";
 
 
 export default function StrategySelectionScreen() {
     const { strategyType } = useLocalSearchParams(); 
+    const { tokenRef } = useAuth();
+    const { routeTo } = useRouteTo();
     
     const strategyTypeString = Array.isArray(strategyType) ? strategyType[0] : strategyType;
     const parsedStrategyType = Object.values(StrategyType).includes(strategyTypeString as StrategyType)
@@ -26,12 +35,19 @@ export default function StrategySelectionScreen() {
     const textInputColor = useThemeColor({}, 'text');
     
     const [symbol, setSymbol] = useState<string>('');
-    const [candleLength, setCandleLength] = useState<CandleLength>(CandleLength.D1);
+    const [interval, setInterval] = useState<Interval>(Interval.D1);
     const [buySignals, setBuySignals] = useState<Signal[]>([]);
     const [sellSignals, setSellSignals] = useState<Signal[]>([]);
-    const [candleModal, setCandleModal] = useState<boolean>(false);
-    const [backtestModal, setBacktestModal] = useState<boolean>(false);
+    const [intervalModal, setIntervalModal] = useState<boolean>(false);
     const [subscriptionModal, setSubscriptionModal] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(false);
+    const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
+    const [startDateMonth, setStartDateMonth] = useState<string>('');
+    const [startDateDay, setStartDateDay] = useState<string>('');
+    const [startDateYear, setStartDateYear] = useState<string>('');
+    const [endDateMonth, setEndDateMonth] = useState<string>('');
+    const [endDateDay, setEndDateDay] = useState<string>('');
+    const [endDateYear, setEndDateYear] = useState<string>('');
 
     useEffect(() => {
         if (buySignals.length === 0) {
@@ -70,19 +86,79 @@ export default function StrategySelectionScreen() {
 
     const clickedNext = () => {
         if (parsedStrategyType === StrategyType.Backtest) {
-            setBacktestModal(true);
+            clickedRunBacktest();
         } else {
             setSubscriptionModal(true);
         }
     }
 
-    const runBacktest = () => {
-        console.log("Run backtest");
-        setBacktestModal(false);
+    const runBacktest = async (startDate: Date, endDate: Date) => {
+        setLoading(true);
+        setLoadingMessage("Conducting backtest...");
+        try {
+            if (!startDate || !endDate) {
+                throw new Error("Start date or end date not set");
+            }
+            const strategy = new Strategy(
+                -1,
+                symbol,
+                interval,
+                buySignals,
+                sellSignals,
+                [],
+                0
+            );
+            const backtest = new Backtest(
+                strategy,
+                startDate,
+                endDate,
+                [],
+                {},
+                []
+            );
+            if (!tokenRef.current) {
+                throw new Error("Token not stored");
+            }
+            const backtestResult = await StrategyService.conductBacktest(backtest, tokenRef.current)
+            routeTo(Routes.BacktestResults, { backtest: backtestResult.toNavigationJSON() });
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+            setLoadingMessage(null)
+        }
     }    
+
+    const clickedRunBacktest = () => {
+            try {
+                const startYear = parseInt(startDateYear);
+                const endYear = parseInt(endDateYear);
+                const startMonth = parseInt(startDateMonth);
+                const endMonth = parseInt(endDateMonth);
+                const startDay = parseInt(startDateDay);
+                const endDay = parseInt(endDateDay);
+    
+                const startDate = new Date(startYear, startMonth - 1, startDay);
+                const endDate = new Date(endYear, endMonth - 1, endDay);
+                const currentDate = new Date();
+    
+                if (startDate > endDate) {
+                    throw new Error('Start date must come before end date');
+                } else if (endDate > currentDate) {
+                    throw new Error('End date cannot be ahead of the current date');
+                }
+    
+                runBacktest(startDate, endDate);
+            } catch (error: any) {
+                console.error(error);
+            }
+        }
 
     return (
         <CustomHeaderView header="Build Your Strategy">
+            {loading ? 
+            <LoadingScreen loadingMessage={loadingMessage} />
+            :
             <ThemedView style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -103,14 +179,14 @@ export default function StrategySelectionScreen() {
                                     
 
                                 <ThemedView style={styles.symbolContainer}>
-                                    <ThemedText>Candle Length:</ThemedText>
-                                    <TouchableOpacity style={[styles.dropdown, {flexDirection: 'row'}]} onPress={() => setCandleModal(true)}>
-                                        <ThemedText>{candleLength}</ThemedText>
+                                    <ThemedText>Candle Interval:</ThemedText>
+                                    <TouchableOpacity style={[styles.dropdown, {flexDirection: 'row'}]} onPress={() => setIntervalModal(true)}>
+                                        <ThemedText>{interval}</ThemedText>
                                         <ThemedText>▼</ThemedText>
                                     </TouchableOpacity>
                                 </ThemedView>
 
-                                <CandleModal setCandleLength={setCandleLength} candleModal={candleModal} setCandleModal={setCandleModal}/>
+                                <IntervalModal setIntervalLength={setInterval} intervalModal={intervalModal} setIntervalModal={setIntervalModal}/>
 
                                 <IndicatorSection
                                     sectionTitle="Buy Signal(s)"
@@ -127,21 +203,30 @@ export default function StrategySelectionScreen() {
                                     buttonAction={addSellIndicator}
                                 />
 
-                                <ThemedView>
-                                    <GeneralButton
-                                        title={parsedStrategyType === StrategyType.Backtest ? "Set Date Parameters" : "Subscribe to Strategy"}
-                                        onPress={clickedNext}
+                                { parsedStrategyType === StrategyType.Backtest &&
+                                <>
+                                    <DateInput
+                                        startDateMonth={startDateMonth} setStartDateMonth={setStartDateMonth}
+                                        startDateDay={startDateDay} setStartDateDay={setStartDateDay}
+                                        startDateYear={startDateYear} setStartDateYear={setStartDateYear}
+                                        endDateMonth={endDateMonth} setEndDateMonth={setEndDateMonth}
+                                        endDateDay={endDateDay} setEndDateDay={setEndDateDay}
+                                        endDateYear={endDateYear} setEndDateYear={setEndDateYear}
                                     />
-                                </ThemedView>
+                                </>}
+
+                                <GeneralButton
+                                    title={parsedStrategyType === StrategyType.Backtest ? "Run Backtest" : "Subscribe to Strategy"}
+                                    onPress={clickedNext}
+                                />
                                 
                             </ThemedView> 
-
-                            <BacktestModal backtestModal={backtestModal} setBacktestModal={setBacktestModal} runBacktest={runBacktest}/>  
 
                         </KeyboardAvoidingView>
                     </TouchableWithoutFeedback>
                 </ScrollView>
             </ThemedView>
+            }
         </CustomHeaderView>
     )
 }
@@ -183,4 +268,46 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
     },
+
+    dateInputContainer: {
+        marginBottom: 10,
+    },
+
+    inputLabel: {
+        fontSize: 14,
+        color: '#555',
+    },
+
+    dateInputsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+
+    dateInput: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        padding: 10,
+        fontSize: 16,
+        width: 50,
+        textAlign: 'center',
+    },
+
+    saveButton: {
+        backgroundColor: '#4CAF50',
+        padding: 10,
+        borderRadius: 8,
+        marginTop: 20,
+        alignItems: 'center',
+    },
+
+    saveButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+
+    costNoteView: {
+        width: '90%',
+        alignSelf: 'center'
+    }
 })
