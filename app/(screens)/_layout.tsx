@@ -7,6 +7,8 @@ import { UserProvider } from '@/contexts/UserContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Routes } from '@/app/(screens)/Routes';
 import { ThemedView } from '@/components/ThemedView';
+import messaging from '@react-native-firebase/messaging';
+
 
 export default function PagesLayout() {
   return (

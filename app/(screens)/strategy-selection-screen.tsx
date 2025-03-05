@@ -39,7 +39,6 @@ export default function StrategySelectionScreen() {
     const [buySignals, setBuySignals] = useState<Signal[]>([]);
     const [sellSignals, setSellSignals] = useState<Signal[]>([]);
     const [intervalModal, setIntervalModal] = useState<boolean>(false);
-    const [subscriptionModal, setSubscriptionModal] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
     const [startDateMonth, setStartDateMonth] = useState<string>('');
@@ -64,7 +63,10 @@ export default function StrategySelectionScreen() {
             additionalIndicator, 
             50, 
             true,
-            defaultParams[additionalIndicator] || {}
+            14,
+            null,
+            null,
+            null
         );
         const prevBuySignals = [...buySignals]
         prevBuySignals.push(additionalBuySignal);
@@ -77,7 +79,10 @@ export default function StrategySelectionScreen() {
             additionalIndicator, 
             50, 
             false,
-            defaultParams[additionalIndicator] || {}
+            14,
+            null,
+            null,
+            null
         );
         const prevSellSignals = [...sellSignals]
         prevSellSignals.push(additionalSellSignal);
@@ -88,7 +93,7 @@ export default function StrategySelectionScreen() {
         if (parsedStrategyType === StrategyType.Backtest) {
             clickedRunBacktest();
         } else {
-            setSubscriptionModal(true);
+            clickedSubscribeStrategy();
         }
     }
 
@@ -119,7 +124,7 @@ export default function StrategySelectionScreen() {
             if (!tokenRef.current) {
                 throw new Error("Token not stored");
             }
-            const backtestResult = await StrategyService.conductBacktest(backtest, tokenRef.current)
+            const backtestResult = await StrategyService.conductBacktest(backtest, tokenRef.current);
             routeTo(Routes.BacktestResults, { backtest: backtestResult.toNavigationJSON() });
         } catch (error) {
             console.error(error);
@@ -130,29 +135,50 @@ export default function StrategySelectionScreen() {
     }    
 
     const clickedRunBacktest = () => {
-            try {
-                const startYear = parseInt(startDateYear);
-                const endYear = parseInt(endDateYear);
-                const startMonth = parseInt(startDateMonth);
-                const endMonth = parseInt(endDateMonth);
-                const startDay = parseInt(startDateDay);
-                const endDay = parseInt(endDateDay);
-    
-                const startDate = new Date(startYear, startMonth - 1, startDay);
-                const endDate = new Date(endYear, endMonth - 1, endDay);
-                const currentDate = new Date();
-    
-                if (startDate > endDate) {
-                    throw new Error('Start date must come before end date');
-                } else if (endDate > currentDate) {
-                    throw new Error('End date cannot be ahead of the current date');
-                }
-    
-                runBacktest(startDate, endDate);
-            } catch (error: any) {
-                console.error(error);
+        try {
+            const startYear = parseInt(startDateYear);
+            const endYear = parseInt(endDateYear);
+            const startMonth = parseInt(startDateMonth);
+            const endMonth = parseInt(endDateMonth);
+            const startDay = parseInt(startDateDay);
+            const endDay = parseInt(endDateDay);
+
+            const startDate = new Date(startYear, startMonth - 1, startDay);
+            const endDate = new Date(endYear, endMonth - 1, endDay);
+            const currentDate = new Date();
+
+            if (startDate > endDate) {
+                throw new Error('Start date must come before end date');
+            } else if (endDate > currentDate) {
+                throw new Error('End date cannot be ahead of the current date');
             }
+
+            runBacktest(startDate, endDate);
+        } catch (error: any) {
+            console.error(error);
         }
+    }
+
+    const clickedSubscribeStrategy = async () => {
+        try {
+            const strategy = new Strategy(
+                -1,
+                symbol,
+                interval,
+                buySignals,
+                sellSignals,
+                [],
+                0
+            );
+            if (!tokenRef.current) {
+                throw new Error("Token not stored");
+            }
+            const subscriptionResult = await StrategyService.subscribeStrategy(strategy, tokenRef.current);
+            console.log(subscriptionResult)
+        } catch (error: any) {
+            console.error(error)
+        }
+    }
 
     return (
         <CustomHeaderView header="Build Your Strategy">

@@ -67,7 +67,10 @@ export function IndicatorSection({
                                                 value as Indicator, 
                                                 signal.targetValue, 
                                                 signal.aboveTarget, 
-                                                defaultParams[value as Indicator] || {}
+                                                signal.window,
+                                                signal.fastWindow,
+                                                signal.slowWindow,
+                                                signal.signalWindow
                                             );
                                             const newSignals = [...signals];
                                             newSignals[index] = newSignal;
@@ -83,30 +86,45 @@ export function IndicatorSection({
                     </TouchableWithoutFeedback>
                 </Modal>
 
-                {Object.entries(signal.parameters).map(([paramName, paramValue]) => (
-                    <ThemedView key={paramName} style={styles.symbolContainer}>
-                        <ThemedText>{paramName}:</ThemedText>
-                        <TextInput
-                            style={[styles.input, { color: textInputColor }]}
-                            keyboardType="numeric"
-                            returnKeyType="done"
-                            value={paramValue.toString()}
-                            onChangeText={(text) => {
-                                const cleanedText = text.replace(/[^-.\d]/g, '');
-                                const validText = cleanedText
-                                    .replace(/^(-?)(.*)-/g, '$1$2')
-                                    .replace(/(\..*)\./g, '$1');
-                
+                {[
+                    { label: "Window", value: signal.window, key: "window" },
+                    { label: "Fast Window", value: signal.fastWindow, key: "fastWindow" },
+                    { label: "Slow Window", value: signal.slowWindow, key: "slowWindow" },
+                    { label: "Signal Window", value: signal.signalWindow, key: "signalWindow" }
+                ].map(({ label, value, key }) => (
+                    value !== null && (
+                        <ThemedView key={key} style={styles.symbolContainer}>
+                            <ThemedText>{label}:</ThemedText>
+                            <TextInput
+                                style={[styles.input, { color: textInputColor }]}
+                                keyboardType="numeric"
+                                returnKeyType="done"
+                                value={value.toString()}
+                                onChangeText={(text) => {
+                                    const cleanedText = text.replace(/[^-.\d]/g, '');
+                                    const validText = cleanedText
+                                        .replace(/^(-?)(.*)-/g, '$1$2')
+                                        .replace(/(\..*)\./g, '$1');
 
-                                const newNumber = validText === '' || validText === '-' || validText === '.' ? 0 : parseFloat(validText);
-                                const newParameters = { ...signal.parameters, [paramName]: newNumber };
-                                const newSignal = new Signal(signal.indicator, signal.targetValue, signal.aboveTarget, newParameters);
-                                const newSignals = [...signals];
-                                newSignals[index] = newSignal;
-                                setSignals(newSignals);
-                            }}
-                        />
-                    </ThemedView>
+                                    const newNumber = validText === '' || validText === '-' || validText === '.' ? 0 : parseFloat(validText);
+
+                                    const newSignal = new Signal(
+                                        signal.indicator, 
+                                        signal.targetValue, 
+                                        signal.aboveTarget, 
+                                        key === "window" ? newNumber : signal.window,
+                                        key === "fastWindow" ? newNumber : signal.fastWindow,
+                                        key === "slowWindow" ? newNumber : signal.slowWindow,
+                                        key === "signalWindow" ? newNumber : signal.signalWindow
+                                    );
+
+                                    const newSignals = [...signals];
+                                    newSignals[index] = newSignal;
+                                    setSignals(newSignals);
+                                }}
+                            />
+                        </ThemedView>
+                    )
                 ))}
 
                 <ThemedView style={styles.symbolContainer}>
@@ -118,7 +136,15 @@ export function IndicatorSection({
                         value={signal.targetValue.toString()}
                         onChangeText={(text) => {
                             const newNumber = text === "" ? 0 : parseFloat(text);
-                            const newSignal = new Signal(signal.indicator, newNumber, signal.aboveTarget, signal.parameters);
+                            const newSignal = new Signal(
+                                signal.indicator, 
+                                newNumber, 
+                                signal.aboveTarget, 
+                                signal.window,
+                                signal.fastWindow,
+                                signal.slowWindow,
+                                signal.signalWindow
+                            );
                             const newSignals = [...signals];
                             newSignals[index] = newSignal;
                             setSignals(newSignals);
@@ -135,7 +161,15 @@ export function IndicatorSection({
                     <ThemedView style={styles.symbolContainer}>
                         <ThemedText>Greater</ThemedText>
                         <Switch value={signal.aboveTarget} onValueChange={(value) => {
-                            const newSignal = new Signal(signal.indicator, signal.targetValue, value, signal.parameters);
+                            const newSignal = new Signal(
+                                signal.indicator, 
+                                signal.targetValue, 
+                                value,
+                                signal.window,
+                                signal.fastWindow,
+                                signal.slowWindow,
+                                signal.signalWindow
+                            );
                             const newSignals = [...signals];
                             newSignals[index] = newSignal;
                             setSignals(newSignals);
@@ -145,7 +179,15 @@ export function IndicatorSection({
                     <ThemedView style={styles.symbolContainer}>
                         <ThemedText>Less</ThemedText>
                         <Switch value={!signal.aboveTarget} onValueChange={(value) => {
-                            const newSignal = new Signal(signal.indicator, signal.targetValue, !value, signal.parameters);
+                            const newSignal = new Signal(
+                                signal.indicator, 
+                                signal.targetValue, 
+                                !value, 
+                                signal.window,
+                                signal.fastWindow,
+                                signal.slowWindow,
+                                signal.signalWindow
+                            );
                             const newSignals = [...signals];
                             newSignals[index] = newSignal;
                             setSignals(newSignals);

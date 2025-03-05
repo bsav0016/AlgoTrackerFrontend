@@ -7,6 +7,8 @@ import { AuthFields } from "./AuthFields";
 import { AuthType } from "./AuthType";
 import { RegisterDTO } from "./dtos/RegisterDTO";
 import { User } from "./User";
+import { DeviceIdDTO } from "./dtos/DeviceIdDTO";
+
 
 interface AuthResponseFields {
     user: User;
@@ -27,7 +29,7 @@ export const AuthService = {
                 RequestMethod.POST, 
                 headers, 
                 body
-            )
+            );
             const data: AuthResponseData = response.data as AuthResponseData;
             const authResponseDTO: AuthResponseDTO = new AuthResponseDTO(data);
             return { 
@@ -55,6 +57,45 @@ export const AuthService = {
             console.error("Error during logout:", error);
             throw(error);
         }
-    }
-      
+    },
+
+    async addDeviceId(token: string, pushToken: string) {
+        try {
+            const body = new DeviceIdDTO(pushToken).jsonify()
+            const headers = {
+                ...HEADERS(token).AUTH,
+                ...HEADERS().JSON
+            }
+            await networkRequest(
+                URL_EXT.DEVICE_ID, 
+                RequestMethod.POST, 
+                headers,
+                body
+            );
+            return true;
+        } catch (error) {
+            console.error("Error adding deviceId:", error);
+            throw(error);
+        }
+    },
+
+    async deleteDeviceId(token: string, pushToken: string) {
+        try {
+            const body = new DeviceIdDTO(pushToken).jsonify()
+            const headers = {
+                ...HEADERS(token).AUTH,
+                ...HEADERS().JSON
+            }
+            await networkRequest(
+                URL_EXT.DEVICE_ID, 
+                RequestMethod.DELETE, 
+                headers,
+                body
+            );
+            return true;
+        } catch (error) {
+            console.error("Error adding deviceId:", error);
+            throw(error);
+        }
+    },
 }

@@ -19,5 +19,6 @@ export const URL_EXT = {
     REGISTER: 'register/',
     LOGOUT: 'logout/',
     BACKTEST: 'backtest/',
-    STRATEGY: 'strategy/'
+    STRATEGY: 'strategy/',
+    DEVICE_ID: 'device-id/'
 }
