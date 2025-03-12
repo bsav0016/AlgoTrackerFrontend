@@ -1,9 +1,6 @@
-const DEV_ENV: Boolean = true
+import Constants from 'expo-constants';
 
-const URL: string = DEV_ENV 
-    ? "http://192.168.1.144:8000/"
-    : "" //TODO: Insert true backend url here
-export const DB_URL = URL + "api/"
+export const DB_URL = (Constants.expoConfig?.extra?.API_URL || '') + 'api/';
 
 export const ACCEPTABLE_STATUS_CODES: number[] = [200, 201]
 
@@ -18,7 +15,12 @@ export const URL_EXT = {
     LOGIN: 'login/',
     REGISTER: 'register/',
     LOGOUT: 'logout/',
+    TOKEN_REFRESH: 'token/refresh/',
     BACKTEST: 'backtest/',
     STRATEGY: 'strategy/',
-    DEVICE_ID: 'device-id/'
+    DEVICE_ID: 'device-id/',
+    SYMBOLS_AND_INTERVALS: 'symbols-and-intervals/',
+    PASSWORD_RESET: 'password-reset/',
+    PASSWORD_RESET_CONFIRM: 'password-reset-confirm/',
+    PAYMENT_INTENT: 'payment-intent/',
 }

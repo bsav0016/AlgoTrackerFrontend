@@ -70,7 +70,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
               style={styles.dimButton}
               onPress={() => removeToast(toast.id)}
             >
-              <ThemedText style={styles.dimButtonText}>Cancel</ThemedText>
+              <ThemedText style={styles.dimButtonText}>{toast.actions.length > 0 ? "Cancel" : "Dismiss"}</ThemedText>
             </TouchableOpacity>
           </ThemedView>
         </ThemedView>

@@ -8,7 +8,8 @@ export class User {
     accountCreated: Date;
     strategies: Strategy[];
     accountFunds: number;
-    freeBacktests: number;
+    monthlyFunds: number;
+    resetMonthlyFunds: Date;
 
     constructor(
         username: string,
@@ -18,7 +19,8 @@ export class User {
         accountCreated: Date,
         strategies: Strategy[],
         accountFunds: number,
-        freeBacktests: number
+        monthlyFunds: number,
+        resetMonthlyFunds: Date
     ) {
         this.username = username;
         this.firstName = firstName;
@@ -27,6 +29,7 @@ export class User {
         this.accountCreated = accountCreated;
         this.strategies = strategies;
         this.accountFunds = accountFunds;
-        this.freeBacktests = freeBacktests;
+        this.monthlyFunds = monthlyFunds;
+        this.resetMonthlyFunds = resetMonthlyFunds
     }
 }

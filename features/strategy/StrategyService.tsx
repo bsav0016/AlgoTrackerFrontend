@@ -3,6 +3,7 @@ import { HEADERS, URL_EXT } from "@/lib/networkRequests/NetworkConstants";
 import { networkRequest } from "@/lib/networkRequests/NetworkRequest";
 import { Backtest, BacktestResponseDataFormat } from "./classes/Backtest";
 import { Strategy } from "./classes/Strategy";
+import { SymbolsAndIntervalsResponseData, SymbolsAndIntervalsResponseDTO } from "./dtos/SymbolsAndIntervalsResponseDTO";
 
 
 export const StrategyService = {
@@ -60,6 +61,24 @@ export const StrategyService = {
                 headers,
             );
             return true;
+        } catch (error) {
+            throw(error);
+        }
+    },
+
+    async getSymbolsAndIntervals(token: string): Promise<SymbolsAndIntervalsResponseDTO> {
+        const headers = {
+            ...HEADERS(token).AUTH
+        }
+        const urlExt = URL_EXT.SYMBOLS_AND_INTERVALS;
+        try {
+            const response = await networkRequest(
+                urlExt,
+                RequestMethod.POST,
+                headers,
+            );
+            const data = response.data as SymbolsAndIntervalsResponseData;
+            return data;
         } catch (error) {
             throw(error);
         }

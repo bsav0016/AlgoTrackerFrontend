@@ -5,7 +5,7 @@ import { useRouteTo } from "@/contexts/RouteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import React, { useEffect } from "react";
-import { Platform, ScrollView, StyleSheet } from "react-native";
+import { Platform, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { Routes } from "./Routes";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
 import { ThemedView } from "@/components/ThemedView";
@@ -13,12 +13,18 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from "@/features/auth/AuthService";
+import { PositionMapping, Strategy } from "@/features/strategy/classes/Strategy";
+import { useStrategy } from "@/contexts/StrategyContext";
+import { useToast } from "@/contexts/ToastContext";
+import { TestStrategies } from "@/features/strategy/testStrategies";
 
 
 export default function Home() {
     const { userRef } = useUser();
-    const { tokenRef } = useAuth();
+    const { accessToken } = useAuth();
+    const { addToast } = useToast();
     const { routeTo } = useRouteTo();
+    const { setStrategy } = useStrategy();
 
     useEffect(() => {
         const expoPushTokenKey = 'expoPushToken';
@@ -57,10 +63,10 @@ export default function Home() {
                 switch (existingStatus) {
                     case (Notifications.PermissionStatus.GRANTED):
                         if (newPushToken !== previousToken) {
-                            if (tokenRef.current) {
-                                await AuthService.addDeviceId(tokenRef.current, newPushToken);
+                            if (accessToken) {
+                                await AuthService.addDeviceId(accessToken, newPushToken);
                                 if (previousToken !== null) {
-                                    await AuthService.deleteDeviceId(tokenRef.current, previousToken);
+                                    await AuthService.deleteDeviceId(accessToken, previousToken);
                                 }
                             }
                             await AsyncStorage.setItem(expoPushTokenKey, newPushToken);
@@ -68,8 +74,8 @@ export default function Home() {
                         break;
                     case (Notifications.PermissionStatus.DENIED):
                         if (previousToken !== null) {
-                            if (tokenRef.current) {
-                                await AuthService.deleteDeviceId(tokenRef.current, previousToken);
+                            if (accessToken) {
+                                await AuthService.deleteDeviceId(accessToken, previousToken);
                             }
                             await AsyncStorage.removeItem(expoPushTokenKey);
                         }
@@ -97,8 +103,8 @@ export default function Home() {
 
                         switch (finalStatus) {
                             case (Notifications.PermissionStatus.GRANTED):
-                                if (tokenRef.current) {
-                                    await AuthService.addDeviceId(tokenRef.current, newPushToken);
+                                if (accessToken) {
+                                    await AuthService.addDeviceId(accessToken, newPushToken);
                                 }
                                 await AsyncStorage.setItem(expoPushTokenKey, newPushToken);
                                 break;
@@ -110,10 +116,13 @@ export default function Home() {
             }
         }
 
-        initializeNotifications();
+        if (Platform.OS === "ios" || Platform.OS === "android") {
+            initializeNotifications();
+        }
+        setStrategy(null);
     }, []);
 
-    const goToStrategy = (strategyType: StrategyType) => {
+    const goToStrategySelection = (strategyType: StrategyType) => {
         routeTo(Routes.StrategySelection, { strategyType });
     }
 
@@ -125,22 +134,58 @@ export default function Home() {
         routeTo(Routes.HowItWorks);
     }
 
+    const goToViewStrategy = (index: number) => {
+        try {
+            const viewedStrategy = TestStrategies[index];
+            //const viewedStrategy = userRef.current?.strategies[index]; TODO: This needs to be uncommented
+            if (!viewedStrategy) {
+                addToast("Error opening strategy. Please try again later")
+                return;
+            }
+            setStrategy(viewedStrategy);
+            routeTo(Routes.ViewStrategy);
+        } catch (error) {
+            addToast("Error processing strategy");
+        }
+    }
+
     return (
         <CustomHeaderView header={`Welcome back, ${userRef.current?.firstName}!`} canGoBack={false}>
             <ThemedView style={styles.buttonContainer}>
                 <GeneralButton title="How it Works" onPress={goToHowItWorks} />
-                <GeneralButton title="Run a Backtest" onPress={() => goToStrategy(StrategyType.Backtest)} />
-                <GeneralButton title="Subscribe to a Strategy" onPress={() => goToStrategy(StrategyType.Subscription)} />
+                <GeneralButton title="Run a Backtest" onPress={() => goToStrategySelection(StrategyType.Backtest)} />
+                <GeneralButton title="Subscribe to a Strategy" onPress={() => goToStrategySelection(StrategyType.Subscription)} />
                 <GeneralButton title="Deposit Funds" onPress={goToDeposit} />
             </ThemedView>
             
+            <ThemedText style={styles.strategiesHeader}>Strategy Subscriptions:</ThemedText>
+            <ThemedView style={styles.strategyContainer}>
+                <ThemedText style={[styles.strategyTitleText, styles.columnHeaderText]}>Title</ThemedText>
+                <ThemedText style={[styles.strategyPositionText, styles.columnHeaderText]}>Position</ThemedText>
+                <ThemedText style={[styles.strategyReturnText, styles.columnHeaderText]}>Return</ThemedText>
+            </ThemedView>
+
             <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
                 <ThemedView style={styles.strategiesContainer}>
-                    <ThemedText style={styles.strategiesHeader}>Strategy Subscriptions:</ThemedText>
-                    {userRef.current?.strategies.map((strategy, index) => (
-                        <ThemedView key={index}>
-                            <ThemedText>Place strategy here!</ThemedText>
-                        </ThemedView>
+                    
+                    {TestStrategies.map((strategy, index) => (
+                    /*{userRef.current?.strategies.map((strategy, index) => ( TODO: This needs to be uncommented*/
+                        <TouchableOpacity onPress={() => goToViewStrategy(index)} key={index}>
+                            <ThemedView style={[
+                                styles.strategyContainer,
+                                { backgroundColor: strategy.position < 1 ? 'red' : 
+                                    strategy.position === 1 ? '#e87474' :
+                                    strategy.position === 2 ? '#6dbf71':
+                                    '#14871a'
+                                }
+                            ]}>
+                                <ThemedText style={styles.strategyTitleText}>{strategy.title}</ThemedText>
+                                <ThemedText style={styles.strategyPositionText}>{PositionMapping[strategy.position] ?? "Hold"}</ThemedText>
+                                <ThemedText style={styles.strategyReturnText}>
+                                    {((strategy.strategyReturn - 1) * 100).toFixed(1)}%
+                                </ThemedText>
+                            </ThemedView>
+                        </TouchableOpacity>
                     ))
                     }
                 </ThemedView>
@@ -157,12 +202,45 @@ const styles = StyleSheet.create({
         alignSelf: 'center'
     },
 
-    strategiesContainer: {
-        marginTop: 30,
-        alignSelf: 'center'
-    },
-
     strategiesHeader: {
+        marginTop: 30,
+        marginBottom: 10,
+        textAlign: 'center',
+        fontSize: 24,
         fontWeight: 600
     },
+
+    columnHeaderText: {
+        fontWeight: 600,
+        fontSize: 22
+    },
+
+    strategiesContainer: {
+        alignSelf: 'center',
+        width: '100%',
+        gap: 10
+    },    
+
+    strategyContainer: {
+        display: 'flex',
+        flexDirection: 'row',
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+        alignItems: 'center'
+    },
+
+    strategyTitleText: {
+        flex: 4,
+        textAlign: 'center'
+    },
+
+    strategyPositionText: {
+        flex: 3,
+        textAlign: 'center'
+    },
+
+    strategyReturnText: {
+        flex: 3,
+        textAlign: 'center'
+    }
 })

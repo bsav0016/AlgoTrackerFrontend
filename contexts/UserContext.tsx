@@ -21,26 +21,26 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     useEffect(() => {
-        const setStoredUser = async () => {
-          const storedUser = await AsyncStorage.getItem('user');
-          if (storedUser) {
-            const plainUser = JSON.parse(storedUser) as User;
-            const currentUser = new User (
-                plainUser.username,
-                plainUser.firstName,
-                plainUser.lastName,
-                plainUser.email,
-                plainUser.accountCreated,
-                plainUser.strategies,
-                plainUser.accountFunds,
-                plainUser.freeBacktests
-            );
-            setUser(currentUser);
-          }
-        };
-    
-        setStoredUser();
-      }, []);
+      const getStoredUser = async () => {
+        const storedUser = await AsyncStorage.getItem('user');
+        if (storedUser) {
+          const plainUser = JSON.parse(storedUser) as User;
+          const currentUser = new User (
+              plainUser.username,
+              plainUser.firstName,
+              plainUser.lastName,
+              plainUser.email,
+              plainUser.accountCreated,
+              plainUser.strategies,
+              plainUser.accountFunds,
+              plainUser.freeBacktests
+          );
+          setUser(currentUser);
+        }
+      };
+  
+      getStoredUser();
+    }, []);
 
     return (
         <UserContext.Provider value={{ userRef, setUser }}>

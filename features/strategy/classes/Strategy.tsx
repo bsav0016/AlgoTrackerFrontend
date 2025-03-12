@@ -1,67 +1,64 @@
-import { Interval } from "../enums/Interval";
 import { Signal, SignalData } from "./Signal";
 import { Trade, TradeData } from "./Trade";
 
 export interface StrategyData {
     id: number;
+    title: string;
     symbol: string;
     interval: string;
     buy_signals: SignalData[];
     sell_signals: SignalData[];
     trades: TradeData[];
-    estimated_return: number;
+    strategy_return: number;
+    asset_return: number;
+    position: number;
+    charge_user_date: string;
 }
+
+export const PositionMapping: Record<number, string> = {
+    0: "Sell",
+    1: "Hold (Sold)",
+    2: "Hold (Bought)",
+    3: "Buy",
+};
 
 export class Strategy {
     id: number;
+    title: string;
     symbol: string;
-    interval: Interval;
+    interval: string;
     buySignals: Signal[];
     sellSignals: Signal[];
     trades: Trade[];
-    estimatedReturn: number;
+    strategyReturn: number;
+    assetReturn: number;
+    position: number;
+    chargeUserDate: Date;
     
     constructor(
         id: number,
+        title: string,
         symbol: string,
-        interval: Interval,
+        interval: string,
         buySignals: Signal[],
         sellSignals: Signal[],
-        trades: Trade[],
-        estimatedReturn: number
+        trades: Trade[] = [],
+        strategyReturn: number = 1,
+        assetReturn: number = 1,
+        position: number = 1,
+        chargeUserDate: Date = new Date()
     ) {
         this.id = id;
+        this.title = title;
         this.symbol = symbol;
         this.interval = interval;
         this.buySignals = buySignals;
         this.sellSignals = sellSignals;
         this.trades = trades;
-        this.estimatedReturn = estimatedReturn;
-    }
-
-    toNavigationJSON(): string {
-        return JSON.stringify({
-            id: this.id,
-            symbol: this.symbol,
-            interval: this.interval,
-            buySignals: this.buySignals.map((signal) => signal.toNavigationJSON()),
-            sellSignals: this.sellSignals.map((signal) => signal.toNavigationJSON()),
-            trades: this.trades.map((trade) => trade.toNavigationJSON()),
-            estimatedReturn: this.estimatedReturn,
-        });
-    }
-
-    static fromNavigationJSON(jsonString: string): Strategy {
-        const data = JSON.parse(jsonString);
-        return new Strategy(
-            data.id,
-            data.symbol,
-            data.interval as Interval,
-            data.buySignals.map((signalData: string) => Signal.fromNavigationJSON(signalData)),
-            data.sellSignals.map((signalData: string) => Signal.fromNavigationJSON(signalData)),
-            data.trades.map((tradeData: string) => Trade.fromNavigationJSON(tradeData)),
-            data.estimatedReturn
-        );
+        this.strategyReturn = strategyReturn;
+        this.assetReturn = assetReturn;
+        this.position = position;
+        this.chargeUserDate = chargeUserDate;
     }
 
     toSubscribeJSON() {
@@ -75,17 +72,13 @@ export class Strategy {
 
         return JSON.stringify({
             symbol: this.symbol,
+            title: 'title',
             interval: this.interval,
             signals: signals
         })
     }
 
     static fromData(data: StrategyData): Strategy {
-        const interval = Object.values(Interval).includes(data.interval as Interval)
-                    ? (data.interval as Interval)
-                    : (() => {
-                        throw new Error(`Invalid interval value: ${data.interval}`);
-                    })();
         let buySignals: Signal[] = [];
         let sellSignals: Signal[] = [];
         let trades: Trade[] = [];
@@ -107,12 +100,16 @@ export class Strategy {
 
         return new Strategy(
             data.id,
+            data.title,
             data.symbol,
-            interval,
+            data.interval,
             buySignals,
             sellSignals,
             trades,
-            data.estimated_return
+            data.strategy_return,
+            data.asset_return,
+            data.position,
+            new Date(data.charge_user_date)
         )
     }
 }

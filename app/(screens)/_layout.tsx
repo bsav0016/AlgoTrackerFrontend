@@ -7,7 +7,8 @@ import { UserProvider } from '@/contexts/UserContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Routes } from '@/app/(screens)/Routes';
 import { ThemedView } from '@/components/ThemedView';
-import messaging from '@react-native-firebase/messaging';
+import { BacktestProvider } from '@/contexts/BacktestContext';
+import { StrategyProvider } from '@/contexts/StrategyContext';
 
 
 export default function PagesLayout() {
@@ -17,18 +18,25 @@ export default function PagesLayout() {
             <UserProvider>
                 <AuthProvider>
                     <RouteProvider>
-                        <ThemedView style={styles.fullScreenArea}>
-                            <SafeAreaView style={styles.safeArea}>
-                                <Stack screenOptions={{ headerShown: false }}>
-                                    <Stack.Screen name={Routes.Login} options={{ headerShown: false }} />
-                                    <Stack.Screen name={Routes.Home} options={{ headerShown: false }} />
-                                    <Stack.Screen name={Routes.DepositFunds} options={{ headerShown: false }} />
-                                    <Stack.Screen name={Routes.StrategySelection} options={{ headerShown: false }} />
-                                    <Stack.Screen name={Routes.HowItWorks} options={{ headerShown: false }} />
-                                    <Stack.Screen name={Routes.BacktestResults} options={{ headerShown: false }} />
-                                </Stack>
-                            </SafeAreaView>
-                        </ThemedView>
+                        <BacktestProvider>
+                            <StrategyProvider>
+                                <ThemedView style={styles.fullScreenArea}>
+                                    <SafeAreaView style={styles.safeArea}>
+                                        <Stack screenOptions={{ headerShown: false }}>
+                                            <Stack.Screen name={Routes.Login} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.Home} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.DepositFunds} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.StrategySelection} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.HowItWorks} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.BacktestResults} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.ResetPassword} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.ForgotPassword} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.ViewStrategy} options={{ headerShown: false }} />
+                                        </Stack>
+                                    </SafeAreaView>
+                                </ThemedView>
+                            </StrategyProvider>
+                        </BacktestProvider>
                     </RouteProvider>
                 </AuthProvider>
             </UserProvider>

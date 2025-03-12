@@ -25,7 +25,7 @@ interface Field<T> {
 export default function LoginScreen() {
     const { auth } = useAuth();
     const { addToast } = useToast();
-    const { routeReplace } = useRouteTo();
+    const { routeTo, routeReplace } = useRouteTo();
     const color = useThemeColor({}, 'text');
     const [formFields, setFormFields] = useState<AuthFields>({
         username: "",
@@ -68,6 +68,27 @@ export default function LoginScreen() {
     ];
 
     const authUser = async () => {
+        if (formFields.username.length === 0) {
+            addToast("Username cannot be blank");
+            return;
+        }
+        if (formFields.password.length === 0) {
+            addToast("Password cannot be blank");
+            return;
+        }
+        if (type === AuthType.Register && formFields.email !== undefined) {
+            if (!validateEmail(formFields.email)) {
+                addToast("Please use a valid email");
+                return;
+            }
+        }
+        if (formFields.confirmPassword !== undefined) {
+            if (type === AuthType.Register && !(formFields.confirmPassword !== formFields.password)) {
+                addToast("Passwords must match");
+                return;
+            }
+        }
+        
         setProcessing(true);
         try {
             const response = await auth(formFields, type);
@@ -103,6 +124,15 @@ export default function LoginScreen() {
             setType(AuthType.Login);
         }
     }
+
+    const validateEmail = (testEmail: string) => {
+        const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (regex.test(testEmail)) {
+            return true;
+        } else {
+            return false;
+        }
+    };
 
     const displayedFields: Field<AuthFields>[] = type === AuthType.Login ? loginFields : registerFields;
     const header: string = type === AuthType.Login ? "Login" : "Register"
@@ -159,6 +189,7 @@ export default function LoginScreen() {
                             }
                             
                         </ThemedView>
+
                         <ThemedView style={styles.switchView}>
                             <ThemedText>{bottomText}</ThemedText>
                             <TouchableOpacity onPress={switchType}>
@@ -167,6 +198,17 @@ export default function LoginScreen() {
                                 </ThemedText>
                             </TouchableOpacity>
                         </ThemedView>
+
+                        {type === AuthType.Login &&
+                            <ThemedView style={styles.switchView}>
+                                <TouchableOpacity onPress={() => routeTo(Routes.ForgotPassword)}>
+                                    <ThemedText style={[styles.switchButton, { color: Colors.button.background }]}>
+                                        Forgot Password?
+                                    </ThemedText>
+                                </TouchableOpacity>
+                            </ThemedView>
+                        }
+
                     </ThemedView>
                 </TouchableWithoutFeedback>
             </KeyboardAvoidingView>

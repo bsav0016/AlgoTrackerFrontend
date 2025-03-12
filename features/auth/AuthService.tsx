@@ -8,6 +8,9 @@ import { AuthType } from "./AuthType";
 import { RegisterDTO } from "./dtos/RegisterDTO";
 import { User } from "./User";
 import { DeviceIdDTO } from "./dtos/DeviceIdDTO";
+import { TokenRefreshDTO, TokenRefreshResponseData } from "./dtos/TokenRefreshDTO";
+import { ForgotPasswordDTO } from "./dtos/ForgotPasswordDTO";
+import { ResetPasswordDTO } from "./dtos/ResetPasswordDTO";
 
 
 interface AuthResponseFields {
@@ -42,6 +45,25 @@ export const AuthService = {
         }
     },
 
+    async resetToken(refreshToken: string) {
+        try {
+            const body = new TokenRefreshDTO(refreshToken).jsonify();
+            const headers = {
+                ...HEADERS().JSON
+            };
+            const response = await networkRequest(
+                URL_EXT.TOKEN_REFRESH,
+                RequestMethod.POST,
+                headers,
+                body
+            );
+            const data = response.data as TokenRefreshResponseData;
+            return data.access;
+        } catch (error) {
+            throw(error);
+        }
+    },
+
     async logout(token: string) {
         try {
             const headers = {
@@ -56,6 +78,40 @@ export const AuthService = {
         } catch (error) {
             console.error("Error during logout:", error);
             throw(error);
+        }
+    },
+
+    async sendPasswordResetEmail(email: string) {
+        try {
+            const body = new ForgotPasswordDTO(email).jsonify();
+            const headers = {
+                ...HEADERS().JSON
+            }
+            await networkRequest(
+                URL_EXT.PASSWORD_RESET,
+                RequestMethod.POST,
+                headers,
+                body
+            )
+        } catch (error) {
+            throw(error);
+        }
+    },
+
+    async confirmResetPassword(username: string, otp: number, password: string) {
+        try {
+            const body = new ResetPasswordDTO(username, otp, password).jsonify();
+            const headers = {
+                ...HEADERS().JSON
+            }
+            await networkRequest(
+                URL_EXT.PASSWORD_RESET_CONFIRM,
+                RequestMethod.POST,
+                headers,
+                body
+            );
+        } catch (error) {
+            throw(error)
         }
     },
 

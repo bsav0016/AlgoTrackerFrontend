@@ -34,33 +34,7 @@ export class Signal {
         this.window = window;
         this.fastWindow = fastWindow;
         this.slowWindow = slowWindow;
-        this.signalWindow = signalWindow;
-        
-    }
-
-    toNavigationJSON(): string {
-        return JSON.stringify({
-            indicator: this.indicator,
-            targetValue: this.targetValue,
-            aboveTarget: this.aboveTarget,
-            window: this.window,
-            fastWindow: this.fastWindow,
-            slowWindow: this.slowWindow,
-            signalWindow: this.signalWindow
-        });
-    }
-    
-    static fromNavigationJSON(jsonString: string): Signal {
-        const data = JSON.parse(jsonString);
-        return new Signal(
-            data.indicator as Indicator,
-            data.targetValue,
-            data.aboveTarget,
-            data.window,
-            data.fastWindow,
-            data.slowWindow,
-            data.signalWindow
-        );
+        this.signalWindow = signalWindow;   
     }
 
     static fromData(data: SignalData): Signal {

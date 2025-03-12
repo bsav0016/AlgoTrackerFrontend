@@ -3,14 +3,59 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useUser } from "@/contexts/UserContext";
 import { StyleSheet, TextInput, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GeneralButton } from "@/components/GeneralButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { initPaymentSheet, presentPaymentSheet, StripeProvider }  from "@stripe/stripe-react-native";
+import Constants from 'expo-constants';
+import { PaymentService } from "@/features/payment/PaymentService";
+import { PaymentSheetResponseDTO } from "@/features/payment/PaymentSheetResponseDTO";
+import { useToast } from "@/contexts/ToastContext";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useRouteTo } from "@/contexts/RouteContext";
+import { Routes } from "./Routes";
+
 
 export default function DepositFundsScreen() {
+    const merchantId = Constants.expoConfig?.plugins?.find(
+        (p) => p[0] === "@stripe/stripe-react-native"
+    )?.[1].merchantIdentifier
+    const stripePublicKey = Constants.expoConfig?.extra?.STRIPE_PUBLIC_KEY;
+    if (!merchantId || !stripePublicKey) {
+        throw new Error("Missing expo config for '@stripe/stripe-react-native'");
+    }
+
     const { userRef } = useUser();
+    const { addToast } = useToast();
+    const { routeReplace } = useRouteTo();
     const textInputColor = useThemeColor({}, 'text');
     const [addAmount, setAddAmount] = useState<string>("$0.00");
+    const [paymentSheet, setPaymentSheet] = useState<PaymentSheetResponseDTO | null>(null);
+    const [loading, setLoading] = useState<boolean>(false);
+
+    useEffect(() => {
+        const initializePaymentSheet = async () => {
+            if (!paymentSheet || !userRef.current) return;
+            const { error } = await initPaymentSheet({
+                merchantDisplayName: "Savidge Apps",
+                customerId: paymentSheet.customer,
+                customerEphemeralKeySecret: paymentSheet.ephemeralKey,
+                paymentIntentClientSecret: paymentSheet.paymentIntent,
+                defaultBillingDetails: {
+                    name: `${userRef.current.firstName} ${userRef.current.lastName}`
+                }
+            });
+
+            if (error) {
+                addToast("Error occured loading the payment details screen")
+                setLoading(false);
+            } else {
+                await openPaymentSheet()
+            }
+        };
+
+        initializePaymentSheet();
+    }, [paymentSheet])
 
     const formatCurrency = (value: string) => {
         const numericValue = value.replace(/\D/g, "");
@@ -24,38 +69,67 @@ export default function DepositFundsScreen() {
         setAddAmount(formatCurrency(input));
     };
 
-    const clickedDepositFunds = () => {
-        console.log("Clicked deposit funds");
-        // TODO: Implement Apple Pay API
-    };
+    const clickedEnterCardDetails = async () => {
+        setLoading(true);
+        try {
+            const amountInCents = parseInt(addAmount.replace(/[^0-9]/g, ""), 10);
+            const paymentSheetDetails = await PaymentService.fetchPaymentSheetParams(amountInCents);
+            setPaymentSheet(paymentSheetDetails);
+        } catch {
+            addToast("Error loading card details screen. Please verify your input amount");
+            setPaymentSheet(null);
+            setLoading(false);
+        }
+    }
+
+    const openPaymentSheet = async () => {
+        const { error } = await presentPaymentSheet();
+
+        if (error) {
+            addToast("Error completing payment");
+        } else {
+            addToast("Payment completed successfully!");
+            routeReplace(Routes.Home);
+        }
+    }
+    
 
     return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={styles.container}
-            >
-                <CustomHeaderView header="Deposit Funds">
-                    <ThemedView style={styles.mainView}>
-                        <ThemedText>{`Available funds: $${userRef.current?.accountFunds}`}</ThemedText>
+        <StripeProvider
+            publishableKey={stripePublicKey}
+            merchantIdentifier={merchantId}
+        >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.container}
+                >
+                    <CustomHeaderView header="Deposit Funds">
+                        <ThemedView style={styles.mainView}>
+                            <ThemedText>{`Available funds: $${userRef.current?.accountFunds}`}</ThemedText>
 
-                        <ThemedView style={styles.addAmountView}>
-                            <ThemedText>Amount to add:</ThemedText>
-                            <TextInput
-                                style={[styles.input, { color: textInputColor }]}
-                                keyboardType="numeric"
-                                returnKeyType="done"
-                                value={addAmount}
-                                onChangeText={handleAmountChange}
-                                onSubmitEditing={Keyboard.dismiss}
-                            />
+                            <ThemedView style={styles.addAmountView}>
+                                <ThemedText>Amount to add:</ThemedText>
+                                <TextInput
+                                    style={[styles.input, { color: textInputColor }]}
+                                    keyboardType="numeric"
+                                    returnKeyType="done"
+                                    value={addAmount}
+                                    onChangeText={handleAmountChange}
+                                    onSubmitEditing={Keyboard.dismiss}
+                                />
+                            </ThemedView>
+
+                            { loading ?
+                                <GeneralButton title="Enter Card Details" onPress={clickedEnterCardDetails} />
+                            :
+                                <LoadingSpinner />
+                            }
                         </ThemedView>
-
-                        <GeneralButton title="Deposit Funds" onPress={clickedDepositFunds} />
-                    </ThemedView>
-                </CustomHeaderView>
-            </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
+                    </CustomHeaderView>
+                </KeyboardAvoidingView>
+            </TouchableWithoutFeedback>
+        </StripeProvider>
     );
 }
 

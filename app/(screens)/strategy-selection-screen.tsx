@@ -1,13 +1,11 @@
 import { CustomHeaderView } from "@/components/CustomHeaderView";
-import { Interval } from "@/features/strategy/enums/Interval";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
 import { useEffect, useState } from 'react';
 import { Signal } from "@/features/strategy/classes/Signal";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { defaultParams, Indicator } from "@/features/strategy/enums/Indicator";
+import { Indicator } from "@/features/strategy/enums/Indicator";
 import { GeneralButton } from "@/components/GeneralButton";
 import { useLocalSearchParams } from "expo-router";
 import { DateInput } from "@/features/strategy/components/dateInput";
@@ -20,25 +18,31 @@ import { useAuth } from "@/contexts/AuthContext";
 import { StrategyService } from "@/features/strategy/StrategyService";
 import { useRouteTo } from "@/contexts/RouteContext";
 import { Routes } from "./Routes";
+import { useToast } from "@/contexts/ToastContext";
+import { SymbolModal } from "@/features/strategy/components/symbolModal";
+import { useBacktest } from "@/contexts/BacktestContext";
 
 
 export default function StrategySelectionScreen() {
     const { strategyType } = useLocalSearchParams(); 
-    const { tokenRef } = useAuth();
+    const { accessToken } = useAuth();
     const { routeTo } = useRouteTo();
+    const { addToast } = useToast();
+    const { backtestData, setBacktestData } = useBacktest();
     
     const strategyTypeString = Array.isArray(strategyType) ? strategyType[0] : strategyType;
     const parsedStrategyType = Object.values(StrategyType).includes(strategyTypeString as StrategyType)
         ? (strategyTypeString as StrategyType)
         : undefined;
-
-    const textInputColor = useThemeColor({}, 'text');
     
+    const [availableSymbols, setAvailableSymbols] = useState<string[]>(['']);
+    const [availableIntervals, setAvailableIntervals] = useState<string[]>(['']);
     const [symbol, setSymbol] = useState<string>('');
-    const [interval, setInterval] = useState<Interval>(Interval.D1);
+    const [interval, setInterval] = useState<string>('');
+    const [symbolModal, setSymbolModal] = useState<boolean>(false);
+    const [intervalModal, setIntervalModal] = useState<boolean>(false);
     const [buySignals, setBuySignals] = useState<Signal[]>([]);
     const [sellSignals, setSellSignals] = useState<Signal[]>([]);
-    const [intervalModal, setIntervalModal] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
     const [startDateMonth, setStartDateMonth] = useState<string>('');
@@ -49,13 +53,37 @@ export default function StrategySelectionScreen() {
     const [endDateYear, setEndDateYear] = useState<string>('');
 
     useEffect(() => {
+        const getSymbolsAndIntervals = async () => {
+            if (accessToken) {
+                try {
+                    const symbolsAndIntervals = await StrategyService.getSymbolsAndIntervals(accessToken);
+                    setAvailableSymbols(symbolsAndIntervals.symbols);
+                    setAvailableIntervals(symbolsAndIntervals.intervals);
+                } catch {
+                    addToast("Communication with server failed");
+                    routeTo(Routes.Home);
+                }
+            }
+        }
+
+        setBacktestData(null);
+        getSymbolsAndIntervals();
+    }, []);
+
+    useEffect(() => {
         if (buySignals.length === 0) {
             addBuyIndicator();
         }
         if (sellSignals.length === 0) {
             addSellIndicator();
         }
-    }, []);
+    }, [buySignals, sellSignals]);
+
+    useEffect(() => {
+        if (backtestData) {
+            routeTo(Routes.BacktestResults);
+        }
+    }, [backtestData])
 
     const addBuyIndicator = () => {
         const additionalIndicator = Indicator.RSI;
@@ -106,12 +134,11 @@ export default function StrategySelectionScreen() {
             }
             const strategy = new Strategy(
                 -1,
+                '',
                 symbol,
                 interval,
                 buySignals,
-                sellSignals,
-                [],
-                0
+                sellSignals
             );
             const backtest = new Backtest(
                 strategy,
@@ -119,18 +146,21 @@ export default function StrategySelectionScreen() {
                 endDate,
                 [],
                 {},
-                []
+                [],
+                null,
+                null,
+                null
             );
-            if (!tokenRef.current) {
+            if (!accessToken) {
                 throw new Error("Token not stored");
             }
-            const backtestResult = await StrategyService.conductBacktest(backtest, tokenRef.current);
-            routeTo(Routes.BacktestResults, { backtest: backtestResult.toNavigationJSON() });
+            const backtestResult = await StrategyService.conductBacktest(backtest, accessToken);
+            setBacktestData(backtestResult);
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
-            setLoadingMessage(null)
+            setLoadingMessage(null);
         }
     }    
 
@@ -163,18 +193,16 @@ export default function StrategySelectionScreen() {
         try {
             const strategy = new Strategy(
                 -1,
+                '',
                 symbol,
                 interval,
                 buySignals,
-                sellSignals,
-                [],
-                0
+                sellSignals
             );
-            if (!tokenRef.current) {
+            if (!accessToken) {
                 throw new Error("Token not stored");
             }
-            const subscriptionResult = await StrategyService.subscribeStrategy(strategy, tokenRef.current);
-            console.log(subscriptionResult)
+            const subscriptionResult = await StrategyService.subscribeStrategy(strategy, accessToken);
         } catch (error: any) {
             console.error(error)
         }
@@ -195,14 +223,18 @@ export default function StrategySelectionScreen() {
                             <ThemedView style={styles.strategyView}>
                                 <ThemedView style={styles.symbolContainer}>
                                     <ThemedText>Symbol:</ThemedText>
-                                    <TextInput
-                                        style={[styles.input, { color: textInputColor }]}
-                                        returnKeyType="done"
-                                        value={symbol}
-                                        onChangeText={setSymbol}
-                                    />
+                                    <TouchableOpacity style={[styles.dropdown, {flexDirection: 'row'}]} onPress={() => setSymbolModal(true)}>
+                                        <ThemedText>{symbol}</ThemedText>
+                                        <ThemedText>▼</ThemedText>
+                                    </TouchableOpacity>
                                 </ThemedView>
-                                    
+
+                                <SymbolModal 
+                                    availableSymbols={availableSymbols}
+                                    setSymbol={setSymbol} 
+                                    symbolModal={symbolModal} 
+                                    setSymbolModal={setSymbolModal}
+                                />                                    
 
                                 <ThemedView style={styles.symbolContainer}>
                                     <ThemedText>Candle Interval:</ThemedText>
@@ -212,7 +244,12 @@ export default function StrategySelectionScreen() {
                                     </TouchableOpacity>
                                 </ThemedView>
 
-                                <IntervalModal setIntervalLength={setInterval} intervalModal={intervalModal} setIntervalModal={setIntervalModal}/>
+                                <IntervalModal 
+                                    availableIntervals={availableIntervals}
+                                    setIntervalLength={setInterval} 
+                                    intervalModal={intervalModal} 
+                                    setIntervalModal={setIntervalModal}
+                                />
 
                                 <IndicatorSection
                                     sectionTitle="Buy Signal(s)"

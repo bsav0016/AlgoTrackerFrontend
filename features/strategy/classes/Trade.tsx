@@ -1,40 +1,28 @@
-import { StockValue, StockValueData } from "./StockValue";
-
 export interface TradeData {
-    stock_value: StockValueData;
+    date: string;
+    price: number;
     is_buy: boolean;
 }
 
 export class Trade {
-    stockValue: StockValue;
+    date: Date;
+    price: number;
     isBuy: boolean;
 
     constructor(
-        stockValue: StockValue,
+        date: Date,
+        price: number,
         isBuy: boolean
     ) {
-        this.stockValue = stockValue;
+        this.date = date;
+        this.price = price;
         this.isBuy = isBuy;
-    }
-
-    toNavigationJSON(): string {
-        return JSON.stringify({
-            stockValue: this.stockValue.toNavigationJSON(),
-            isBuy: this.isBuy
-        });
-    }
-    
-    static fromNavigationJSON(jsonString: string): Trade {
-        const data = JSON.parse(jsonString);
-        return new Trade(
-            StockValue.fromNavigationJSON(data.stockValue),
-            data.isBuy
-        );
     }
 
     static fromData(data: TradeData): Trade {
         return new Trade(
-            StockValue.fromData(data.stock_value),
+            new Date(data.date),
+            data.price,
             data.is_buy
         )
     }

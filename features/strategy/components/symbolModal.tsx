@@ -2,34 +2,34 @@ import { ThemedView } from "@/components/ThemedView";
 import { Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
 
 
-interface IntervalModalProps {
-    availableIntervals: string[];
-    setIntervalLength: (interval: string) => void;
-    intervalModal: boolean;
-    setIntervalModal: (value: boolean) => void;
+interface SymbolModalProps {
+    availableSymbols: string[];
+    setSymbol: (symbol: string) => void;
+    symbolModal: boolean;
+    setSymbolModal: (value: boolean) => void;
 }
 
-export function IntervalModal({ availableIntervals, setIntervalLength, intervalModal, setIntervalModal }: IntervalModalProps) {
+export function SymbolModal({ availableSymbols, setSymbol, symbolModal, setSymbolModal }: SymbolModalProps) {
     return (
         <Modal
-            visible={intervalModal}
+            visible={symbolModal}
             animationType="fade"
             transparent={true}
-            onRequestClose={() => setIntervalModal(false)}
+            onRequestClose={() => setSymbolModal(false)}
         >
-            <TouchableWithoutFeedback onPress={() => setIntervalModal(false)}>
+            <TouchableWithoutFeedback onPress={() => setSymbolModal(false)}>
                 <ThemedView style={styles.modalOverlay}>
                     <ThemedView style={styles.modalContainer}>
-                        {availableIntervals.map((interval) => (
+                        {availableSymbols.map((symbol) => (
                             <TouchableOpacity
-                                key={interval}
+                                key={symbol}
                                 style={styles.modalOption}
                                 onPress={() => {
-                                    setIntervalLength(interval);
-                                    setIntervalModal(false);
+                                    setSymbol(symbol);
+                                    setSymbolModal(false);
                                 }}
                             >
-                                <Text>{interval}</Text>
+                                <Text>{symbol}</Text>
                             </TouchableOpacity>
                         ))}
                     </ThemedView>

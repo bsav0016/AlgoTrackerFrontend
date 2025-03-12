@@ -6,6 +6,9 @@ import { Trade } from "./Trade";
 
 export interface BacktestResponseDataFormat {
     result: BacktestResultDataFormat[];
+    image: string;
+    sharpe_ratio: number;
+    sortino_ratio: number;
 }
 
 interface BacktestResultDataFormat {
@@ -16,6 +19,9 @@ interface BacktestResultDataFormat {
     sell: boolean;
     owned: number;
     return: number;
+    resultImage: string;
+    sharpeRatio: number;
+    sortinoRatio: number;
 }
 
 export class Backtest {
@@ -25,6 +31,9 @@ export class Backtest {
     stockValues: StockValue[];
     indicatorValues: Record<string, IndicatorValue[]>;
     returnValues: ReturnValue[];
+    resultImage: string | null;
+    sharpeRatio: number | null;
+    sortinoRatio: number | null;
 
     constructor(
         strategy: Strategy,
@@ -32,7 +41,10 @@ export class Backtest {
         endDate: Date,
         stockValues: StockValue[],
         indicatorValues: Record<string, IndicatorValue[]>,
-        returnValues: ReturnValue[]
+        returnValues: ReturnValue[],
+        resultImage: string | null,
+        sharpeRatio: number | null,
+        sortinoRatio: number | null
     ) {
         this.strategy = strategy;
         this.startDate = startDate;
@@ -40,39 +52,9 @@ export class Backtest {
         this.stockValues = stockValues;
         this.indicatorValues = indicatorValues;
         this.returnValues = returnValues;
-    }
-
-    toNavigationJSON() {
-        return JSON.stringify({
-            strategy: this.strategy.toNavigationJSON(),
-            startDate: this.startDate.toISOString(),
-            endDate: this.endDate.toISOString(),
-            stockValues: this.stockValues.map((sv) => sv.toNavigationJSON()),
-            indicatorValues: Object.fromEntries(
-                Object.entries(this.indicatorValues).map(([key, values]) => [
-                    key,
-                    values.map((iv) => iv.toNavigationJSON()),
-                ])
-            ),
-            returnValues: this.returnValues.map((rv) => rv.toNavigationJSON()),
-        });
-    }
-
-    static fromNavigationJSON(jsonString: string): Backtest {
-        const data = JSON.parse(jsonString);
-        return new Backtest(
-            Strategy.fromNavigationJSON(data.strategy),
-            new Date(data.startDate),
-            new Date(data.endDate),
-            data.stockValues.map((sv: any) => StockValue.fromNavigationJSON(sv)),
-            Object.fromEntries(
-                Object.entries(data.indicatorValues).map(([key, values]: [string, unknown]) => [
-                    key,
-                    (values as any[]).map((iv: any) => IndicatorValue.fromNavigationJSON(iv)),
-                ])
-            ),
-            data.returnValues.map((rv: any) => ReturnValue.fromNavigationJSON(rv))
-        );
+        this.resultImage = resultImage;
+        this.sharpeRatio = sharpeRatio;
+        this.sortinoRatio = sortinoRatio;
     }
 
     toRequestJSON() {
@@ -118,10 +100,10 @@ export class Backtest {
             dataStockValues.push(newStockValue);
             dataReturnValues.push(new ReturnValue(datumDate, datum.return));
             if (!owned && datum.owned) {
-                dataTrades.push(new Trade(newStockValue, true));
+                dataTrades.push(new Trade(datumDate, datum.close, true));
             }
             else if (owned && !datum.owned) {
-                dataTrades.push(new Trade(newStockValue, false));
+                dataTrades.push(new Trade(datumDate, datum.close, false));
             }
             owned = datum.owned;
 
@@ -137,6 +119,9 @@ export class Backtest {
         this.strategy.trades = dataTrades;
         this.indicatorValues = dataIndicatorValues;
         this.returnValues = dataReturnValues;
+        this.resultImage = data.image;
+        this.sharpeRatio = data.sharpe_ratio;
+        this.sortinoRatio = data.sortino_ratio;
 
         return this;
     }
