@@ -4,7 +4,7 @@ export class PaymentSheetDTO {
     constructor(
         amount: number
     ) {
-        this.amount = Math.floor(amount * 100);
+        this.amount = amount;
     }
 
     jsonify() {

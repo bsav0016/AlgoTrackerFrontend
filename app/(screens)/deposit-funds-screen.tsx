@@ -14,6 +14,7 @@ import { useToast } from "@/contexts/ToastContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useRouteTo } from "@/contexts/RouteContext";
 import { Routes } from "./Routes";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 export default function DepositFundsScreen() {
@@ -27,6 +28,7 @@ export default function DepositFundsScreen() {
 
     const { userRef } = useUser();
     const { addToast } = useToast();
+    const { accessToken } = useAuth();
     const { routeReplace } = useRouteTo();
     const textInputColor = useThemeColor({}, 'text');
     const [addAmount, setAddAmount] = useState<string>("$0.00");
@@ -36,6 +38,7 @@ export default function DepositFundsScreen() {
     useEffect(() => {
         const initializePaymentSheet = async () => {
             if (!paymentSheet || !userRef.current) return;
+            console.log(paymentSheet)
             const { error } = await initPaymentSheet({
                 merchantDisplayName: "Savidge Apps",
                 customerId: paymentSheet.customer,
@@ -45,8 +48,9 @@ export default function DepositFundsScreen() {
                     name: `${userRef.current.firstName} ${userRef.current.lastName}`
                 }
             });
-
+            
             if (error) {
+                console.error(error)
                 addToast("Error occured loading the payment details screen")
                 setLoading(false);
             } else {
@@ -70,12 +74,17 @@ export default function DepositFundsScreen() {
     };
 
     const clickedEnterCardDetails = async () => {
+        if (!accessToken) {
+            addToast("Please try to log in again. User info not properly stored")
+            return;
+        }
         setLoading(true);
         try {
             const amountInCents = parseInt(addAmount.replace(/[^0-9]/g, ""), 10);
-            const paymentSheetDetails = await PaymentService.fetchPaymentSheetParams(amountInCents);
+            const paymentSheetDetails = await PaymentService.fetchPaymentSheetParams(accessToken, amountInCents);
             setPaymentSheet(paymentSheetDetails);
-        } catch {
+        } catch (error) {
+            console.error(error);
             addToast("Error loading card details screen. Please verify your input amount");
             setPaymentSheet(null);
             setLoading(false);
@@ -91,6 +100,7 @@ export default function DepositFundsScreen() {
             addToast("Payment completed successfully!");
             routeReplace(Routes.Home);
         }
+        setLoading(false);
     }
     
 
@@ -121,9 +131,9 @@ export default function DepositFundsScreen() {
                             </ThemedView>
 
                             { loading ?
-                                <GeneralButton title="Enter Card Details" onPress={clickedEnterCardDetails} />
-                            :
                                 <LoadingSpinner />
+                            :
+                                <GeneralButton title="Enter Card Details" onPress={clickedEnterCardDetails} />
                             }
                         </ThemedView>
                     </CustomHeaderView>

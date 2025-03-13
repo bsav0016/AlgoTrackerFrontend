@@ -1,11 +1,11 @@
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
 import { useEffect, useState } from 'react';
 import { Signal } from "@/features/strategy/classes/Signal";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import { Indicator } from "@/features/strategy/enums/Indicator";
+import { Indicators } from "@/features/strategy/enums/Indicator";
 import { GeneralButton } from "@/components/GeneralButton";
 import { useLocalSearchParams } from "expo-router";
 import { DateInput } from "@/features/strategy/components/dateInput";
@@ -21,6 +21,7 @@ import { Routes } from "./Routes";
 import { useToast } from "@/contexts/ToastContext";
 import { SymbolModal } from "@/features/strategy/components/symbolModal";
 import { useBacktest } from "@/contexts/BacktestContext";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 
 export default function StrategySelectionScreen() {
@@ -28,6 +29,7 @@ export default function StrategySelectionScreen() {
     const { accessToken } = useAuth();
     const { routeTo } = useRouteTo();
     const { addToast } = useToast();
+    const textInputColor = useThemeColor({}, 'text');
     const { backtestData, setBacktestData } = useBacktest();
     
     const strategyTypeString = Array.isArray(strategyType) ? strategyType[0] : strategyType;
@@ -37,6 +39,7 @@ export default function StrategySelectionScreen() {
     
     const [availableSymbols, setAvailableSymbols] = useState<string[]>(['']);
     const [availableIntervals, setAvailableIntervals] = useState<string[]>(['']);
+    const [title, setTitle] = useState<string>('');
     const [symbol, setSymbol] = useState<string>('');
     const [interval, setInterval] = useState<string>('');
     const [symbolModal, setSymbolModal] = useState<boolean>(false);
@@ -86,7 +89,7 @@ export default function StrategySelectionScreen() {
     }, [backtestData])
 
     const addBuyIndicator = () => {
-        const additionalIndicator = Indicator.RSI;
+        const additionalIndicator = Indicators[0];
         const additionalBuySignal = new Signal(
             additionalIndicator, 
             50, 
@@ -102,7 +105,7 @@ export default function StrategySelectionScreen() {
     }
 
     const addSellIndicator = () => {
-        const additionalIndicator = Indicator.RSI;
+        const additionalIndicator = Indicators[0];
         const additionalSellSignal = new Signal(
             additionalIndicator, 
             50, 
@@ -156,8 +159,12 @@ export default function StrategySelectionScreen() {
             }
             const backtestResult = await StrategyService.conductBacktest(backtest, accessToken);
             setBacktestData(backtestResult);
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
+            if (error.status && error.status === 402) {
+                addToast(error.message);
+            } else {
+                console.error(error);
+            }
         } finally {
             setLoading(false);
             setLoadingMessage(null);
@@ -190,10 +197,14 @@ export default function StrategySelectionScreen() {
     }
 
     const clickedSubscribeStrategy = async () => {
+        if (title.length === 0) {
+            addToast("Please add a title");
+            return;
+        }
         try {
             const strategy = new Strategy(
                 -1,
-                '',
+                title,
                 symbol,
                 interval,
                 buySignals,
@@ -221,6 +232,19 @@ export default function StrategySelectionScreen() {
                             style={{ flex: 1 }}
                         >                        
                             <ThemedView style={styles.strategyView}>
+                                { parsedStrategyType === StrategyType.Subscription &&
+                                    <ThemedView style={styles.symbolContainer}>
+                                        <ThemedText>Title:</ThemedText>
+                                        <TextInput
+                                            style={[styles.input, { color: textInputColor }]}
+                                            returnKeyType="done"
+                                            value={title}
+                                            onChangeText={setTitle}
+                                            onSubmitEditing={Keyboard.dismiss}
+                                        />
+                                    </ThemedView>
+                                }
+
                                 <ThemedView style={styles.symbolContainer}>
                                     <ThemedText>Symbol:</ThemedText>
                                     <TouchableOpacity style={[styles.dropdown, {flexDirection: 'row'}]} onPress={() => setSymbolModal(true)}>

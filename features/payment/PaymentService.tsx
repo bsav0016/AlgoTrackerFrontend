@@ -5,10 +5,11 @@ import { RequestMethod } from "@/lib/networkRequests/RequestMethod";
 import { PaymentSheetResponseData, PaymentSheetResponseDTO } from "./PaymentSheetResponseDTO";
 
 export const PaymentService = {
-    async fetchPaymentSheetParams(amount: number) {
+    async fetchPaymentSheetParams(accessToken: string, amount: number) {
         const body = new PaymentSheetDTO(amount).jsonify();
         const headers = {
-            ...HEADERS().JSON
+            ...HEADERS().JSON,
+            ...HEADERS(accessToken).AUTH
         };
         const response = await networkRequest(
             URL_EXT.PAYMENT_INTENT,

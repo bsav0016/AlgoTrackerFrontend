@@ -72,7 +72,7 @@ export class Strategy {
 
         return JSON.stringify({
             symbol: this.symbol,
-            title: 'title',
+            title: this.title,
             interval: this.interval,
             signals: signals
         })

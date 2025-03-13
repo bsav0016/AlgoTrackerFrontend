@@ -1,8 +1,8 @@
 import { ThemedText } from "@/components/ThemedText";
 import { Signal } from "../classes/Signal";
 import { ThemedView } from "@/components/ThemedView";
-import { Button, Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
-import { Indicator, defaultParams } from "../enums/Indicator";
+import { Modal, StyleSheet, Switch, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import { Indicators, defaultParams, fastWindowString, signalWindowString, slowWindowString, targetValueString, windowString } from "../enums/Indicator";
 import { GeneralButton } from "@/components/GeneralButton";
 import { useState } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
@@ -58,19 +58,19 @@ export function IndicatorSection({
                     <TouchableWithoutFeedback onPress={closeModal}>
                         <ThemedView style={styles.modalOverlay}>
                             <ThemedView style={styles.modalContainer}>
-                                {Object.entries(Indicator).map(([key, value]) => (
+                                {Indicators.map((indicator) => (
                                     <TouchableOpacity
-                                        key={key}
+                                        key={indicator.name}
                                         style={styles.modalOption}
                                         onPress={() => {
                                             const newSignal = new Signal(
-                                                value as Indicator, 
-                                                signal.targetValue, 
-                                                signal.aboveTarget, 
-                                                signal.window,
-                                                signal.fastWindow,
-                                                signal.slowWindow,
-                                                signal.signalWindow
+                                                indicator.name, 
+                                                defaultParams[indicator.name][targetValueString] ?? 0, 
+                                                true, 
+                                                defaultParams[indicator.name][windowString],
+                                                defaultParams[indicator.name][fastWindowString],
+                                                defaultParams[indicator.name][slowWindowString],
+                                                defaultParams[indicator.name][signalWindowString]
                                             );
                                             const newSignals = [...signals];
                                             newSignals[index] = newSignal;
@@ -78,7 +78,7 @@ export function IndicatorSection({
                                             closeModal();
                                         }}
                                     >
-                                        <Text>{value}</Text>
+                                        <Text>{indicator.displayName}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </ThemedView>
@@ -87,13 +87,13 @@ export function IndicatorSection({
                 </Modal>
 
                 {[
-                    { label: "Window", value: signal.window, key: "window" },
-                    { label: "Fast Window", value: signal.fastWindow, key: "fastWindow" },
-                    { label: "Slow Window", value: signal.slowWindow, key: "slowWindow" },
-                    { label: "Signal Window", value: signal.signalWindow, key: "signalWindow" }
-                ].map(({ label, value, key }) => (
+                    { label: windowString, value: signal.window },
+                    { label: fastWindowString, value: signal.fastWindow },
+                    { label: slowWindowString, value: signal.slowWindow },
+                    { label: signalWindowString, value: signal.signalWindow }
+                ].map(({ label, value }) => (
                     value !== null && (
-                        <ThemedView key={key} style={styles.symbolContainer}>
+                        <ThemedView key={label} style={styles.symbolContainer}>
                             <ThemedText>{label}:</ThemedText>
                             <TextInput
                                 style={[styles.input, { color: textInputColor }]}
@@ -112,10 +112,10 @@ export function IndicatorSection({
                                         signal.indicator, 
                                         signal.targetValue, 
                                         signal.aboveTarget, 
-                                        key === "window" ? newNumber : signal.window,
-                                        key === "fastWindow" ? newNumber : signal.fastWindow,
-                                        key === "slowWindow" ? newNumber : signal.slowWindow,
-                                        key === "signalWindow" ? newNumber : signal.signalWindow
+                                        label === windowString ? newNumber : signal.window,
+                                        label === fastWindowString ? newNumber : signal.fastWindow,
+                                        label === slowWindowString ? newNumber : signal.slowWindow,
+                                        label === signalWindowString ? newNumber : signal.signalWindow
                                     );
 
                                     const newSignals = [...signals];
