@@ -5,7 +5,7 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { LoadingProvider } from '@/contexts/LoadingContext';
 import { UserProvider } from '@/contexts/UserContext';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { Routes } from '@/app/(screens)/Routes';
+import { Routes } from '@/app/Routes';
 import { ThemedView } from '@/components/ThemedView';
 import { BacktestProvider } from '@/contexts/BacktestContext';
 import { StrategyProvider } from '@/contexts/StrategyContext';
@@ -27,11 +27,12 @@ export default function PagesLayout() {
                                             <Stack.Screen name={Routes.Home} options={{ headerShown: false }} />
                                             <Stack.Screen name={Routes.DepositFunds} options={{ headerShown: false }} />
                                             <Stack.Screen name={Routes.StrategySelection} options={{ headerShown: false }} />
-                                            <Stack.Screen name={Routes.HowItWorks} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.Support} options={{ headerShown: false }} />
                                             <Stack.Screen name={Routes.BacktestResults} options={{ headerShown: false }} />
-                                            <Stack.Screen name={Routes.ResetPassword} options={{ headerShown: false }} />
                                             <Stack.Screen name={Routes.ForgotPassword} options={{ headerShown: false }} />
                                             <Stack.Screen name={Routes.ViewStrategy} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.Profile} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.HowItWorks} options={{ headerShown: false }} />
                                         </Stack>
                                     </SafeAreaView>
                                 </ThemedView>

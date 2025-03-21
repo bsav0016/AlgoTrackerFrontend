@@ -1,10 +1,11 @@
 import { ThemedView } from "@/components/ThemedView";
 import { Modal, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import { Interval } from "../dtos/SymbolsAndIntervalsResponseDTO";
 
 
 interface IntervalModalProps {
-    availableIntervals: string[];
-    setIntervalLength: (interval: string) => void;
+    availableIntervals: Interval[];
+    setIntervalLength: (interval: Interval) => void;
     intervalModal: boolean;
     setIntervalModal: (value: boolean) => void;
 }
@@ -22,14 +23,14 @@ export function IntervalModal({ availableIntervals, setIntervalLength, intervalM
                     <ThemedView style={styles.modalContainer}>
                         {availableIntervals.map((interval) => (
                             <TouchableOpacity
-                                key={interval}
+                                key={interval.interval}
                                 style={styles.modalOption}
                                 onPress={() => {
                                     setIntervalLength(interval);
                                     setIntervalModal(false);
                                 }}
                             >
-                                <Text>{interval}</Text>
+                                <Text>{interval.interval}</Text>
                             </TouchableOpacity>
                         ))}
                     </ThemedView>

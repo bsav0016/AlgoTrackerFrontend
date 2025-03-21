@@ -3,7 +3,7 @@ import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { ThemedView } from "@/components/ThemedView";
 import { useToast } from "@/contexts/ToastContext";
 import { useRouteTo } from "@/contexts/RouteContext";
-import { Routes } from "./Routes";
+import { Routes } from "@/app/Routes";
 import { ThemedText } from "@/components/ThemedText";
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableWithoutFeedback } from "react-native";
 import { GeneralButton } from "@/components/GeneralButton";
@@ -12,7 +12,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { AuthService } from "@/features/auth/AuthService";
 
 
-export default function LoginScreen() {
+export default function ForgotPassword() {
     const { addToast } = useToast();
     const { routeTo } = useRouteTo();
 

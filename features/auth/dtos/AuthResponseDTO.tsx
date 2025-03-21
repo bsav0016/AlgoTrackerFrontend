@@ -11,14 +11,14 @@ export interface AuthResponseData {
     account_funds: number;
     monthly_funds: number;
     reset_monthly_funds: string;
-    refresh_token: string;
-    access_token: string;
+    refresh_token?: string;
+    access_token?: string;
 }
 
 export class AuthResponseDTO {
     user: User;
-    refreshToken: string;
-    accessToken: string;
+    refreshToken?: string;
+    accessToken?: string;
 
     constructor(data: AuthResponseData) {
         let strategies: Strategy[] = []

@@ -6,7 +6,8 @@ import { ThemedView } from "./ThemedView";
 import { ThemedText } from "./ThemedText";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/Colors";
-import { Routes } from "@/app/(screens)/Routes";
+import { Routes } from "@/app/Routes";
+import { useUser } from "@/contexts/UserContext";
 
 
 interface CustomHeaderProps {
@@ -16,6 +17,7 @@ interface CustomHeaderProps {
     goBack?: () => void,
     style?: StyleProp<ViewStyle>;
     goProfile?: Boolean;
+    displayFunds?: boolean;
 }
 
 export function CustomHeaderView({ 
@@ -24,15 +26,25 @@ export function CustomHeaderView({
     canGoBack=true,
     goBack,
     style,
-    goProfile=false
+    goProfile=false,
+    displayFunds=true
 }: CustomHeaderProps) {
     const router = useRouter();
     const { routeTo } = useRouteTo();
+    const { userRef } = useUser();
 
     const handleBackPress = goBack || router.back
 
     return (
         <ThemedView style={[styles.screenView, style]}>
+            { (displayFunds && userRef && userRef.current) &&
+                <ThemedView style={styles.fundsHeaderView}>
+                        <ThemedText style={styles.fundsHeaderText}>
+                            {`Account/Monthly Funds: $${userRef.current.accountFunds}/$${userRef.current.monthlyFunds}`}
+                        </ThemedText>
+                </ThemedView>
+            }
+
             <ThemedView style={styles.headerView}>
                 {canGoBack &&
                     <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
@@ -65,6 +77,19 @@ const styles = StyleSheet.create({
     screenView: {
         flex: 1,
         flexDirection: 'column'
+    },
+
+    fundsHeaderView: {
+        display: 'flex',
+        flexDirection: 'row',
+        paddingVertical: 3,
+        justifyContent: 'center',
+        paddingTop: 2,
+        paddingBottom: 0
+    },
+
+    fundsHeaderText: {
+        fontSize: 14
     },
 
     headerView: {

@@ -2,35 +2,27 @@ import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { useRouteTo } from "@/contexts/RouteContext";
 import { useStrategy } from "@/contexts/StrategyContext";
 import { useToast } from "@/contexts/ToastContext";
-import { Trade } from "@/features/strategy/classes/Trade";
-import React, { useEffect, useState } from "react";
-import { Routes } from "./Routes";
+import React from "react";
 import { ThemedView } from "@/components/ThemedView";
 import { ScrollView, StyleSheet } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
+import { CountdownTimer } from "@/components/CountdownTimer";
+import { GeneralButton } from "@/components/GeneralButton";
+import { StrategyService } from "@/features/strategy/StrategyService";
+import { useAuth } from "@/contexts/AuthContext";
+
 
 export default function ViewStrategy() {
-    const { strategy } = useStrategy();
-    const { routeTo } = useRouteTo();
+    const { strategy, setStrategy } = useStrategy();
+    const { accessToken } = useAuth()
+    const { routeBack } = useRouteTo();
     const { addToast } = useToast();
 
-    const [title, setTitle] = useState<string>('');
-    const [strategyReturn, setStrategyReturn] = useState<number>(1)
-    const [assetReturn, setAssetReturn] = useState<number>(1);
-    const [trades, setTrades] = useState<Trade[]>([]);
-
-    useEffect(() => {
-        if (!strategy) {
-            addToast("Could not load strategy. Returning home...");
-            routeTo(Routes.Home);
-            return;
-        }
-        
-        setTitle(strategy.title);
-        setStrategyReturn(strategy.strategyReturn);
-        setAssetReturn(strategy.assetReturn);
-        setTrades(strategy.trades);
-    }, []);
+    if (!strategy) {
+        addToast("Could not load strategy. Returning home...");
+        routeBack();
+        return;
+    }
 
     const calculatePercentage = (value: number): string => {
         return ((value - 1) * 100).toFixed(2);
@@ -48,11 +40,34 @@ export default function ViewStrategy() {
         });
     }
 
+    const confirmStopStrategy = () => {
+        addToast("This will stop your strategy and remove it altogether. Would you like to proceed?", [{
+            label: 'Yes',
+            callback: () => stopStrategy()
+        }])
+    }
+
+    const stopStrategy = async () => {
+        if (!accessToken) {
+            addToast("Error stopping strategy. Please contact the support team");
+            return;
+        }
+        await StrategyService.unsubscribeStrategy(strategy, accessToken);
+        setStrategy(null);
+        routeBack();
+    }
+
+
     return (
-        <CustomHeaderView header={title}>
+        <CustomHeaderView header={strategy.title}>
             <ThemedView>
-                <ThemedText style={styles.returnText}>Strategy Return: {calculatePercentage(strategyReturn)}%</ThemedText>
-                <ThemedText style={styles.returnText}>Asset Return: {calculatePercentage(assetReturn)}%</ThemedText>
+                <ThemedText style={styles.returnText}>Strategy Return: {calculatePercentage(strategy.strategyReturn)}%</ThemedText>
+                <ThemedText style={styles.returnText}>Asset Return: {calculatePercentage(strategy.assetReturn)}%</ThemedText>
+
+                <ThemedText>Strategy subscription charged again in:</ThemedText>
+                <CountdownTimer timeRemaining={strategy.chargeUserDate.getDate() ?? 100}/>
+
+                <GeneralButton title="Stop Strategy" onPress={confirmStopStrategy} />
 
                 <ThemedView style={styles.tradeHeaderContainer}>
                     <ThemedText style={styles.tradeHeaderText}>Trade Data:</ThemedText>
@@ -65,9 +80,9 @@ export default function ViewStrategy() {
                 </ThemedView>
 
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-                    {trades.length > 0 ?
+                    {strategy.trades.length > 0 ?
                         <>
-                            {trades.map((trade, index) => (
+                            {strategy.trades.map((trade, index) => (
                                 <React.Fragment key={index}>
                                     <ThemedView style={styles.tradeContainer}>
                                         <ThemedText style={styles.dateText}>{formattedDate(trade.date)}</ThemedText>
@@ -75,8 +90,7 @@ export default function ViewStrategy() {
                                         <ThemedText style={styles.actionText}>{trade.isBuy ? "Buy" : "Sell"}</ThemedText>
                                     </ThemedView>
 
-                                    {/* Add divider except after the last item */}
-                                    {index < trades.length - 1 && 
+                                    {index < strategy.trades.length - 1 && 
                                         <ThemedView style={[
                                             styles.divider,
                                             { backgroundColor: '#ccc' }

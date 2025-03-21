@@ -1,11 +1,11 @@
 import { Signal } from "./classes/Signal";
 import { Strategy } from "./classes/Strategy";
 import { Trade } from "./classes/Trade";
-import { Indicator } from "./enums/Indicator";
+import { indicators } from "./enums/Indicator";
 
 const signals: Signal[] = [
     new Signal(
-        Indicator.RSI,
+        indicators[0],
         30,
         false,
         14,
@@ -15,7 +15,7 @@ const signals: Signal[] = [
     ),
 
     new Signal(
-        Indicator.RSI,
+        indicators[0],
         70,
         false,
         14,

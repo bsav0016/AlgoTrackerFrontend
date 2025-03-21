@@ -12,7 +12,7 @@ import { useToast } from './ToastContext';
 interface AuthContextType {
     accessToken: string | null;
     auth: (fields: AuthFields, type: AuthType) => Promise<boolean>;
-    logout: () => void;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

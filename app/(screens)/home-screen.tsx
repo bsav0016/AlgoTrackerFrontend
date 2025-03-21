@@ -1,26 +1,26 @@
+import React, { useEffect } from "react";
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { GeneralButton } from "@/components/GeneralButton";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouteTo } from "@/contexts/RouteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
-import React, { useEffect } from "react";
 import { Platform, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
-import { Routes } from "./Routes";
+import { Routes } from "@/app/Routes";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
 import { ThemedView } from "@/components/ThemedView";
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from "@/features/auth/AuthService";
-import { PositionMapping, Strategy } from "@/features/strategy/classes/Strategy";
+import { PositionMapping } from "@/features/strategy/classes/Strategy";
 import { useStrategy } from "@/contexts/StrategyContext";
 import { useToast } from "@/contexts/ToastContext";
 import { TestStrategies } from "@/features/strategy/testStrategies";
 
 
-export default function Home() {
-    const { userRef } = useUser();
+const HomeScreen = () => {
+    const { userRef, updateUserData } = useUser();
     const { accessToken } = useAuth();
     const { addToast } = useToast();
     const { routeTo } = useRouteTo();
@@ -119,6 +119,11 @@ export default function Home() {
         if (Platform.OS === "ios" || Platform.OS === "android") {
             initializeNotifications();
         }
+        
+        if (accessToken) {
+            updateUserData(accessToken);
+        }
+        
         setStrategy(null);
     }, []);
 
@@ -126,12 +131,8 @@ export default function Home() {
         routeTo(Routes.StrategySelection, { strategyType });
     }
 
-    const goToDeposit = () => {
-        routeTo(Routes.DepositFunds);
-    }
-
-    const goToHowItWorks = () => {
-        routeTo(Routes.HowItWorks);
+    const goToSupport = () => {
+        routeTo(Routes.Support);
     }
 
     const goToViewStrategy = (index: number) => {
@@ -150,12 +151,11 @@ export default function Home() {
     }
 
     return (
-        <CustomHeaderView header={`Welcome back, ${userRef.current?.firstName}!`} canGoBack={false}>
+        <CustomHeaderView header={`Welcome back, ${userRef.current?.firstName}!`} canGoBack={false} goProfile={true}>
             <ThemedView style={styles.buttonContainer}>
-                <GeneralButton title="How it Works" onPress={goToHowItWorks} />
                 <GeneralButton title="Run a Backtest" onPress={() => goToStrategySelection(StrategyType.Backtest)} />
                 <GeneralButton title="Subscribe to a Strategy" onPress={() => goToStrategySelection(StrategyType.Subscription)} />
-                <GeneralButton title="Deposit Funds" onPress={goToDeposit} />
+                <GeneralButton title="Support" onPress={goToSupport} />
             </ThemedView>
             
             <ThemedText style={styles.strategiesHeader}>Strategy Subscriptions:</ThemedText>
@@ -206,13 +206,13 @@ const styles = StyleSheet.create({
         marginTop: 30,
         marginBottom: 10,
         textAlign: 'center',
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: 600
     },
 
     columnHeaderText: {
-        fontWeight: 600,
-        fontSize: 22
+        fontWeight: 500,
+        fontSize: 20
     },
 
     strategiesContainer: {
@@ -231,16 +231,18 @@ const styles = StyleSheet.create({
 
     strategyTitleText: {
         flex: 4,
-        textAlign: 'center'
+        textAlign: 'center',
     },
 
     strategyPositionText: {
         flex: 3,
-        textAlign: 'center'
+        textAlign: 'center',
     },
 
     strategyReturnText: {
         flex: 3,
-        textAlign: 'center'
+        textAlign: 'center',
     }
 })
+
+export default HomeScreen;

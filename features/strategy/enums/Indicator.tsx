@@ -1,4 +1,4 @@
-interface IndicatorData {
+export interface IndicatorData {
     name: string;
     displayName: string;
 }
@@ -17,7 +17,7 @@ export const fastWindowString = "Fast Window";
 export const slowWindowString = "Slow Window";
 export const signalWindowString = "Signal Window";
 
-export const Indicators: IndicatorData[] = [
+export const indicators: IndicatorData[] = [
     { name: rsiString, displayName: "RSI" },
     { name: smaString, displayName: "SMA/Current Price" },
     { name: emaString, displayName: "EMA/Current Price" },

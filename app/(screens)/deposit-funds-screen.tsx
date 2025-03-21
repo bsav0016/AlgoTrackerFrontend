@@ -13,7 +13,7 @@ import { PaymentSheetResponseDTO } from "@/features/payment/PaymentSheetResponse
 import { useToast } from "@/contexts/ToastContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useRouteTo } from "@/contexts/RouteContext";
-import { Routes } from "./Routes";
+import { Routes } from "@/app/Routes";
 import { useAuth } from "@/contexts/AuthContext";
 
 

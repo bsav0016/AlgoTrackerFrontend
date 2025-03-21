@@ -11,6 +11,7 @@ import { DeviceIdDTO } from "./dtos/DeviceIdDTO";
 import { TokenRefreshDTO, TokenRefreshResponseData } from "./dtos/TokenRefreshDTO";
 import { ForgotPasswordDTO } from "./dtos/ForgotPasswordDTO";
 import { ResetPasswordDTO } from "./dtos/ResetPasswordDTO";
+import { NetworkError } from "@/lib/networkRequests/NetworkError";
 
 
 interface AuthResponseFields {
@@ -35,6 +36,13 @@ export const AuthService = {
             );
             const data: AuthResponseData = response.data as AuthResponseData;
             const authResponseDTO: AuthResponseDTO = new AuthResponseDTO(data);
+            if (!authResponseDTO.refreshToken || !authResponseDTO.accessToken) {
+                throw new NetworkError(
+                    "Did not properly receive tokens",
+                    500,
+                    "Did not properly receive tokens"
+                );
+            }
             return { 
                 user: authResponseDTO.user, 
                 refresh: authResponseDTO.refreshToken,
@@ -154,4 +162,23 @@ export const AuthService = {
             throw(error);
         }
     },
+
+    async refreshUserData(token: string): Promise<User> {
+        try {
+            const headers = {
+                ...HEADERS(token).AUTH
+            }
+            const urlExt = URL_EXT.USER_DETAILS;
+            const response = await networkRequest(
+                urlExt, 
+                RequestMethod.GET, 
+                headers
+            );
+            const data: AuthResponseData = response.data as AuthResponseData;
+            const authResponseDTO: AuthResponseDTO = new AuthResponseDTO(data);
+            return authResponseDTO.user;
+        } catch (error) {
+            throw(error);
+        }
+    }
 }

@@ -7,8 +7,15 @@ import { Trade } from "./Trade";
 export interface BacktestResponseDataFormat {
     result: BacktestResultDataFormat[];
     image: string;
+    image_no_signals: string;
+    percent_return: number;
+    percent_return_adj: number;
     sharpe_ratio: number;
+    sharpe_ratio_adj: number;
     sortino_ratio: number;
+    sortino_ratio_adj: number;
+    user_account_funds: number;
+    user_monthly_funds: number;
 }
 
 interface BacktestResultDataFormat {
@@ -19,9 +26,6 @@ interface BacktestResultDataFormat {
     sell: boolean;
     owned: number;
     return: number;
-    resultImage: string;
-    sharpeRatio: number;
-    sortinoRatio: number;
 }
 
 export class Backtest {
@@ -32,19 +36,29 @@ export class Backtest {
     indicatorValues: Record<string, IndicatorValue[]>;
     returnValues: ReturnValue[];
     resultImage: string | null;
+    resultImageNoSignals: string | null;
+    percentReturn: number | null;
+    percentReturnAdj: number | null;
     sharpeRatio: number | null;
+    sharpeRatioAdj: number | null;
     sortinoRatio: number | null;
+    sortinoRatioAdj: number | null;
 
     constructor(
         strategy: Strategy,
         startDate: Date,
         endDate: Date,
-        stockValues: StockValue[],
-        indicatorValues: Record<string, IndicatorValue[]>,
-        returnValues: ReturnValue[],
-        resultImage: string | null,
-        sharpeRatio: number | null,
-        sortinoRatio: number | null
+        stockValues: StockValue[] = [],
+        indicatorValues: Record<string, IndicatorValue[]> = {},
+        returnValues: ReturnValue[] = [],
+        resultImage: string | null = null,
+        resultImageNoSignals: string | null = null,
+        percentReturn: number | null = null,
+        percentReturnAdj: number | null = null,
+        sharpeRatio: number | null = null,
+        sharpeRatioAdj: number | null = null,
+        sortinoRatio: number | null = null,
+        sortinoRatioAdj: number | null = null
     ) {
         this.strategy = strategy;
         this.startDate = startDate;
@@ -53,8 +67,13 @@ export class Backtest {
         this.indicatorValues = indicatorValues;
         this.returnValues = returnValues;
         this.resultImage = resultImage;
+        this.resultImageNoSignals = resultImageNoSignals;
+        this.percentReturn = percentReturn;
+        this.percentReturnAdj = percentReturnAdj;
         this.sharpeRatio = sharpeRatio;
+        this.sharpeRatioAdj = sharpeRatioAdj;
         this.sortinoRatio = sortinoRatio;
+        this.sortinoRatioAdj = sortinoRatioAdj;
     }
 
     toRequestJSON() {
@@ -120,8 +139,13 @@ export class Backtest {
         this.indicatorValues = dataIndicatorValues;
         this.returnValues = dataReturnValues;
         this.resultImage = data.image;
+        this.resultImageNoSignals = data.image_no_signals;
+        this.percentReturn = data.percent_return;
+        this.percentReturnAdj = data.percent_return_adj;
         this.sharpeRatio = data.sharpe_ratio;
+        this.sharpeRatioAdj = data.sharpe_ratio_adj;
         this.sortinoRatio = data.sortino_ratio;
+        this.sortinoRatioAdj = data.sortino_ratio_adj;
 
         return this;
     }

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'expo-router';
-import { Routes } from '@/app/(screens)/Routes';
+import { Routes } from '@/app/Routes';
 
 const RouteContext = createContext({
   routeTo: (route: Routes, props?: Record<string, any>) => {},
@@ -17,7 +17,9 @@ export const RouteProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const queryString = new URLSearchParams(props).toString();
       routeString += `?${queryString}`;
     }
-    router.push(routeString as import('expo-router').RelativePathString);
+    if (router) {
+      router.push(routeString as import('expo-router').RelativePathString);
+    }
   };
 
   const routeReplace = (route: Routes, props?: Record<string, any>) => {
@@ -26,11 +28,15 @@ export const RouteProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const queryString = new URLSearchParams(props).toString();
       routeString += `?${queryString}`;
     }
-    router.replace(routeString as import('expo-router').RelativePathString);
+    if (router) {
+      router.replace(routeString as import('expo-router').RelativePathString);
+    }
   };
 
   const routeBack = () => {
-    router.back()
+    if (router) {
+      router.back()
+    }
   }
 
   return (

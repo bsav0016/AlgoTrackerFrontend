@@ -54,6 +54,12 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         <ThemedView key={toast.id} style={styles.toastContainer}>
           <ThemedText style={styles.toastContainerLabel}>{toast.message}</ThemedText>
           <ThemedView style={[styles.buttonContainer, { flexDirection: toast.actions.length > 1 ? 'column' : 'row' }]}>
+            <TouchableOpacity
+              style={styles.dimButton}
+              onPress={() => removeToast(toast.id)}
+            >
+              <ThemedText style={styles.dimButtonText}>{toast.actions.length > 0 ? "Cancel" : "Dismiss"}</ThemedText>
+            </TouchableOpacity>
             {toast.actions.map((action, index) => (
               <TouchableOpacity
                 key={index}
@@ -66,12 +72,6 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
                 <ThemedText style={styles.boldButtonText}>{action.label}</ThemedText>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity
-              style={styles.dimButton}
-              onPress={() => removeToast(toast.id)}
-            >
-              <ThemedText style={styles.dimButtonText}>{toast.actions.length > 0 ? "Cancel" : "Dismiss"}</ThemedText>
-            </TouchableOpacity>
           </ThemedView>
         </ThemedView>
       ))}

@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 import { Signal } from "@/features/strategy/classes/Signal";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
-import { Indicators } from "@/features/strategy/enums/Indicator";
+import { indicators } from "@/features/strategy/enums/Indicator";
 import { GeneralButton } from "@/components/GeneralButton";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { DateInput } from "@/features/strategy/components/dateInput";
 import { IntervalModal } from "@/features/strategy/components/intervalModal";
 import { IndicatorSection } from "@/features/strategy/components/indicatorSection";
@@ -17,11 +17,13 @@ import { Strategy } from "@/features/strategy/classes/Strategy";
 import { useAuth } from "@/contexts/AuthContext";
 import { StrategyService } from "@/features/strategy/StrategyService";
 import { useRouteTo } from "@/contexts/RouteContext";
-import { Routes } from "./Routes";
+import { Routes } from "@/app/Routes";
 import { useToast } from "@/contexts/ToastContext";
 import { SymbolModal } from "@/features/strategy/components/symbolModal";
 import { useBacktest } from "@/contexts/BacktestContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { EditIndicator } from "@/features/strategy/components/editIndicator";
+import { Interval } from "@/features/strategy/dtos/SymbolsAndIntervalsResponseDTO";
 
 
 export default function StrategySelectionScreen() {
@@ -31,17 +33,21 @@ export default function StrategySelectionScreen() {
     const { addToast } = useToast();
     const textInputColor = useThemeColor({}, 'text');
     const { backtestData, setBacktestData } = useBacktest();
+    const router = useRouter();
     
     const strategyTypeString = Array.isArray(strategyType) ? strategyType[0] : strategyType;
     const parsedStrategyType = Object.values(StrategyType).includes(strategyTypeString as StrategyType)
         ? (strategyTypeString as StrategyType)
-        : undefined;
+        : StrategyType.Backtest;
     
+    const [functionType, setFunctionType] = useState<StrategyType>(parsedStrategyType);
     const [availableSymbols, setAvailableSymbols] = useState<string[]>(['']);
-    const [availableIntervals, setAvailableIntervals] = useState<string[]>(['']);
+    const [availableIntervals, setAvailableIntervals] = useState<Interval[]>([]);
+    const [backtestBaseCost, setBacktestBaseCost] = useState<number>(0.03);
+    const [backtestIterations, setBacktestIterations] = useState<number>(5);
     const [title, setTitle] = useState<string>('');
     const [symbol, setSymbol] = useState<string>('');
-    const [interval, setInterval] = useState<string>('');
+    const [interval, setInterval] = useState<Interval>();
     const [symbolModal, setSymbolModal] = useState<boolean>(false);
     const [intervalModal, setIntervalModal] = useState<boolean>(false);
     const [buySignals, setBuySignals] = useState<Signal[]>([]);
@@ -54,6 +60,8 @@ export default function StrategySelectionScreen() {
     const [endDateMonth, setEndDateMonth] = useState<string>('');
     const [endDateDay, setEndDateDay] = useState<string>('');
     const [endDateYear, setEndDateYear] = useState<string>('');
+    const [buyIndicatorIndex, setBuyIndicatorIndex] = useState<number | null>(null);
+    const [sellIndicatorIndex, setSellIndicatorIndex] = useState<number | null>(null);
 
     useEffect(() => {
         const getSymbolsAndIntervals = async () => {
@@ -62,6 +70,8 @@ export default function StrategySelectionScreen() {
                     const symbolsAndIntervals = await StrategyService.getSymbolsAndIntervals(accessToken);
                     setAvailableSymbols(symbolsAndIntervals.symbols);
                     setAvailableIntervals(symbolsAndIntervals.intervals);
+                    setBacktestBaseCost(symbolsAndIntervals.backtestBaseCost);
+                    setBacktestIterations(symbolsAndIntervals.backtestIterations);
                 } catch {
                     addToast("Communication with server failed");
                     routeTo(Routes.Home);
@@ -86,10 +96,14 @@ export default function StrategySelectionScreen() {
         if (backtestData) {
             routeTo(Routes.BacktestResults);
         }
-    }, [backtestData])
+    }, [backtestData]);
+
+    useEffect(() => {
+        console.log(buyIndicatorIndex);
+    }, [buyIndicatorIndex])
 
     const addBuyIndicator = () => {
-        const additionalIndicator = Indicators[0];
+        const additionalIndicator = indicators[0];
         const additionalBuySignal = new Signal(
             additionalIndicator, 
             50, 
@@ -105,7 +119,7 @@ export default function StrategySelectionScreen() {
     }
 
     const addSellIndicator = () => {
-        const additionalIndicator = Indicators[0];
+        const additionalIndicator = indicators[0];
         const additionalSellSignal = new Signal(
             additionalIndicator, 
             50, 
@@ -121,11 +135,23 @@ export default function StrategySelectionScreen() {
     }
 
     const clickedNext = () => {
-        if (parsedStrategyType === StrategyType.Backtest) {
-            clickedRunBacktest();
+        let message: string;
+        let callbackFunction;
+
+        if (functionType === StrategyType.Backtest) {
+            message = `Backtest will cost $${backtestBaseCost}-$${backtestBaseCost * backtestIterations} (${backtestBaseCost} for every 5000 data points queried)`;
+            callbackFunction = clickedRunBacktest
         } else {
-            clickedSubscribeStrategy();
+            message = `Strategy will cost $${interval?.monthly_charge || 1} per month until stopped or insufficient funds`
+            callbackFunction = clickedSubscribeStrategy
         }
+
+        addToast(message, 
+            [{
+                label: 'Execute',
+                callback: callbackFunction
+            }]
+        );
     }
 
     const runBacktest = async (startDate: Date, endDate: Date) => {
@@ -139,20 +165,14 @@ export default function StrategySelectionScreen() {
                 -1,
                 '',
                 symbol,
-                interval,
+                interval?.interval || "",
                 buySignals,
                 sellSignals
             );
             const backtest = new Backtest(
                 strategy,
                 startDate,
-                endDate,
-                [],
-                {},
-                [],
-                null,
-                null,
-                null
+                endDate
             );
             if (!accessToken) {
                 throw new Error("Token not stored");
@@ -169,7 +189,7 @@ export default function StrategySelectionScreen() {
             setLoading(false);
             setLoadingMessage(null);
         }
-    }    
+    }   
 
     const clickedRunBacktest = () => {
         try {
@@ -192,6 +212,7 @@ export default function StrategySelectionScreen() {
 
             runBacktest(startDate, endDate);
         } catch (error: any) {
+            addToast(error);
             console.error(error);
         }
     }
@@ -206,7 +227,7 @@ export default function StrategySelectionScreen() {
                 -1,
                 title,
                 symbol,
-                interval,
+                interval?.interval || "",
                 buySignals,
                 sellSignals
             );
@@ -219,10 +240,46 @@ export default function StrategySelectionScreen() {
         }
     }
 
+    const switchStrategyType = () => {
+        if (functionType === StrategyType.Backtest) {
+            setFunctionType(StrategyType.Subscription)
+        } else {
+            setFunctionType(StrategyType.Backtest);
+        }
+    }
+
+    const routeBack = () => {
+        if (buyIndicatorIndex !== null) {
+            setBuyIndicatorIndex(null);
+        }
+        else if (sellIndicatorIndex !== null) {
+            setSellIndicatorIndex(null);
+        } else {
+            router.back();
+        }
+    }
+
     return (
-        <CustomHeaderView header="Build Your Strategy">
+        <CustomHeaderView 
+            header={`Build Your ${buyIndicatorIndex === null && sellIndicatorIndex === null ? 'Strategy' : 'Signal'}`}
+            goBack={routeBack}
+        >
             {loading ? 
             <LoadingScreen loadingMessage={loadingMessage} />
+            : buyIndicatorIndex !== null ?
+            <EditIndicator
+                signals={buySignals}
+                setSignals={setBuySignals}
+                indicatorIndex={buyIndicatorIndex}
+                setIndicatorIndex={setBuyIndicatorIndex}
+            />
+            : sellIndicatorIndex !== null ?
+            <EditIndicator
+                signals={sellSignals}
+                setSignals={setSellSignals}
+                indicatorIndex={sellIndicatorIndex}
+                setIndicatorIndex={setSellIndicatorIndex}
+            />
             :
             <ThemedView style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
@@ -232,7 +289,12 @@ export default function StrategySelectionScreen() {
                             style={{ flex: 1 }}
                         >                        
                             <ThemedView style={styles.strategyView}>
-                                { parsedStrategyType === StrategyType.Subscription &&
+                                <GeneralButton
+                                    title={`Convert to ${functionType === StrategyType.Backtest ? "Strategy" : "Backtest"}`}
+                                    onPress={switchStrategyType}
+                                />
+
+                                { functionType === StrategyType.Subscription &&
                                     <ThemedView style={styles.symbolContainer}>
                                         <ThemedText>Title:</ThemedText>
                                         <TextInput
@@ -263,7 +325,7 @@ export default function StrategySelectionScreen() {
                                 <ThemedView style={styles.symbolContainer}>
                                     <ThemedText>Candle Interval:</ThemedText>
                                     <TouchableOpacity style={[styles.dropdown, {flexDirection: 'row'}]} onPress={() => setIntervalModal(true)}>
-                                        <ThemedText>{interval}</ThemedText>
+                                        <ThemedText>{interval?.interval || ""}</ThemedText>
                                         <ThemedText>▼</ThemedText>
                                     </TouchableOpacity>
                                 </ThemedView>
@@ -281,6 +343,7 @@ export default function StrategySelectionScreen() {
                                     setSignals={setBuySignals}
                                     buttonText="Add Buy Indicator"
                                     buttonAction={addBuyIndicator}
+                                    setIndicatorIndex={setBuyIndicatorIndex}
                                 />
                                 <IndicatorSection 
                                     sectionTitle="Sell Signal(s)"
@@ -288,9 +351,10 @@ export default function StrategySelectionScreen() {
                                     setSignals={setSellSignals}
                                     buttonText="Add Sell Indicator"
                                     buttonAction={addSellIndicator}
+                                    setIndicatorIndex={setSellIndicatorIndex}
                                 />
 
-                                { parsedStrategyType === StrategyType.Backtest &&
+                                { functionType === StrategyType.Backtest &&
                                 <>
                                     <DateInput
                                         startDateMonth={startDateMonth} setStartDateMonth={setStartDateMonth}
@@ -303,7 +367,7 @@ export default function StrategySelectionScreen() {
                                 </>}
 
                                 <GeneralButton
-                                    title={parsedStrategyType === StrategyType.Backtest ? "Run Backtest" : "Subscribe to Strategy"}
+                                    title={functionType === StrategyType.Backtest ? "Run Backtest" : "Subscribe to Strategy"}
                                     onPress={clickedNext}
                                 />
                                 
@@ -322,7 +386,8 @@ const styles = StyleSheet.create({
     strategyView: {
         flex: 1,
         flexDirection: 'column',
-        gap: 15
+        gap: 15,
+        alignItems: 'center'
     },
 
     symbolContainer: {

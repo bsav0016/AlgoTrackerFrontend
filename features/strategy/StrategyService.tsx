@@ -4,10 +4,12 @@ import { networkRequest } from "@/lib/networkRequests/NetworkRequest";
 import { Backtest, BacktestResponseDataFormat } from "./classes/Backtest";
 import { Strategy } from "./classes/Strategy";
 import { SymbolsAndIntervalsResponseData, SymbolsAndIntervalsResponseDTO } from "./dtos/SymbolsAndIntervalsResponseDTO";
+import { useUser } from "@/contexts/UserContext";
 
 
 export const StrategyService = {
     async conductBacktest(backtest: Backtest, token: string): Promise<Backtest> {
+        const { updateAccountFunds } = useUser();
         const body = backtest.toRequestJSON();
         const headers = {
             ...HEADERS().JSON,
@@ -23,6 +25,7 @@ export const StrategyService = {
             );
             const data = response.data as BacktestResponseDataFormat;
             const updatedBacktest = backtest.updateFromData(data);
+            updateAccountFunds(data.user_account_funds, data.user_monthly_funds);
             return updatedBacktest;
         } catch (error) {
             throw(error);

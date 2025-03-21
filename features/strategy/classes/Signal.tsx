@@ -1,4 +1,4 @@
-import { Indicator } from "../enums/Indicator";
+import { IndicatorData, indicators } from "../enums/Indicator";
 
 export interface SignalData {
     name: string;
@@ -11,7 +11,7 @@ export interface SignalData {
 }
 
 export class Signal {
-    indicator: Indicator;
+    indicator: IndicatorData;
     targetValue: number;
     aboveTarget: boolean;
     window: number | null;
@@ -20,7 +20,7 @@ export class Signal {
     signalWindow: number | null;
 
     constructor(
-        indicator: Indicator,
+        indicator: IndicatorData,
         targetValue: number,
         aboveTarget: boolean,
         window: number | null,
@@ -38,11 +38,10 @@ export class Signal {
     }
 
     static fromData(data: SignalData): Signal {
-        const indicator = Object.values(Indicator).includes(data.name as Indicator)
-            ? (data.name as Indicator)
-            : (() => {
-                throw new Error(`Invalid indicator value: ${data.name}`);
-            })();
+        const indicator = indicators.find(ind => ind.name === data.name);
+        if (!indicator) {
+            throw new Error(`Invalid indicator value: ${data.name}`);
+        }
             
         return new Signal(
             indicator,
@@ -57,7 +56,7 @@ export class Signal {
 
     toJSON(buySignal: boolean): Record<string, any> {
         return {
-            name: this.indicator,
+            name: this.indicator.name,
             above_target: this.aboveTarget,
             buy_signal: buySignal,
             target_value: this.targetValue,

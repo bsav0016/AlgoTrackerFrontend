@@ -1,10 +1,10 @@
-import React, { RefObject, useState } from "react";
+import React, { RefObject, useEffect, useState } from "react";
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useRouteTo } from "@/contexts/RouteContext";
-import { Routes } from "./Routes";
+import { Routes } from "@/app/Routes";
 import { ThemedText } from "@/components/ThemedText";
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
 import { AuthFields } from "@/features/auth/AuthFields";
@@ -13,6 +13,7 @@ import { GeneralButton } from "@/components/GeneralButton";
 import { Colors } from "@/constants/Colors";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useUser } from "@/contexts/UserContext";
 
 
 interface Field<T> {
@@ -23,9 +24,12 @@ interface Field<T> {
 }
 
 export default function LoginScreen() {
+    console.log("Here")
     const { auth } = useAuth();
     const { addToast } = useToast();
     const { routeTo, routeReplace } = useRouteTo();
+    const { userRef } = useUser();
+    const { accessToken } = useAuth();
     const color = useThemeColor({}, 'text');
     const [formFields, setFormFields] = useState<AuthFields>({
         username: "",
@@ -42,6 +46,14 @@ export default function LoginScreen() {
     const emailRef = React.createRef<TextInput>();
     const firstNameRef = React.createRef<TextInput>();
     const lastNameRef = React.createRef<TextInput>();
+
+    useEffect(() => {
+        console.log(userRef);
+        console.log(accessToken);
+        if (userRef.current && accessToken) {
+            routeReplace(Routes.Home);
+        }
+    }, [userRef.current, accessToken])
 
     const focusNextField = (nextField: React.RefObject<TextInput>) => {
         nextField.current?.focus();
@@ -93,7 +105,7 @@ export default function LoginScreen() {
         try {
             const response = await auth(formFields, type);
             if (response) {
-                routeReplace(Routes.Home);
+                routeReplace(Routes.StrategySelection);
             } else {
                 addToast("Invalid username and password");
             }
@@ -140,7 +152,7 @@ export default function LoginScreen() {
     const bottomButtom: string = type === AuthType.Login ? "Register Here" : "Login Here"
 
     return (
-        <CustomHeaderView header={header} canGoBack={false}>
+        <CustomHeaderView header={header} canGoBack={false} displayFunds={false}>
             <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
 
             <KeyboardAvoidingView
