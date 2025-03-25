@@ -4,7 +4,7 @@ export const formatTime = (timeInSeconds: number): string => {
     const minutes = Math.floor((timeInSeconds % 3600) / 60);
     const seconds = Math.floor(timeInSeconds % 60);
 
-    return `${days}:${padZero(hours)}:${padZero(minutes)}:${padZero(seconds)}`;
+    return `${days}d ${hours}:${padZero(minutes)}:${padZero(seconds)}`;
 };
 
 const padZero = (num: number): string => {

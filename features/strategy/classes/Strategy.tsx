@@ -13,6 +13,7 @@ export interface StrategyData {
     asset_return: number;
     position: number;
     charge_user_date: string;
+    active: boolean;
 }
 
 export const PositionMapping: Record<number, string> = {
@@ -34,6 +35,7 @@ export class Strategy {
     assetReturn: number;
     position: number;
     chargeUserDate: Date;
+    active: boolean;
     
     constructor(
         id: number,
@@ -46,7 +48,8 @@ export class Strategy {
         strategyReturn: number = 1,
         assetReturn: number = 1,
         position: number = 1,
-        chargeUserDate: Date = new Date()
+        chargeUserDate: Date = new Date(),
+        active: boolean = true
     ) {
         this.id = id;
         this.title = title;
@@ -58,7 +61,9 @@ export class Strategy {
         this.strategyReturn = strategyReturn;
         this.assetReturn = assetReturn;
         this.position = position;
+        chargeUserDate.setDate(chargeUserDate.getDate() + 30);
         this.chargeUserDate = chargeUserDate;
+        this.active = active;
     }
 
     toSubscribeJSON() {
@@ -109,7 +114,8 @@ export class Strategy {
             data.strategy_return,
             data.asset_return,
             data.position,
-            new Date(data.charge_user_date)
+            new Date(data.charge_user_date),
+            data.active
         )
     }
 }

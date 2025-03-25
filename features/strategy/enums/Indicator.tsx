@@ -21,7 +21,7 @@ export const indicators: IndicatorData[] = [
     { name: rsiString, displayName: "RSI" },
     { name: smaString, displayName: "SMA/Current Price" },
     { name: emaString, displayName: "EMA/Current Price" },
-    { name: macdString, displayName: "MACD/Current Price" },
+    { name: macdString, displayName: "MACD/Signal" },
     { name: soString, displayName: "Stochastic Oscillator"},
     { name: bbpString, displayName: "Percent B" },
     { name: adxString, displayName: "ADX" },

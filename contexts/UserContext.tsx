@@ -6,7 +6,7 @@ import { AuthService } from '@/features/auth/AuthService';
 interface UserContextType {
     userRef: React.MutableRefObject<User | null>;
     setUser: (user: User | null) => void;
-    updateUserData: (token: string) => void;
+    updateUserData: (token: string) => Promise<void>;
     updateAccountFunds: (accountFunds: number, monthlyFunds: number) => void;
 }
 
@@ -46,10 +46,11 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       getStoredUser();
     }, []);
 
-    const updateUserData = async (token: string) => {
+    const updateUserData = async (token: string): Promise<void> => {
       try {
         const updatedUserData = await AuthService.refreshUserData(token);
         setUser(updatedUserData);
+        console.log("Finished updating user")
       } catch (error) {
         throw error;
       }

@@ -72,7 +72,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         try {
             const newAccessToken = await AuthService.resetToken(storedRefreshToken);
-            console.log(newAccessToken)
             setAccessToken(newAccessToken);
         } catch (error) {
             console.error('Failed to update token:', error);

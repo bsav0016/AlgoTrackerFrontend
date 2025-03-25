@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { formatTime } from '@/lib/TimeFormatUtil';
 
 interface CountdownTimerProps {
     timeRemaining: number;
     alignRight?: boolean;
-    color?: string
     whenZero?: (() => Promise<void>) | null
 }
 
 export const CountdownTimer: React.FC<CountdownTimerProps> = ({ 
     timeRemaining, 
     alignRight=false, 
-    color='black',
     whenZero=null
 }) => {
   const [timeLeft, setTimeLeft] = useState(timeRemaining);
@@ -36,10 +33,8 @@ export const CountdownTimer: React.FC<CountdownTimerProps> = ({
     }, [timeRemaining]);
 
     return (
-        <View style={{ flex: 1 }}>
-            <ThemedText style={[{ color: color }, alignRight && { textAlign: 'right' }]}>
-                {formatTime(timeLeft)}
-            </ThemedText>
-        </View>
+        <ThemedText style={[alignRight && { textAlign: 'right' }]}>
+            {formatTime(timeLeft)}
+        </ThemedText>
     );
 };

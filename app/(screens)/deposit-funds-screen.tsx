@@ -38,7 +38,6 @@ export default function DepositFundsScreen() {
     useEffect(() => {
         const initializePaymentSheet = async () => {
             if (!paymentSheet || !userRef.current) return;
-            console.log(paymentSheet)
             const { error } = await initPaymentSheet({
                 merchantDisplayName: "Savidge Apps",
                 customerId: paymentSheet.customer,

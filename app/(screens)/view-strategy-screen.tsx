@@ -64,8 +64,11 @@ export default function ViewStrategy() {
                 <ThemedText style={styles.returnText}>Strategy Return: {calculatePercentage(strategy.strategyReturn)}%</ThemedText>
                 <ThemedText style={styles.returnText}>Asset Return: {calculatePercentage(strategy.assetReturn)}%</ThemedText>
 
-                <ThemedText>Strategy subscription charged again in:</ThemedText>
-                <CountdownTimer timeRemaining={strategy.chargeUserDate.getDate() ?? 100}/>
+                <ThemedView style={styles.rechargeContainer}>
+                    <ThemedText>Strategy subscription charged again in:</ThemedText>
+                    <CountdownTimer timeRemaining={(strategy.chargeUserDate.getTime() - Date.now()) / 1000}/>
+                </ThemedView>
+                
 
                 <GeneralButton title="Stop Strategy" onPress={confirmStopStrategy} />
 
@@ -74,9 +77,9 @@ export default function ViewStrategy() {
                 </ThemedView>
                 
                 <ThemedView style={[styles.tradeContainer, { marginTop: 10 }]}>
-                    <ThemedText style={[styles.dateText, styles.boldText]}>Date</ThemedText>
-                    <ThemedText style={[styles.priceText, styles.boldText]}>Price</ThemedText>
-                    <ThemedText style={[styles.actionText, styles.boldText]}>Action</ThemedText>
+                    <ThemedText style={[styles.dateText, styles.headerText]}>Date</ThemedText>
+                    <ThemedText style={[styles.priceText, styles.headerText]}>Price</ThemedText>
+                    <ThemedText style={[styles.actionText, styles.headerText]}>Action</ThemedText>
                 </ThemedView>
 
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
@@ -118,6 +121,11 @@ const styles = StyleSheet.create({
         fontWeight: 700
     },
 
+    rechargeContainer: {
+        marginVertical: 15,
+        alignItems: 'center'
+    },
+
     tradeHeaderContainer: {
         marginTop: 30
     },
@@ -125,12 +133,8 @@ const styles = StyleSheet.create({
     tradeHeaderText: {
         fontWeight: 600,
         fontSize: 24,
-        textAlign: 'center'
-    },
-
-    tradesHeader: {
         textAlign: 'center',
-        fontWeight: 600,
+        textDecorationLine: 'underline'
     },
 
     tradeContainer: {
@@ -157,9 +161,10 @@ const styles = StyleSheet.create({
         textAlign: 'center'
     },
 
-    boldText: {
+    headerText: {
         fontWeight: 600,
-        fontSize: 22
+        fontSize: 22,
+        textDecorationLine: 'underline'
     },
 
     noTradesText: {

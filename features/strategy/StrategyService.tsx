@@ -6,10 +6,14 @@ import { Strategy } from "./classes/Strategy";
 import { SymbolsAndIntervalsResponseData, SymbolsAndIntervalsResponseDTO } from "./dtos/SymbolsAndIntervalsResponseDTO";
 import { useUser } from "@/contexts/UserContext";
 
+export interface ReturnedBacktest {
+    backtest: Backtest,
+    userAccountFunds: number,
+    userMonthlyFunds: number
+}
 
 export const StrategyService = {
-    async conductBacktest(backtest: Backtest, token: string): Promise<Backtest> {
-        const { updateAccountFunds } = useUser();
+    async conductBacktest(backtest: Backtest, token: string): Promise<ReturnedBacktest> {
         const body = backtest.toRequestJSON();
         const headers = {
             ...HEADERS().JSON,
@@ -25,8 +29,12 @@ export const StrategyService = {
             );
             const data = response.data as BacktestResponseDataFormat;
             const updatedBacktest = backtest.updateFromData(data);
-            updateAccountFunds(data.user_account_funds, data.user_monthly_funds);
-            return updatedBacktest;
+            const returnedBacktest: ReturnedBacktest = {
+                backtest: updatedBacktest,
+                userAccountFunds: data.user_account_funds,
+                userMonthlyFunds: data.user_monthly_funds
+            }
+            return returnedBacktest;
         } catch (error) {
             throw(error);
         }
@@ -81,7 +89,8 @@ export const StrategyService = {
                 headers,
             );
             const data = response.data as SymbolsAndIntervalsResponseData;
-            return data;
+            const processedData = SymbolsAndIntervalsResponseDTO.fromData(data);
+            return processedData;
         } catch (error) {
             throw(error);
         }

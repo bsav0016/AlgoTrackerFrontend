@@ -1,6 +1,6 @@
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import { Keyboard, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { useEffect, useState } from 'react';
 import { Signal } from "@/features/strategy/classes/Signal";
 import { ThemedView } from "@/components/ThemedView";
@@ -24,11 +24,13 @@ import { useBacktest } from "@/contexts/BacktestContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { EditIndicator } from "@/features/strategy/components/editIndicator";
 import { Interval } from "@/features/strategy/dtos/SymbolsAndIntervalsResponseDTO";
+import { useUser } from "@/contexts/UserContext";
 
 
 export default function StrategySelectionScreen() {
     const { strategyType } = useLocalSearchParams(); 
     const { accessToken } = useAuth();
+    const { updateAccountFunds } = useUser();
     const { routeTo } = useRouteTo();
     const { addToast } = useToast();
     const textInputColor = useThemeColor({}, 'text');
@@ -98,10 +100,6 @@ export default function StrategySelectionScreen() {
         }
     }, [backtestData]);
 
-    useEffect(() => {
-        console.log(buyIndicatorIndex);
-    }, [buyIndicatorIndex])
-
     const addBuyIndicator = () => {
         const additionalIndicator = indicators[0];
         const additionalBuySignal = new Signal(
@@ -139,7 +137,7 @@ export default function StrategySelectionScreen() {
         let callbackFunction;
 
         if (functionType === StrategyType.Backtest) {
-            message = `Backtest will cost $${backtestBaseCost}-$${backtestBaseCost * backtestIterations} (${backtestBaseCost} for every 5000 data points queried)`;
+            message = `Backtest will cost $${backtestBaseCost}-$${backtestBaseCost * backtestIterations} ($${backtestBaseCost} for every 5000 data points queried)`;
             callbackFunction = clickedRunBacktest
         } else {
             message = `Strategy will cost $${interval?.monthly_charge || 1} per month until stopped or insufficient funds`
@@ -177,8 +175,9 @@ export default function StrategySelectionScreen() {
             if (!accessToken) {
                 throw new Error("Token not stored");
             }
-            const backtestResult = await StrategyService.conductBacktest(backtest, accessToken);
-            setBacktestData(backtestResult);
+            const returnedBacktest = await StrategyService.conductBacktest(backtest, accessToken);
+            updateAccountFunds(returnedBacktest.userAccountFunds, returnedBacktest.userMonthlyFunds);
+            setBacktestData(returnedBacktest.backtest);
         } catch (error: any) {
             if (error.status && error.status === 402) {
                 addToast(error.message);
@@ -259,6 +258,12 @@ export default function StrategySelectionScreen() {
         }
     }
 
+    function LineBreak() {
+        return (
+            <View style={{ borderBottomWidth: 1, borderColor: textInputColor, width: '100%'}} />
+        );
+    }
+
     return (
         <CustomHeaderView 
             header={`Build Your ${buyIndicatorIndex === null && sellIndicatorIndex === null ? 'Strategy' : 'Signal'}`}
@@ -281,99 +286,105 @@ export default function StrategySelectionScreen() {
                 setIndicatorIndex={setSellIndicatorIndex}
             />
             :
-            <ThemedView style={{ flex: 1 }}>
-                <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-                    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                        <KeyboardAvoidingView
-                            behavior={Platform.OS === "ios" ? "padding" : "height"}
-                            style={{ flex: 1 }}
-                        >                        
-                            <ThemedView style={styles.strategyView}>
-                                <GeneralButton
-                                    title={`Convert to ${functionType === StrategyType.Backtest ? "Strategy" : "Backtest"}`}
-                                    onPress={switchStrategyType}
-                                />
+            <ThemedView>
+                <ScrollView
+                    contentContainerStyle={{ flexGrow: 1 }} 
+                    keyboardShouldPersistTaps="handled"
+                    keyboardDismissMode="interactive"
+                    automaticallyAdjustContentInsets={false}
+                    contentInsetAdjustmentBehavior="never"
+                    maintainVisibleContentPosition={{ minIndexForVisible: 0, autoscrollToTopThreshold: 100 }}
+                    automaticallyAdjustKeyboardInsets={true}
+                >
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>                
+                        <ThemedView style={styles.strategyView}>
+                            <GeneralButton
+                                title={`Convert to ${functionType === StrategyType.Backtest ? "Strategy" : "Backtest"}`}
+                                onPress={switchStrategyType}
+                            />
 
-                                { functionType === StrategyType.Subscription &&
-                                    <ThemedView style={styles.symbolContainer}>
-                                        <ThemedText>Title:</ThemedText>
-                                        <TextInput
-                                            style={[styles.input, { color: textInputColor }]}
-                                            returnKeyType="done"
-                                            value={title}
-                                            onChangeText={setTitle}
-                                            onSubmitEditing={Keyboard.dismiss}
-                                        />
-                                    </ThemedView>
-                                }
-
+                            { functionType === StrategyType.Subscription &&
                                 <ThemedView style={styles.symbolContainer}>
-                                    <ThemedText>Symbol:</ThemedText>
-                                    <TouchableOpacity style={[styles.dropdown, {flexDirection: 'row'}]} onPress={() => setSymbolModal(true)}>
-                                        <ThemedText>{symbol}</ThemedText>
-                                        <ThemedText>▼</ThemedText>
-                                    </TouchableOpacity>
-                                </ThemedView>
-
-                                <SymbolModal 
-                                    availableSymbols={availableSymbols}
-                                    setSymbol={setSymbol} 
-                                    symbolModal={symbolModal} 
-                                    setSymbolModal={setSymbolModal}
-                                />                                    
-
-                                <ThemedView style={styles.symbolContainer}>
-                                    <ThemedText>Candle Interval:</ThemedText>
-                                    <TouchableOpacity style={[styles.dropdown, {flexDirection: 'row'}]} onPress={() => setIntervalModal(true)}>
-                                        <ThemedText>{interval?.interval || ""}</ThemedText>
-                                        <ThemedText>▼</ThemedText>
-                                    </TouchableOpacity>
-                                </ThemedView>
-
-                                <IntervalModal 
-                                    availableIntervals={availableIntervals}
-                                    setIntervalLength={setInterval} 
-                                    intervalModal={intervalModal} 
-                                    setIntervalModal={setIntervalModal}
-                                />
-
-                                <IndicatorSection
-                                    sectionTitle="Buy Signal(s)"
-                                    signals={buySignals}
-                                    setSignals={setBuySignals}
-                                    buttonText="Add Buy Indicator"
-                                    buttonAction={addBuyIndicator}
-                                    setIndicatorIndex={setBuyIndicatorIndex}
-                                />
-                                <IndicatorSection 
-                                    sectionTitle="Sell Signal(s)"
-                                    signals={sellSignals}
-                                    setSignals={setSellSignals}
-                                    buttonText="Add Sell Indicator"
-                                    buttonAction={addSellIndicator}
-                                    setIndicatorIndex={setSellIndicatorIndex}
-                                />
-
-                                { functionType === StrategyType.Backtest &&
-                                <>
-                                    <DateInput
-                                        startDateMonth={startDateMonth} setStartDateMonth={setStartDateMonth}
-                                        startDateDay={startDateDay} setStartDateDay={setStartDateDay}
-                                        startDateYear={startDateYear} setStartDateYear={setStartDateYear}
-                                        endDateMonth={endDateMonth} setEndDateMonth={setEndDateMonth}
-                                        endDateDay={endDateDay} setEndDateDay={setEndDateDay}
-                                        endDateYear={endDateYear} setEndDateYear={setEndDateYear}
+                                    <ThemedText>Title:</ThemedText>
+                                    <TextInput
+                                        style={[styles.input, { color: textInputColor }]}
+                                        returnKeyType="done"
+                                        value={title}
+                                        onChangeText={setTitle}
+                                        onSubmitEditing={Keyboard.dismiss}
                                     />
-                                </>}
+                                </ThemedView>
+                            }
 
-                                <GeneralButton
-                                    title={functionType === StrategyType.Backtest ? "Run Backtest" : "Subscribe to Strategy"}
-                                    onPress={clickedNext}
+                            <ThemedView style={styles.symbolContainer}>
+                                <ThemedText>Symbol:</ThemedText>
+                                <TouchableOpacity style={[styles.dropdown, {flexDirection: 'row'}]} onPress={() => setSymbolModal(true)}>
+                                    <ThemedText>{symbol}</ThemedText>
+                                    <ThemedText>▼</ThemedText>
+                                </TouchableOpacity>
+                            </ThemedView>
+
+                            <SymbolModal 
+                                availableSymbols={availableSymbols}
+                                setSymbol={setSymbol} 
+                                symbolModal={symbolModal} 
+                                setSymbolModal={setSymbolModal}
+                            />                                    
+
+                            <ThemedView style={styles.symbolContainer}>
+                                <ThemedText>Candle Interval:</ThemedText>
+                                <TouchableOpacity style={[styles.dropdown, {flexDirection: 'row'}]} onPress={() => setIntervalModal(true)}>
+                                    <ThemedText>{interval?.interval || ""}</ThemedText>
+                                    <ThemedText>▼</ThemedText>
+                                </TouchableOpacity>
+                            </ThemedView>
+
+                            <LineBreak />
+
+                            <IntervalModal 
+                                availableIntervals={availableIntervals}
+                                setIntervalLength={setInterval} 
+                                intervalModal={intervalModal} 
+                                setIntervalModal={setIntervalModal}
+                            />
+
+                            <IndicatorSection
+                                sectionTitle="Buy Signal(s)"
+                                signals={buySignals}
+                                setSignals={setBuySignals}
+                                buttonText="Add Buy Indicator"
+                                buttonAction={addBuyIndicator}
+                                setIndicatorIndex={setBuyIndicatorIndex}
+                            />
+                            <LineBreak />
+                            <IndicatorSection 
+                                sectionTitle="Sell Signal(s)"
+                                signals={sellSignals}
+                                setSignals={setSellSignals}
+                                buttonText="Add Sell Indicator"
+                                buttonAction={addSellIndicator}
+                                setIndicatorIndex={setSellIndicatorIndex}
+                            />
+                            <LineBreak />
+
+                            { functionType === StrategyType.Backtest &&
+                            <>
+                                <DateInput
+                                    startDateMonth={startDateMonth} setStartDateMonth={setStartDateMonth}
+                                    startDateDay={startDateDay} setStartDateDay={setStartDateDay}
+                                    startDateYear={startDateYear} setStartDateYear={setStartDateYear}
+                                    endDateMonth={endDateMonth} setEndDateMonth={setEndDateMonth}
+                                    endDateDay={endDateDay} setEndDateDay={setEndDateDay}
+                                    endDateYear={endDateYear} setEndDateYear={setEndDateYear}
                                 />
-                                
-                            </ThemedView> 
+                            </>}
 
-                        </KeyboardAvoidingView>
+                            <GeneralButton
+                                title={functionType === StrategyType.Backtest ? "Run Backtest" : "Subscribe to Strategy"}
+                                onPress={clickedNext}
+                            />
+                            
+                        </ThemedView> 
                     </TouchableWithoutFeedback>
                 </ScrollView>
             </ThemedView>

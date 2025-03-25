@@ -271,21 +271,23 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 5,
+        width: '90%'
     },
 
     inputLabel: {
-        fontSize: 20,
-        color: '#555',
+        fontSize: 20
     },
 
     dateInputsRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        gap: 3
+        gap: 3,
+        flex: 1
     },
 
     dateInput: {
+        flex: 1,
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 8,

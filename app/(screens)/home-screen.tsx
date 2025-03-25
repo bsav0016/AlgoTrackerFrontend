@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { GeneralButton } from "@/components/GeneralButton";
 import { ThemedText } from "@/components/ThemedText";
@@ -17,14 +17,18 @@ import { PositionMapping } from "@/features/strategy/classes/Strategy";
 import { useStrategy } from "@/contexts/StrategyContext";
 import { useToast } from "@/contexts/ToastContext";
 import { TestStrategies } from "@/features/strategy/testStrategies";
+import { useFocusEffect } from "expo-router";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 
 const HomeScreen = () => {
     const { userRef, updateUserData } = useUser();
-    const { accessToken } = useAuth();
+    const { accessToken, logout } = useAuth();
     const { addToast } = useToast();
     const { routeTo } = useRouteTo();
     const { setStrategy } = useStrategy();
+
+    const [loading, setLoading] = useState<boolean>(false);
 
     useEffect(() => {
         const expoPushTokenKey = 'expoPushToken';
@@ -120,12 +124,34 @@ const HomeScreen = () => {
             initializeNotifications();
         }
         
-        if (accessToken) {
-            updateUserData(accessToken);
-        }
-        
         setStrategy(null);
     }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            let active = true;
+
+            const doUpdateUser = async () => {
+                if (accessToken) {
+                    try {
+                        setLoading(true);
+                        await updateUserData(accessToken);
+                    } catch {
+                        addToast("Error retreiving user details. Please log back in.")
+                        await logout();
+                    } finally {
+                        setLoading(false);
+                    }
+                }
+            }
+            
+            doUpdateUser();
+
+            return () => {
+                active = false;
+            }
+        }, [])
+    );
 
     const goToStrategySelection = (strategyType: StrategyType) => {
         routeTo(Routes.StrategySelection, { strategyType });
@@ -151,6 +177,10 @@ const HomeScreen = () => {
     }
 
     return (
+        <>
+        { loading ?
+        <LoadingScreen loadingMessage="Refreshing data"/>
+        :
         <CustomHeaderView header={`Welcome back, ${userRef.current?.firstName}!`} canGoBack={false} goProfile={true}>
             <ThemedView style={styles.buttonContainer}>
                 <GeneralButton title="Run a Backtest" onPress={() => goToStrategySelection(StrategyType.Backtest)} />
@@ -191,6 +221,8 @@ const HomeScreen = () => {
                 </ThemedView>
             </ScrollView>
         </CustomHeaderView>
+        }
+        </>
     )
 }
 
@@ -207,12 +239,14 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         textAlign: 'center',
         fontSize: 22,
-        fontWeight: 600
+        fontWeight: 600,
+        textDecorationLine: 'underline'
     },
 
     columnHeaderText: {
         fontWeight: 500,
-        fontSize: 20
+        fontSize: 20,
+        textDecorationLine: 'underline'
     },
 
     strategiesContainer: {

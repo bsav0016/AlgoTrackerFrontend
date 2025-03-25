@@ -24,7 +24,6 @@ interface Field<T> {
 }
 
 export default function LoginScreen() {
-    console.log("Here")
     const { auth } = useAuth();
     const { addToast } = useToast();
     const { routeTo, routeReplace } = useRouteTo();
@@ -48,8 +47,6 @@ export default function LoginScreen() {
     const lastNameRef = React.createRef<TextInput>();
 
     useEffect(() => {
-        console.log(userRef);
-        console.log(accessToken);
         if (userRef.current && accessToken) {
             routeReplace(Routes.Home);
         }

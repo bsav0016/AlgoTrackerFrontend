@@ -5,6 +5,7 @@ import { StyleSheet, TouchableOpacity } from "react-native";
 import { GeneralButton } from "@/components/GeneralButton";
 import { FontAwesome } from '@expo/vector-icons';
 import { Colors } from "@/constants/Colors";
+import { useThemeColor } from "@/hooks/useThemeColor";
 
 interface SignalSectionProps {
     sectionTitle: string;
@@ -42,12 +43,17 @@ export function IndicatorSection({
         if (signal.signalWindow) {
             variables.push(signal.signalWindow);
         }
+        if (signal.aboveTarget) {
+            variables.push(`Above ${signal.targetValue}`);
+        } else {
+            variables.push(`Below ${signal.targetValue}`);
+        }
         
         if (variables.length === 0) {
             return ""
         }
         let parameterString = "("
-        for (let i = 0; i < variables.length - 2; i++) {
+        for (let i = 0; i < variables.length - 1; i++) {
             parameterString += `${variables[i]}, `
         }
         parameterString += `${variables[variables.length - 1]})`
@@ -55,7 +61,7 @@ export function IndicatorSection({
     }
     
     return (
-        <>
+        <ThemedView style={styles.indicatorSectionContainer}>
             <ThemedText style={styles.signalSectionHeader}>{sectionTitle}</ThemedText>
             {signals.map((signal, index) => (
                 <ThemedView key={index} style={styles.signalContainer}>
@@ -64,7 +70,7 @@ export function IndicatorSection({
                     </ThemedView>
                     
                     <ThemedView style={styles.parameterContainer}>
-                        <ThemedText>{signalParameterString(signal)}</ThemedText>
+                        <ThemedText style={styles.parameterText}>{signalParameterString(signal)}</ThemedText>
                     </ThemedView>
                     
                     <ThemedView style={styles.buttonsContainer}>
@@ -81,22 +87,27 @@ export function IndicatorSection({
             {signals.length < 3 &&
                 <ThemedView style={{ alignItems: 'center' }}><GeneralButton title={buttonText} onPress={buttonAction}/></ThemedView>
             }
-        </>
+        </ThemedView>
     )
 }
 
 const styles = StyleSheet.create({
+    indicatorSectionContainer: {
+        gap: 5,
+    },
+
     signalSectionHeader: {
         textAlign: 'center', 
         fontWeight: 700, 
-        marginTop: 30, 
-        fontSize: 24 
+        fontSize: 24,
+        paddingTop: 0,
+        marginTop: 0
     },
 
     signalContainer: {
         display: 'flex',
         flexDirection: 'row',
-        width: '80%'
+        width: '90%'
     },
 
     nameContainer: {
@@ -106,9 +117,13 @@ const styles = StyleSheet.create({
     },
 
     parameterContainer: {
-        flex: 1,
+        flex: 2,
         alignItems: 'center',
         justifyContent: 'center'
+    },
+
+    parameterText: {
+        textAlign: 'center'
     },
 
     buttonsContainer: {
