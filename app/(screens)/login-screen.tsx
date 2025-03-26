@@ -33,8 +33,11 @@ export default function LoginScreen() {
     const [formFields, setFormFields] = useState<AuthFields>({
         username: "",
         password: "",
-        email: undefined,
         confirmPassword: undefined,
+        email: undefined,
+        firstName: undefined,
+        lastName: undefined,
+        promoCode: undefined
     });
     const [type, setType] = useState<AuthType>(AuthType.Login);
     const [processing, setProcessing] = useState<Boolean>(false);
@@ -45,6 +48,7 @@ export default function LoginScreen() {
     const emailRef = React.createRef<TextInput>();
     const firstNameRef = React.createRef<TextInput>();
     const lastNameRef = React.createRef<TextInput>();
+    const promoCodeRef = React.createRef<TextInput>();
 
     useEffect(() => {
         if (userRef.current && accessToken) {
@@ -74,6 +78,7 @@ export default function LoginScreen() {
         { field: "firstName", text: "First Name", value: formFields.firstName, ref: firstNameRef },
         { field: "lastName", text: "Last Name", value: formFields.lastName, ref: lastNameRef },
         { field: "email", text: "Email", value: formFields.email, ref: emailRef },
+        { field: "promoCode", text: "Promo Code", value: formFields.promoCode, ref: promoCodeRef}
     ];
 
     const authUser = async () => {
@@ -92,7 +97,8 @@ export default function LoginScreen() {
             }
         }
         if (formFields.confirmPassword !== undefined) {
-            if (type === AuthType.Register && !(formFields.confirmPassword !== formFields.password)) {
+            console.log(formFields.confirmPassword, formFields.password)
+            if (type === AuthType.Register && (formFields.confirmPassword !== formFields.password)) {
                 addToast("Passwords must match");
                 return;
             }
@@ -108,14 +114,13 @@ export default function LoginScreen() {
             }
         } catch (error) {
             let errorMessage: string;
-            if (error === "Username already taken") {
-                errorMessage = "Username already taken";
-            }
-            else if (error === "Email already taken") {
-                errorMessage = "Email already taken";
-            }
-            else if (error === "Enter a valid email") {
-                errorMessage = "Enter a valid email";
+            if (
+                error === "Username already taken" ||
+                error === "Email already taken" ||
+                error === "Enter a valid email" ||
+                error === "Invalid promo code"
+            ) {
+                errorMessage = error;
             }
             else {
                 errorMessage = error instanceof Error ? error.message : "Unknown error"

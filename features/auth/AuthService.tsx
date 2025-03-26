@@ -22,7 +22,7 @@ interface AuthResponseFields {
 
 export const AuthService = {
     async auth(fields: AuthFields, type: AuthType): Promise<AuthResponseFields> {
-        const body = type === AuthType.Login ? (new LoginDTO(fields)).jsonify() : (new RegisterDTO(fields)).jsonify()
+        const body = type === AuthType.Login ? (new LoginDTO(fields)).jsonify() : (new RegisterDTO(fields)).jsonify();
         const headers = {
             ...HEADERS().JSON
         }

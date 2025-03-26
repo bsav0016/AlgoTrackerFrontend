@@ -50,7 +50,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         const updatedUserData = await AuthService.refreshUserData(token);
         setUser(updatedUserData);
-        console.log("Finished updating user")
       } catch (error) {
         throw error;
       }

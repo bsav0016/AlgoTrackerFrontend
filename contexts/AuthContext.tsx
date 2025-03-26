@@ -136,12 +136,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 return false;
             }
             if (error instanceof NetworkError && error.status === 409) {
-                if (error.message.includes("username already exists")) {
+                if (error.message.includes("username already")) {
                     throw new Error("Username already taken");
-                } else if (error.message.includes("email already exists")) {
+                } else if (error.message.includes("email already")) {
                     throw new Error("Email already taken");
                 } else if (error.message.includes("valid email")) {
                     throw new Error("Enter a valid email");
+                } else if (error.message.includes("promo code")) {
+                    throw new Error("Invalid promo code");
                 }
             }
             throw new Error('Network error');

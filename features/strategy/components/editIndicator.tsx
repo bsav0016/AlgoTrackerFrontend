@@ -2,10 +2,11 @@ import { ThemedText } from "@/components/ThemedText";
 import { Signal } from "../classes/Signal";
 import { ThemedView } from "@/components/ThemedView";
 import { Modal, StyleSheet, Switch, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
-import { indicators, defaultParams, fastWindowString, signalWindowString, slowWindowString, targetValueString, windowString } from "../enums/Indicator";
+import { indicators, defaultParams, fastWindowString, signalWindowString, slowWindowString, targetValueString, windowString, IndicatorName } from "../enums/Indicator";
 import { GeneralButton } from "@/components/GeneralButton";
 import { useState } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useToast } from "@/contexts/ToastContext";
 
 interface EditIndicatorProps {
     signals: Signal[];
@@ -21,8 +22,61 @@ export function EditIndicator({
     setIndicatorIndex
 }: EditIndicatorProps) {  
     const textInputColor = useThemeColor({}, 'text');
+    const { addToast } = useToast();
     const [modal, setModal] = useState<boolean>(false);
     const signal = signals[indicatorIndex];
+    const [formInput, setFormInput] = useState<string>('');
+
+    const maxWindow = 200;
+    const validateInput = () => {
+        if (signal.window !== null && (signal.window < 1 || signal.window > maxWindow)) {
+            addToast(`Window size must be between 1 and ${maxWindow}`);
+            return;
+        }
+
+        if (
+            [IndicatorName.rsi, IndicatorName.so, IndicatorName.adx].includes(signal.indicator.name)
+        ) {
+            if (signal.targetValue <= 0 || signal.targetValue >= 100) {
+                addToast("Target value must be between 0 and 100, non-inclusive");
+                return;
+            }
+        }
+
+        if ([IndicatorName.sma, IndicatorName.ema].includes(signal.indicator.name)) {
+            if (signal.targetValue <= 0) {
+                addToast("Target value must be greater than 0");
+                return;
+            } else if (signal.targetValue <= 0.5 || signal.targetValue >= 1.5) {
+                addToast("Warning: Your target value is acceptable, but extreme. 1.0 is the default");
+            }
+        }
+
+        if (signal.indicator.name === IndicatorName.bbp) {
+            if (signal.targetValue < -3.0 || signal.targetValue > 3.0) {
+                addToast("Warning: Your target value is acceptable, but extreme. -2.0 or 2.0 is default, and anything outside of 3.0 standard deviations will rarely trigger a signal")
+            }
+        }
+
+        if (signal.indicator.name === IndicatorName.macd) {
+            const fastWindow = signal.fastWindow || 0;
+            const slowWindow = signal.slowWindow || 0;
+            const signalWindow = signal.signalWindow || 0;
+            if (fastWindow < 1 || fastWindow > maxWindow || slowWindow < 1 || slowWindow > maxWindow || signalWindow < 1 || signalWindow > maxWindow) {
+                addToast(`All windows must be between 1 and ${maxWindow}`);
+                return;
+            }
+            if (fastWindow === slowWindow) {
+                addToast("Fast window and slow window cannot be the same");
+                return;
+            }
+            if (fastWindow > slowWindow) {
+                addToast("Warning: fast window is typically less than slow window");
+            }
+        }
+
+        setIndicatorIndex(null);
+    }
     
     return (
         <ThemedView style={styles.signalContainer}>
@@ -88,13 +142,9 @@ export function EditIndicator({
                             returnKeyType="done"
                             value={value.toString()}
                             onChangeText={(text) => {
-                                const cleanedText = text.replace(/[^-.\d]/g, '');
-                                const validText = cleanedText
-                                    .replace(/^(-?)(.*)-/g, '$1$2')
-                                    .replace(/(\..*)\./g, '$1');
-
-                                const newNumber = validText === '' || validText === '-' || validText === '.' ? 0 : parseFloat(validText);
-
+                                const cleanedText = text.replace(/\D/g, '').slice(0, 3);                            
+                                const newNumber = cleanedText === '' ? 0 : parseInt(cleanedText, 10);
+                            
                                 const newSignal = new Signal(
                                     signal.indicator, 
                                     signal.targetValue, 
@@ -104,7 +154,7 @@ export function EditIndicator({
                                     label === slowWindowString ? newNumber : signal.slowWindow,
                                     label === signalWindowString ? newNumber : signal.signalWindow
                                 );
-
+                            
                                 const newSignals = [...signals];
                                 newSignals[indicatorIndex] = newSignal;
                                 setSignals(newSignals);
@@ -118,11 +168,32 @@ export function EditIndicator({
                 <ThemedText>Target Value:</ThemedText>
                 <TextInput
                     style={[styles.input, { color: textInputColor }]}
-                    keyboardType="numeric"
+                    keyboardType={[IndicatorName.macd, IndicatorName.bbp].includes(signal.indicator.name) ? "default" : "numeric"}
                     returnKeyType="done"
-                    value={signal.targetValue.toString()}
-                    onChangeText={(text) => {
-                        const newNumber = text === "" ? 0 : parseFloat(text);
+                    value={formInput}
+                    onChangeText={(text) => setFormInput(text)}
+                    onBlur={() => {
+                        let cleanedText = formInput.replace(/[^0-9.-]/g, '');
+                        cleanedText = cleanedText.replace(/(?!^)-/g, '');
+                        if ((cleanedText.match(/\./g) || []).length > 1) {
+                            cleanedText = cleanedText.replace(/\.+$/, '');
+                        }
+            
+                        let newNumber: number;
+                        if ([IndicatorName.rsi, IndicatorName.adx, IndicatorName.so].includes(signal.indicator.name)) {  
+                            cleanedText = cleanedText.replace(/-/g, '');
+                            cleanedText = cleanedText.replace(/^(\d{0,2})(\.\d{0,4})?.*$/, '$1$2');
+                            newNumber = cleanedText === "" ? 0 : parseFloat(cleanedText);
+                        } else if ([IndicatorName.ema, IndicatorName.sma].includes(signal.indicator.name)) {
+                            cleanedText = cleanedText.replace(/-/g, '');
+                            cleanedText = cleanedText.replace(/^(\d{0,1})(\.\d{0,4})?.*$/, '$1$2');
+                            newNumber = cleanedText === "" ? 0 : parseFloat(cleanedText);
+                        } else {
+                            newNumber = cleanedText === "" || cleanedText === "-" ? 0 : parseFloat(cleanedText);
+                        }
+            
+                        setFormInput(newNumber.toString());
+            
                         const newSignal = new Signal(
                             signal.indicator, 
                             newNumber, 
@@ -132,6 +203,7 @@ export function EditIndicator({
                             signal.slowWindow,
                             signal.signalWindow
                         );
+            
                         const newSignals = [...signals];
                         newSignals[indicatorIndex] = newSignal;
                         setSignals(newSignals);
@@ -182,7 +254,7 @@ export function EditIndicator({
                 </ThemedView>
             </ThemedView>
 
-            <GeneralButton title="Save" onPress={() => setIndicatorIndex(null)}/>
+            <GeneralButton title="Save" onPress={validateInput}/>
             
         </ThemedView>
     )

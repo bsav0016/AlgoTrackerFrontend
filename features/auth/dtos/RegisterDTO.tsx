@@ -7,6 +7,7 @@ export class RegisterDTO {
     email: string;
     password: string;
     confirmPassword: string;
+    promoCode: string;
 
     constructor(
         fields: AuthFields
@@ -28,18 +29,23 @@ export class RegisterDTO {
         this.email = fields.email;
         this.password = fields.password;
         this.confirmPassword = fields.confirmPassword;
+        this.promoCode = fields.promoCode === undefined ? "N/A" : fields.promoCode;
     }
 
     jsonify() {
         if (!(this.password === this.confirmPassword)) {
-            throw new Error("Password's don't match");
+            throw new Error("Passwords don't match");
         }
+
+        console.log(this.promoCode)
+
         return JSON.stringify({
             username: this.username,
             first_name: this.firstName,
             last_name: this.lastName,
             email: this.email,
-            password: this.password
+            password: this.password,
+            promo_code: this.promoCode
         })
     }
 }

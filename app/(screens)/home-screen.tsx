@@ -161,6 +161,10 @@ const HomeScreen = () => {
         routeTo(Routes.Support);
     }
 
+    const goToHowItWorks = () => {
+        routeTo(Routes.HowItWorks);
+    }
+
     const goToViewStrategy = (index: number) => {
         try {
             const viewedStrategy = TestStrategies[index];
@@ -183,6 +187,7 @@ const HomeScreen = () => {
         :
         <CustomHeaderView header={`Welcome back, ${userRef.current?.firstName}!`} canGoBack={false} goProfile={true}>
             <ThemedView style={styles.buttonContainer}>
+                <GeneralButton title="How it Works" onPress={goToHowItWorks} />
                 <GeneralButton title="Run a Backtest" onPress={() => goToStrategySelection(StrategyType.Backtest)} />
                 <GeneralButton title="Subscribe to a Strategy" onPress={() => goToStrategySelection(StrategyType.Subscription)} />
                 <GeneralButton title="Support" onPress={goToSupport} />
