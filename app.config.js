@@ -17,13 +17,16 @@ export default {
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
-      supportsTablet: true
+      supportsTablet: true,
+      bundleIdentifier: "com.bsav0016.AlgoTracker"
     },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff"
-      }
+      },
+      package: "com.bsav0016.AlgoTracker",
+      googleServicesFile: "./google-services.json"
     },
     web: {
       bundler: "metro",
@@ -62,7 +65,11 @@ export default {
     },
     extra: {
       STRIPE_PUBLIC_KEY: process.env.STRIPE_PUBLIC_KEY || 'default',
-      API_URL: process.env.API_URL || 'default'
-    }
+      API_URL: process.env.API_URL || 'default',
+      eas: {
+        projectId: "d3469b31-6534-4636-a88f-5770b20be119"
+      }
+    },
+    owner: "bsav0016"
   }
 };

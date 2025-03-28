@@ -11,6 +11,7 @@ import { StrategyType } from "@/features/strategy/enums/StrategyType";
 import { ThemedView } from "@/components/ThemedView";
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from "@/features/auth/AuthService";
 import { PositionMapping } from "@/features/strategy/classes/Strategy";
@@ -20,6 +21,61 @@ import { TestStrategies } from "@/features/strategy/testStrategies";
 import { useFocusEffect } from "expo-router";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
+
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+    }),
+});
+
+function handleRegistrationError(errorMessage: string) {
+    alert(errorMessage);
+    throw new Error(errorMessage);
+}
+  
+async function registerForPushNotificationsAsync() {
+    if (Platform.OS === 'android') {
+        Notifications.setNotificationChannelAsync('default', {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+        });
+    }
+
+    if (Device.isDevice) {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+        }
+        if (finalStatus !== 'granted') {
+            handleRegistrationError('Permission not granted to get push token for push notification!');
+            return;
+        }
+        const projectId =
+            Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+        if (!projectId) {
+            handleRegistrationError('Project ID not found');
+        }
+        try {
+            const pushTokenString = (
+                await Notifications.getExpoPushTokenAsync({
+                    projectId,
+                })
+            ).data;
+            console.log(pushTokenString);
+            return pushTokenString;
+        } catch (e: unknown) {
+            handleRegistrationError(`${e}`);
+        }
+    } else {
+        handleRegistrationError('Must use physical device for push notifications');
+    }
+}
 
 const HomeScreen = () => {
     const { userRef, updateUserData } = useUser();
@@ -34,97 +90,47 @@ const HomeScreen = () => {
         const expoPushTokenKey = 'expoPushToken';
 
         const initializeNotifications = async () => {
-            if (Device.isDevice) {
-                let previousToken: string | null = null;
-                try {
-                    previousToken = await AsyncStorage.getItem(expoPushTokenKey);
-                } catch {
-                    console.log("Could not get stored push token");
-                }
+            let previousToken: string | null = null;
+            try {
+                previousToken = await AsyncStorage.getItem(expoPushTokenKey);
+            } catch {
+                console.log("Could not get stored push token");
+            }
+            const newPushToken = await registerForPushNotificationsAsync()
 
-                let existingStatus: Notifications.PermissionStatus;
-                const returnedPermissions = await Notifications.getPermissionsAsync();
-                if (Platform.OS === "ios") {
-                    switch (returnedPermissions.ios?.status) {
-                        case Notifications.IosAuthorizationStatus.AUTHORIZED, 
-                            Notifications.IosAuthorizationStatus.PROVISIONAL,
-                            Notifications.IosAuthorizationStatus.EPHEMERAL:
-                            existingStatus = Notifications.PermissionStatus.GRANTED;
-                            break;
-                        case Notifications.IosAuthorizationStatus.DENIED:
-                            existingStatus = Notifications.PermissionStatus.DENIED;
-                            break;
-                        default:
-                            existingStatus = Notifications.PermissionStatus.UNDETERMINED;
-                            break;
+            if (newPushToken && newPushToken !== previousToken) {
+                if (accessToken) {
+                    await AuthService.addDeviceId(accessToken, newPushToken);
+                    if (previousToken !== null) {
+                        await AuthService.deleteDeviceId(accessToken, previousToken);
                     }
-                } else {
-                    existingStatus = returnedPermissions.status;
                 }
-
-                const newPushToken = (await Notifications.getDevicePushTokenAsync()).data;
-
-                switch (existingStatus) {
-                    case (Notifications.PermissionStatus.GRANTED):
-                        if (newPushToken !== previousToken) {
-                            if (accessToken) {
-                                await AuthService.addDeviceId(accessToken, newPushToken);
-                                if (previousToken !== null) {
-                                    await AuthService.deleteDeviceId(accessToken, previousToken);
-                                }
-                            }
-                            await AsyncStorage.setItem(expoPushTokenKey, newPushToken);
-                        }
-                        break;
-                    case (Notifications.PermissionStatus.DENIED):
-                        if (previousToken !== null) {
-                            if (accessToken) {
-                                await AuthService.deleteDeviceId(accessToken, previousToken);
-                            }
-                            await AsyncStorage.removeItem(expoPushTokenKey);
-                        }
-                        break;
-                    default:
-                        let finalStatus: Notifications.PermissionStatus;
-                        const finalReturnedPermission = await Notifications.requestPermissionsAsync();
-                        if (Platform.OS === "ios") {
-                            switch (finalReturnedPermission.ios?.status) {
-                                case Notifications.IosAuthorizationStatus.AUTHORIZED, 
-                                    Notifications.IosAuthorizationStatus.PROVISIONAL,
-                                    Notifications.IosAuthorizationStatus.EPHEMERAL:
-                                    finalStatus = Notifications.PermissionStatus.GRANTED;
-                                    break;
-                                case Notifications.IosAuthorizationStatus.DENIED:
-                                    finalStatus = Notifications.PermissionStatus.DENIED;
-                                    break;
-                                default:
-                                    finalStatus = Notifications.PermissionStatus.UNDETERMINED;
-                                    break;
-                            }
-                        } else {
-                            finalStatus = finalReturnedPermission.status;
-                        }
-
-                        switch (finalStatus) {
-                            case (Notifications.PermissionStatus.GRANTED):
-                                if (accessToken) {
-                                    await AuthService.addDeviceId(accessToken, newPushToken);
-                                }
-                                await AsyncStorage.setItem(expoPushTokenKey, newPushToken);
-                                break;
-                            default:
-                                console.log("Permission not granted");
-                                break;
-                        }
-                }
+                await AsyncStorage.setItem(expoPushTokenKey, newPushToken);
             }
         }
 
         if (Platform.OS === "ios" || Platform.OS === "android") {
             initializeNotifications();
         }
-        
+
         setStrategy(null);
+
+        const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+            console.log("Notification received:", notification);
+        });
+    
+        const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+            console.log("Notification clicked:", response);
+        });
+    
+        return () => {
+            if (notificationListener) {
+                Notifications.removeNotificationSubscription(notificationListener);
+            }
+            if (responseListener) {
+                Notifications.removeNotificationSubscription(responseListener);
+            }
+        };
     }, []);
 
     useFocusEffect(
@@ -167,8 +173,8 @@ const HomeScreen = () => {
 
     const goToViewStrategy = (index: number) => {
         try {
-            const viewedStrategy = TestStrategies[index];
-            //const viewedStrategy = userRef.current?.strategies[index]; TODO: This needs to be uncommented
+            //const viewedStrategy = TestStrategies[index]; //Can use example strategies here
+            const viewedStrategy = userRef.current?.strategies[index];
             if (!viewedStrategy) {
                 addToast("Error opening strategy. Please try again later")
                 return;
@@ -203,8 +209,8 @@ const HomeScreen = () => {
             <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
                 <ThemedView style={styles.strategiesContainer}>
                     
-                    {TestStrategies.map((strategy, index) => (
-                    /*{userRef.current?.strategies.map((strategy, index) => ( TODO: This needs to be uncommented*/
+                    {/*{TestStrategies.map((strategy, index) => ( can use example strategies here*/}
+                    {userRef.current?.strategies.map((strategy, index) => (
                         <TouchableOpacity onPress={() => goToViewStrategy(index)} key={index}>
                             <ThemedView style={[
                                 styles.strategyContainer,
