@@ -8,6 +8,7 @@ import { useUser } from './UserContext';
 import { router } from 'expo-router';
 import { jwtDecode } from 'jwt-decode';
 import { useToast } from './ToastContext';
+import { AuthError } from '@/features/auth/AuthError';
 
 interface AuthContextType {
     accessToken: string | null;
@@ -137,13 +138,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             if (error instanceof NetworkError && error.status === 409) {
                 if (error.message.includes("username already")) {
-                    throw new Error("Username already taken");
+                    throw new Error(AuthError.UsernameTaken);
                 } else if (error.message.includes("email already")) {
-                    throw new Error("Email already taken");
+                    throw new Error(AuthError.EmailTaken);
                 } else if (error.message.includes("valid email")) {
-                    throw new Error("Enter a valid email");
+                    throw new Error(AuthError.InvalidEmail);
                 } else if (error.message.includes("promo code")) {
-                    throw new Error("Invalid promo code");
+                    throw new Error(AuthError.InvalidPromoCode);
                 }
             }
             throw new Error('Network error');

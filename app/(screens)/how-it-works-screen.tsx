@@ -207,7 +207,7 @@ const outputsDetails: HowItWorksDetails[] = [
             + " The values you will see in the backtest results have been annualized."
             + " For example, if the strategy gained 1% over the course of 1 month, then it's annualized to 12% (1% x 12 months = 12%)."
             + " The baseline vs. 0% shows the raw strategy gains."
-            + " The baseline vs. asset returns shows the buy-and-hold strategy return minus the strategy return."
+            + " The baseline vs. asset returns shows the strategy return minus the buy-and-hold return."
             + " If the percent return vs. asset return displays a negative number, this shows the buy-and-hold strategy performed better than your backtested strategy for this period.",
         link: "https://www.investopedia.com/terms/r/returnoninvestment.asp"
     },

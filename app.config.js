@@ -1,6 +1,6 @@
 const dotenv = require('dotenv');
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.EAS_BUILD_PROFILE === 'production') {
   dotenv.config({ path: '.env.production' });
 } else {
   dotenv.config({ path: '.env.development' });
@@ -18,7 +18,10 @@ export default {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.bsav0016.AlgoTracker"
+      bundleIdentifier: "com.bsav0016.AlgoTracker",
+      infoPlist: {
+        NSCameraUsageDescription: "Some dependencies reference camera access, but this app does not actively use the camera.",
+      }
     },
     android: {
       adaptiveIcon: {

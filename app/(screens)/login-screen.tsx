@@ -14,6 +14,7 @@ import { Colors } from "@/constants/Colors";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useUser } from "@/contexts/UserContext";
+import { AuthError } from "@/features/auth/AuthError";
 
 
 interface Field<T> {
@@ -108,17 +109,17 @@ export default function LoginScreen() {
         try {
             const response = await auth(formFields, type);
             if (response) {
-                routeReplace(Routes.StrategySelection);
+                routeReplace(Routes.Home);
             } else {
                 addToast("Invalid username and password");
             }
         } catch (error) {
             let errorMessage: string;
             if (
-                error === "Username already taken" ||
-                error === "Email already taken" ||
-                error === "Enter a valid email" ||
-                error === "Invalid promo code"
+                error === AuthError.UsernameTaken ||
+                error === AuthError.EmailTaken ||
+                error === AuthError.InvalidEmail ||
+                error === AuthError.InvalidPromoCode
             ) {
                 errorMessage = error;
             }
