@@ -14,6 +14,7 @@ interface AuthContextType {
     accessToken: string | null;
     auth: (fields: AuthFields, type: AuthType) => Promise<boolean>;
     logout: () => Promise<void>;
+    deleteCurrentAccount: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -154,19 +155,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const logout = async () => {
         try {
             if (!accessToken) return;
-            setUser(null);
-            setAccessToken(null);
             await SecureStore.deleteItemAsync(REFRESH_TOKEN_STRING);
             await AuthService.logout(accessToken);
         } catch (error) {
             throw error;
         } finally {
+            setUser(null);
+            setAccessToken(null);
             router.push('/(screens)/login-screen');
         }
     };
 
+    const deleteCurrentAccount = async (password: string) => {
+        try {
+            if (!accessToken) return;
+            await SecureStore.deleteItemAsync(REFRESH_TOKEN_STRING);
+            await AuthService.deleteUserAccount(accessToken, password);
+            setUser(null);
+            setAccessToken(null);
+        } catch (error) {
+            throw error;
+        }
+    }
+
     return (
-        <AuthContext.Provider value={{ accessToken, auth, logout }}>
+        <AuthContext.Provider value={{ accessToken, auth, logout, deleteCurrentAccount }}>
             {children}
         </AuthContext.Provider>
     );

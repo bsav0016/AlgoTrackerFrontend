@@ -15,6 +15,7 @@ export const URL_EXT = {
     LOGIN: 'login/',
     REGISTER: 'register/',
     LOGOUT: 'logout/',
+    DELETE_ACCOUNT: 'delete-account/',
     USER_DETAILS: 'user-details/',
     TOKEN_REFRESH: 'token/refresh/',
     BACKTEST: 'backtest/',

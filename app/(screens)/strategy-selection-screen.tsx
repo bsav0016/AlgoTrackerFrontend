@@ -144,6 +144,8 @@ export default function StrategySelectionScreen() {
             callbackFunction = clickedSubscribeStrategy
         }
 
+        message += ". The data provided here is strictly informational and is not financial advice."
+
         addToast(message, 
             [{
                 label: 'Execute',
@@ -235,7 +237,7 @@ export default function StrategySelectionScreen() {
             }
             const subscriptionResult = await StrategyService.subscribeStrategy(strategy, accessToken);
         } catch (error: any) {
-            console.error(error)
+            console.error(error);
         }
     }
 

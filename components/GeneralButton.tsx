@@ -8,14 +8,22 @@ interface GeneralButtonProps {
   disabled?: boolean;
   autoWidth?: boolean;
   fontSize?: number;
+  backgroundColor?: string;
 }
 
-export function GeneralButton({ title, onPress, disabled=false, autoWidth=true, fontSize=20 }: GeneralButtonProps) {
+export function GeneralButton({ 
+  title, 
+  onPress, 
+  disabled=false, 
+  autoWidth=true, 
+  fontSize=20,
+  backgroundColor=undefined
+}: GeneralButtonProps) {
   return (
     <TouchableOpacity
       style={[
         styles.generalButton, 
-        { backgroundColor: Colors.button.background },
+        { backgroundColor: backgroundColor ?? Colors.button.background },
         disabled && styles.disabled, 
         !autoWidth && { width: '100%' }
       ]}

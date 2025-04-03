@@ -89,6 +89,26 @@ export const AuthService = {
         }
     },
 
+    async deleteUserAccount(token: string, password: string) {
+        try {
+            const body = JSON.stringify({ password: password })
+            const headers = {
+                ...HEADERS(token).AUTH,
+                ...HEADERS().JSON
+            }
+            await networkRequest(
+                URL_EXT.DELETE_ACCOUNT,
+                RequestMethod.DELETE,
+                headers,
+                body
+            );
+            return;
+        } catch (error) {
+            console.error("Error deleting account: ", error);
+            throw(error)
+        }
+    },
+
     async sendPasswordResetEmail(email: string) {
         try {
             const body = new ForgotPasswordDTO(email).jsonify();
