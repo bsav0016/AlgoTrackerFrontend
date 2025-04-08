@@ -30,7 +30,7 @@ import { useUser } from "@/contexts/UserContext";
 export default function StrategySelectionScreen() {
     const { strategyType } = useLocalSearchParams(); 
     const { accessToken } = useAuth();
-    const { updateAccountFunds } = useUser();
+    const { updateAccountCredits } = useUser();
     const { routeTo } = useRouteTo();
     const { addToast } = useToast();
     const textInputColor = useThemeColor({}, 'text');
@@ -137,10 +137,10 @@ export default function StrategySelectionScreen() {
         let callbackFunction;
 
         if (functionType === StrategyType.Backtest) {
-            message = `Backtest will cost $${backtestBaseCost}-$${backtestBaseCost * backtestIterations} ($${backtestBaseCost} for every 5000 data points queried)`;
+            message = `Backtest will cost ${backtestBaseCost}-${backtestBaseCost * backtestIterations} credits (${backtestBaseCost} for every 5000 data points queried)`;
             callbackFunction = clickedRunBacktest
         } else {
-            message = `Strategy will cost $${interval?.monthly_charge || 1} per month until stopped or insufficient funds`
+            message = `Strategy will charge ${interval?.monthly_charge || 1} credits per month until stopped or insufficient credits`
             callbackFunction = clickedSubscribeStrategy
         }
 
@@ -178,7 +178,7 @@ export default function StrategySelectionScreen() {
                 throw new Error("Token not stored");
             }
             const returnedBacktest = await StrategyService.conductBacktest(backtest, accessToken);
-            updateAccountFunds(returnedBacktest.userAccountFunds, returnedBacktest.userMonthlyFunds);
+            updateAccountCredits(returnedBacktest.userAccountCredits, returnedBacktest.userMonthlyCredits);
             setBacktestData(returnedBacktest.backtest);
         } catch (error: any) {
             if (error.status && error.status === 402) {
@@ -235,7 +235,9 @@ export default function StrategySelectionScreen() {
             if (!accessToken) {
                 throw new Error("Token not stored");
             }
-            const subscriptionResult = await StrategyService.subscribeStrategy(strategy, accessToken);
+            await StrategyService.subscribeStrategy(strategy, accessToken);
+            addToast("Subscribed successfully");
+            routeBack();
         } catch (error: any) {
             console.error(error);
         }

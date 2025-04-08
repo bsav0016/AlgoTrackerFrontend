@@ -4,12 +4,11 @@ import { networkRequest } from "@/lib/networkRequests/NetworkRequest";
 import { Backtest, BacktestResponseDataFormat } from "./classes/Backtest";
 import { Strategy } from "./classes/Strategy";
 import { SymbolsAndIntervalsResponseData, SymbolsAndIntervalsResponseDTO } from "./dtos/SymbolsAndIntervalsResponseDTO";
-import { useUser } from "@/contexts/UserContext";
 
 export interface ReturnedBacktest {
     backtest: Backtest,
-    userAccountFunds: number,
-    userMonthlyFunds: number
+    userAccountCredits: number,
+    userMonthlyCredits: number
 }
 
 export const StrategyService = {
@@ -31,8 +30,8 @@ export const StrategyService = {
             const updatedBacktest = backtest.updateFromData(data);
             const returnedBacktest: ReturnedBacktest = {
                 backtest: updatedBacktest,
-                userAccountFunds: data.user_account_funds,
-                userMonthlyFunds: data.user_monthly_funds
+                userAccountCredits: data.user_account_credits,
+                userMonthlyCredits: data.user_monthly_credits
             }
             return returnedBacktest;
         } catch (error) {

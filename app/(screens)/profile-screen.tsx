@@ -27,7 +27,7 @@ export default function Profile() {
         routeTo(Routes.Login);
         return;
     }
-    const timeRemaining = (userRef.current.resetMonthlyFunds.getTime() - Date.now()) / 1000;
+    const timeRemaining = (userRef.current.resetMonthlyCredits.getTime() - Date.now()) / 1000;
 
     useEffect(() => {}, [userRef.current]);
 
@@ -79,8 +79,8 @@ export default function Profile() {
             :
             <>
             <ThemedView style={styles.profileContainer}>
-                <ThemedText type="subtitle">{`Account funds: $${userRef.current?.accountFunds}`}</ThemedText>
-                <ThemedText type="subtitle">{`Free monthly funds: $${userRef.current?.monthlyFunds}`}</ThemedText>
+                <ThemedText type="subtitle">{`Account credits: ${userRef.current?.accountCredits}`}</ThemedText>
+                <ThemedText type="subtitle">{`Free monthly credits: ${userRef.current?.monthlyCredits}`}</ThemedText>
                 <ThemedView style={styles.resetContainer}>
                     <ThemedText>Monthly funds reset in: </ThemedText>
                     <CountdownTimer timeRemaining={timeRemaining} whenZero={triggerUserUpdate}/>

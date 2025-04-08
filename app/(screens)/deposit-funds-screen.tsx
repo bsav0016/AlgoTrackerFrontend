@@ -32,6 +32,7 @@ export default function DepositFundsScreen() {
     const { routeReplace } = useRouteTo();
     const textInputColor = useThemeColor({}, 'text');
     const [addAmount, setAddAmount] = useState<string>("$0.00");
+    const [additionalCredits, setAdditionalCredits] = useState<number>(0);
     const [paymentSheet, setPaymentSheet] = useState<PaymentSheetResponseDTO | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
 
@@ -49,8 +50,8 @@ export default function DepositFundsScreen() {
             });
             
             if (error) {
-                console.error(error)
-                addToast("Error occured loading the payment details screen")
+                console.error(error);
+                addToast("Error occured loading the payment details screen");
                 setLoading(false);
             } else {
                 await openPaymentSheet()
@@ -64,6 +65,7 @@ export default function DepositFundsScreen() {
         const numericValue = value.replace(/\D/g, "");
         const cents = parseInt(numericValue || "0", 10);
         const dollars = (cents / 100).toFixed(2);
+        setAdditionalCredits(cents);
         return `$${dollars}`;
     };
 
@@ -80,6 +82,10 @@ export default function DepositFundsScreen() {
         setLoading(true);
         try {
             const amountInCents = parseInt(addAmount.replace(/[^0-9]/g, ""), 10);
+            if (amountInCents < 500) {
+                addToast("$5 Minimum Deposit");
+                return;
+            }
             const paymentSheetDetails = await PaymentService.fetchPaymentSheetParams(accessToken, amountInCents);
             setPaymentSheet(paymentSheetDetails);
         } catch (error) {
@@ -115,7 +121,7 @@ export default function DepositFundsScreen() {
                 >
                     <CustomHeaderView header="Deposit Funds">
                         <ThemedView style={styles.mainView}>
-                            <ThemedText>{`Available funds: $${userRef.current?.accountFunds}`}</ThemedText>
+                            <ThemedText>{`Available credits: ${userRef.current?.accountCredits}`}</ThemedText>
 
                             <ThemedView style={styles.addAmountView}>
                                 <ThemedText>Amount to add:</ThemedText>
@@ -127,6 +133,7 @@ export default function DepositFundsScreen() {
                                     onChangeText={handleAmountChange}
                                     onSubmitEditing={Keyboard.dismiss}
                                 />
+                                <ThemedText>Credits: {additionalCredits}</ThemedText>
                             </ThemedView>
 
                             { loading ?

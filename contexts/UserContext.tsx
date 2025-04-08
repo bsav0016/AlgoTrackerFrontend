@@ -7,7 +7,7 @@ interface UserContextType {
     userRef: React.MutableRefObject<User | null>;
     setUser: (user: User | null) => void;
     updateUserData: (token: string) => Promise<void>;
-    updateAccountFunds: (accountFunds: number, monthlyFunds: number) => void;
+    updateAccountCredits: (accountCredits: number, monthlyCredits: number) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -35,9 +35,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               plainUser.email,
               plainUser.accountCreated,
               plainUser.strategies,
-              plainUser.accountFunds,
-              plainUser.monthlyFunds,
-              plainUser.resetMonthlyFunds
+              plainUser.accountCredits,
+              plainUser.monthlyCredits,
+              plainUser.resetMonthlyCredits
           );
           setUser(currentUser);
         }
@@ -55,7 +55,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     }
 
-    const updateAccountFunds = (accountFunds: number, monthlyFunds: number) => {
+    const updateAccountCredits = (accountCredits: number, monthlyCredits: number) => {
       if (!userRef.current) return;
 
       const updatedUser = new User(
@@ -65,16 +65,16 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         userRef.current.email,
         userRef.current.accountCreated,
         userRef.current.strategies,
-        accountFunds,
-        monthlyFunds,
-        userRef.current.resetMonthlyFunds
+        accountCredits,
+        monthlyCredits,
+        userRef.current.resetMonthlyCredits
       );
 
       setUser(updatedUser);
     }
 
     return (
-        <UserContext.Provider value={{ userRef, setUser, updateUserData, updateAccountFunds }}>
+        <UserContext.Provider value={{ userRef, setUser, updateUserData, updateAccountCredits }}>
             {children}
         </UserContext.Provider>
     );

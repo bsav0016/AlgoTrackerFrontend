@@ -40,7 +40,7 @@ export function CustomHeaderView({
             { (displayFunds && userRef && userRef.current) &&
                 <ThemedView style={styles.fundsHeaderView}>
                         <ThemedText style={styles.fundsHeaderText}>
-                            {`Account/Monthly Funds: $${userRef.current.accountFunds}/$${userRef.current.monthlyFunds}`}
+                            {`Account/Monthly Credits: ${userRef.current.accountCredits}/${userRef.current.monthlyCredits}`}
                         </ThemedText>
                 </ThemedView>
             }

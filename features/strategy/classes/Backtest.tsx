@@ -14,8 +14,8 @@ export interface BacktestResponseDataFormat {
     sharpe_ratio_adj: number;
     sortino_ratio: number;
     sortino_ratio_adj: number;
-    user_account_funds: number;
-    user_monthly_funds: number;
+    user_account_credits: number;
+    user_monthly_credits: number;
 }
 
 interface BacktestResultDataFormat {

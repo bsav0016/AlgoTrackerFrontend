@@ -8,9 +8,9 @@ export interface AuthResponseData {
     email: string;
     account_created: string;
     strategies: StrategyData[];
-    account_funds: number;
-    monthly_funds: number;
-    reset_monthly_funds: string;
+    account_credits: number;
+    monthly_credits: number;
+    reset_monthly_credits: string;
     refresh_token?: string;
     access_token?: string;
 }
@@ -36,9 +36,9 @@ export class AuthResponseDTO {
             data.email,
             accountCreated,
             strategies,
-            data.account_funds,
-            data.monthly_funds,
-            new Date(data.reset_monthly_funds)
+            data.account_credits,
+            data.monthly_credits,
+            new Date(data.reset_monthly_credits)
         )
 
         this.refreshToken = data.refresh_token;
