@@ -15,6 +15,7 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useUser } from "@/contexts/UserContext";
 import { AuthError } from "@/features/auth/AuthError";
+import { AuthService } from "@/features/auth/AuthService";
 
 
 interface Field<T> {
@@ -40,6 +41,7 @@ export default function LoginScreen() {
         lastName: undefined,
         promoCode: undefined
     });
+    const [promoCodeAvailability, setPromoCodeAvailability] = useState<boolean>(false);
     const [type, setType] = useState<AuthType>(AuthType.Login);
     const [processing, setProcessing] = useState<Boolean>(false);
 
@@ -55,7 +57,20 @@ export default function LoginScreen() {
         if (userRef.current && accessToken) {
             routeReplace(Routes.Home);
         }
-    }, [userRef.current, accessToken])
+    }, [userRef.current, accessToken]);
+
+    useEffect(() => {
+        const checkPromoCodeAvailability = async () => {
+            try {
+                const availability = await AuthService.getPromoCodeAvailability();
+                setPromoCodeAvailability(availability);
+            } catch (error) {
+                setPromoCodeAvailability(false);
+            }
+        }
+
+        checkPromoCodeAvailability();
+    }, [])
 
     const focusNextField = (nextField: React.RefObject<TextInput>) => {
         nextField.current?.focus();
@@ -168,34 +183,39 @@ export default function LoginScreen() {
                         <ThemedView style={styles.formView}>
                             {displayedFields.map((field, index) => {
                                 const isLastField = index === displayedFields.length - 1;
-                                return (
-                                    <ThemedView key={field.field} style={styles.fieldView}>
-                                        <ThemedView style={styles.textView}>
-                                            <ThemedText>{`${field.text}: `}</ThemedText>
+                                if (field.field !== "promoCode" || promoCodeAvailability) {
+                                    return (
+                                        <ThemedView key={field.field} style={styles.fieldView}>
+                                            <ThemedView style={styles.textView}>
+                                                <ThemedText>{`${field.text}: `}</ThemedText>
+                                            </ThemedView>
+                                            <TextInput
+                                                ref={field.ref}
+                                                value={field.value}
+                                                onChangeText={(value) => updateFormField(field.field, value)}
+                                                secureTextEntry={field.field.toLowerCase().includes("password")}
+                                                style={[
+                                                    styles.textInput,
+                                                    { color: color, borderColor: color }
+                                                ]}
+                                                textContentType={"oneTimeCode"}
+                                                keyboardType={field.field === "email" ? "email-address" : "default"}
+                                                returnKeyType={isLastField ? 'done' : 'next'}
+                                                onSubmitEditing={() => {
+                                                    if (isLastField) {
+                                                        Keyboard.dismiss();
+                                                    } else {
+                                                        const nextField = displayedFields[index + 1].ref;
+                                                        focusNextField(nextField);
+                                                    }
+                                                }}
+                                            />
                                         </ThemedView>
-                                        <TextInput
-                                            ref={field.ref}
-                                            value={field.value}
-                                            onChangeText={(value) => updateFormField(field.field, value)}
-                                            secureTextEntry={field.field.toLowerCase().includes("password")}
-                                            style={[
-                                                styles.textInput,
-                                                { color: color, borderColor: color }
-                                            ]}
-                                            textContentType={"oneTimeCode"}
-                                            keyboardType={field.field === "email" ? "email-address" : "default"}
-                                            returnKeyType={isLastField ? 'done' : 'next'}
-                                            onSubmitEditing={() => {
-                                                if (isLastField) {
-                                                    Keyboard.dismiss();
-                                                } else {
-                                                    const nextField = displayedFields[index + 1].ref;
-                                                    focusNextField(nextField);
-                                                }
-                                            }}
-                                        />
-                                    </ThemedView>
-                                );
+                                    );
+                                }
+                                else {
+                                    return null;
+                                }
                             })}
                             { processing ? 
                             <LoadingSpinner />

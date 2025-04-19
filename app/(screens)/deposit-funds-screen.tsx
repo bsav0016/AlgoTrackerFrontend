@@ -2,19 +2,20 @@ import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useUser } from "@/contexts/UserContext";
-import { StyleSheet, TextInput, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from "react-native";
+import { StyleSheet, TextInput, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, ScrollView, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import { GeneralButton } from "@/components/GeneralButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { initPaymentSheet, presentPaymentSheet, StripeProvider }  from "@stripe/stripe-react-native";
 import Constants from 'expo-constants';
 import { PaymentService } from "@/features/payment/PaymentService";
-import { PaymentSheetResponseDTO } from "@/features/payment/PaymentSheetResponseDTO";
+import { PaymentSheetResponseDTO } from "@/features/payment/dtos/PaymentSheetResponseDTO";
 import { useToast } from "@/contexts/ToastContext";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useRouteTo } from "@/contexts/RouteContext";
 import { Routes } from "@/app/Routes";
 import { useAuth } from "@/contexts/AuthContext";
+import Purchases, { CustomerInfo, LOG_LEVEL, PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 
 export default function DepositFundsScreen() {
@@ -26,6 +27,11 @@ export default function DepositFundsScreen() {
         throw new Error("Missing expo config for '@stripe/stripe-react-native'");
     }
 
+    const APIKeys = {
+        apple: "appl_ZJjqsVTnMmTiQubGSjQmQOxVtIi",
+        google: "your_revenuecat_google_api_key",
+    };
+
     const { userRef } = useUser();
     const { addToast } = useToast();
     const { accessToken } = useAuth();
@@ -34,7 +40,37 @@ export default function DepositFundsScreen() {
     const [addAmount, setAddAmount] = useState<string>("$0.00");
     const [additionalCredits, setAdditionalCredits] = useState<number>(0);
     const [paymentSheet, setPaymentSheet] = useState<PaymentSheetResponseDTO | null>(null);
-    const [loading, setLoading] = useState<boolean>(false);
+    const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
+    const [packages, setPackages] = useState<PurchasesPackage[]>([]);
+
+    useEffect(() => {
+        const setup = async () => {
+            if (Platform.OS === "ios") {
+                await Purchases.configure({ apiKey: APIKeys.apple });
+            }/* else {
+                await Purchases.configure({ apiKey: APIKeys.android });
+            }*/
+
+            const offerings = await Purchases.getOfferings();
+            const currentOffering = offerings.current;
+            if (currentOffering) {
+                setPackages(currentOffering.availablePackages);
+            }
+        };
+
+        if (Platform.OS === "ios") {
+            setLoadingMessage("Preparing payment options...");
+            Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+            Purchases.addCustomerInfoUpdateListener((customerInfo) => {
+                updateCustomerInfo(customerInfo);
+            }); 
+
+            setup()
+                .catch(console.log);
+
+            setLoadingMessage(null);
+        }
+      }, []);
 
     useEffect(() => {
         const initializePaymentSheet = async () => {
@@ -52,9 +88,9 @@ export default function DepositFundsScreen() {
             if (error) {
                 console.error(error);
                 addToast("Error occured loading the payment details screen");
-                setLoading(false);
+                setLoadingMessage(null);
             } else {
-                await openPaymentSheet()
+                await openPaymentSheet();
             }
         };
 
@@ -79,7 +115,7 @@ export default function DepositFundsScreen() {
             addToast("Please try to log in again. User info not properly stored")
             return;
         }
-        setLoading(true);
+        setLoadingMessage("Processing payment...");
         try {
             const amountInCents = parseInt(addAmount.replace(/[^0-9]/g, ""), 10);
             if (amountInCents < 500) {
@@ -92,7 +128,7 @@ export default function DepositFundsScreen() {
             console.error(error);
             addToast("Error loading card details screen. Please verify your input amount");
             setPaymentSheet(null);
-            setLoading(false);
+            setLoadingMessage(null);
         }
     }
 
@@ -105,21 +141,68 @@ export default function DepositFundsScreen() {
             addToast("Payment completed successfully!");
             routeReplace(Routes.Home);
         }
-        setLoading(false);
+        setLoadingMessage(null);
     }
-    
 
-    return (
-        <StripeProvider
-            publishableKey={stripePublicKey}
-            merchantIdentifier={merchantId}
-        >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
-                    style={styles.container}
-                >
-                    <CustomHeaderView header="Deposit Funds">
+    const purhcasePackage = async (pack: PurchasesPackage) => {
+        try {
+            await Purchases.purchasePackage(pack);
+            setLoadingMessage("Processing payment...");
+        } catch (error) {
+            if (error instanceof Error) {
+                if (error.message.includes('USER_CANCELLED')) {
+                    console.log("User cancelled payment");
+                } else {
+                    console.log('Error processing revenue cat payment: ', error.message);
+                    addToast('Error processing payment');
+                }
+            }
+            else {
+                console.error('Unknown error processing revenue cat payment: ', error);
+                addToast("Unknown error occurred");
+            }
+        }
+    }
+
+    const onPurchase = (pack: PurchasesPackage) => {
+        purhcasePackage!(pack)
+    }
+
+    const updateCustomerInfo = async (customerInfo: CustomerInfo) => {
+        const latestTransaction = customerInfo.nonSubscriptionTransactions?.sort(
+            (a, b) => (new Date(b.purchaseDate)).getTime() - (new Date(a.purchaseDate)).getTime()
+        )?.[0];
+    
+        if (latestTransaction) {
+            if (!accessToken) {
+                addToast("Please log back in. If your card has been charged, please contact the support team")
+                routeReplace(Routes.Login);
+                return;
+            }
+            try {
+                await PaymentService.processRevenueCatDeposit(accessToken, latestTransaction.transactionIdentifier);
+                addToast("Payment processed successfully");
+                routeReplace(Routes.Home);
+            } catch (error) {
+                console.error(error);
+                addToast("Error processing payment");
+            }
+        }
+        
+        setLoadingMessage(null);
+    };
+    
+    function StripeComponent() {
+        return (
+            <StripeProvider
+                publishableKey={stripePublicKey}
+                merchantIdentifier={merchantId}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === "ios" ? "padding" : "height"}
+                        style={styles.container}
+                    >
                         <ThemedView style={styles.mainView}>
                             <ThemedText>{`Available credits: ${userRef.current?.accountCredits}`}</ThemedText>
 
@@ -135,18 +218,47 @@ export default function DepositFundsScreen() {
                                 />
                                 <ThemedText>Credits: {additionalCredits}</ThemedText>
                             </ThemedView>
-
-                            { loading ?
-                                <LoadingSpinner />
-                            :
-                                <GeneralButton title="Enter Card Details" onPress={clickedEnterCardDetails} />
-                            }
+                            
+                            <GeneralButton title="Enter Card Details" onPress={clickedEnterCardDetails} />
                         </ThemedView>
-                    </CustomHeaderView>
-                </KeyboardAvoidingView>
-            </TouchableWithoutFeedback>
-        </StripeProvider>
+                    </KeyboardAvoidingView>
+                </TouchableWithoutFeedback>
+            </StripeProvider>
+        );
+    }
+
+    function RevenueCatComponent() {
+        return (
+            <ScrollView>
+                {packages.map((pack) => (
+                    <TouchableOpacity 
+                        key={pack.identifier} 
+                        onPress={() => onPurchase(pack)}
+                        style={styles.packageContainer}
+                    >
+                        <ThemedView style={styles.packageTextContainer}>
+                            <ThemedText>{pack.product.title}</ThemedText>
+                            <ThemedText>{pack.product.description}</ThemedText>
+                        </ThemedView>
+                        <ThemedView style={styles.packageButton}>
+                            <GeneralButton title={pack.product.priceString} onPress={() => onPurchase(pack)} />
+                        </ThemedView>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+        );
+    }
+
+    return (
+        <CustomHeaderView header="Deposit Funds">
+            { loadingMessage !== null ?
+            <LoadingScreen loadingMessage={loadingMessage}/>
+            :
+            <RevenueCatComponent/>
+            }
+        </CustomHeaderView>
     );
+    
 }
 
 const styles = StyleSheet.create({
@@ -174,4 +286,16 @@ const styles = StyleSheet.create({
         width: 100,
         textAlign: "center",
     },
+    packageContainer: {
+        display: 'flex',
+        flexDirection: 'row',
+        gap: 5,
+        width: '90%'
+    },
+    packageTextContainer: {
+        flex: 3
+    },
+    packageButton: {
+        flex: 1
+    }
 });

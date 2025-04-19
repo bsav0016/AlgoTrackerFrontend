@@ -200,5 +200,19 @@ export const AuthService = {
         } catch (error) {
             throw(error);
         }
+    },
+
+    async getPromoCodeAvailability(): Promise<boolean> {
+        try {
+            const urlExt = URL_EXT.PROMO_CODE_AVAILABILITY;
+            const response = await networkRequest(
+                urlExt,
+                RequestMethod.GET
+            );
+            const data = response.data;
+            return data.availability;
+        } catch (error) {
+            throw(error);
+        }
     }
 }
