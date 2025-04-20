@@ -53,6 +53,7 @@ export default function DepositFundsScreen() {
 
             const offerings = await Purchases.getOfferings();
             const currentOffering = offerings.current;
+            
             if (currentOffering) {
                 setPackages(currentOffering.availablePackages);
             }
@@ -61,16 +62,22 @@ export default function DepositFundsScreen() {
         if (Platform.OS === "ios") {
             setLoadingMessage("Preparing payment options...");
             Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-            Purchases.addCustomerInfoUpdateListener((customerInfo) => {
+
+            const handleCustomerInfoUpdate = (customerInfo: CustomerInfo) => {
                 updateCustomerInfo(customerInfo);
-            }); 
+            };
+            Purchases.addCustomerInfoUpdateListener(handleCustomerInfoUpdate);
 
             setup()
                 .catch(console.log);
 
             setLoadingMessage(null);
+
+            return () => {
+                Purchases.removeCustomerInfoUpdateListener(handleCustomerInfoUpdate);
+            };
         }
-      }, []);
+    }, []);
 
     useEffect(() => {
         const initializePaymentSheet = async () => {
@@ -146,11 +153,11 @@ export default function DepositFundsScreen() {
 
     const purhcasePackage = async (pack: PurchasesPackage) => {
         try {
-            await Purchases.purchasePackage(pack);
             setLoadingMessage("Processing payment...");
+            await Purchases.purchasePackage(pack);
         } catch (error) {
             if (error instanceof Error) {
-                if (error.message.includes('USER_CANCELLED')) {
+                if (error.message.toLowerCase().includes('cancelled')) {
                     console.log("User cancelled payment");
                 } else {
                     console.log('Error processing revenue cat payment: ', error.message);
@@ -172,20 +179,28 @@ export default function DepositFundsScreen() {
         const latestTransaction = customerInfo.nonSubscriptionTransactions?.sort(
             (a, b) => (new Date(b.purchaseDate)).getTime() - (new Date(a.purchaseDate)).getTime()
         )?.[0];
+
+        if (!latestTransaction) {
+            return;
+        }
     
-        if (latestTransaction) {
+        if (Date.now() - new Date(latestTransaction.purchaseDate).getTime() < 20000) {
             if (!accessToken) {
                 addToast("Please log back in. If your card has been charged, please contact the support team")
                 routeReplace(Routes.Login);
                 return;
             }
             try {
-                await PaymentService.processRevenueCatDeposit(accessToken, latestTransaction.transactionIdentifier);
-                addToast("Payment processed successfully");
+                const completed = await PaymentService.processRevenueCatCustomer(accessToken, customerInfo.originalAppUserId);
+                if (completed) {
+                    addToast("Payment processed successfully");
+                } else {
+                    addToast("Payment confirmed, but not yet processed. Please reach out to support (at savidgeapps@gmail.com) if it hasn't been processed in the next 5 minutes")
+                }
                 routeReplace(Routes.Home);
             } catch (error) {
                 console.error(error);
-                addToast("Error processing payment");
+                addToast("Error processing payment. If your card has been charged, please reach out to the support team at savidgeapps@gmail.com");
             }
         }
         
@@ -229,16 +244,15 @@ export default function DepositFundsScreen() {
 
     function RevenueCatComponent() {
         return (
-            <ScrollView>
+            <ScrollView style={styles.packageScrollViewContainer}>
                 {packages.map((pack) => (
                     <TouchableOpacity 
-                        key={pack.identifier} 
+                        key={pack.product.identifier} 
                         onPress={() => onPurchase(pack)}
                         style={styles.packageContainer}
                     >
                         <ThemedView style={styles.packageTextContainer}>
-                            <ThemedText>{pack.product.title}</ThemedText>
-                            <ThemedText>{pack.product.description}</ThemedText>
+                            <ThemedText>{pack.product.title}:</ThemedText>
                         </ThemedView>
                         <ThemedView style={styles.packageButton}>
                             <GeneralButton title={pack.product.priceString} onPress={() => onPurchase(pack)} />
@@ -253,8 +267,10 @@ export default function DepositFundsScreen() {
         <CustomHeaderView header="Deposit Funds">
             { loadingMessage !== null ?
             <LoadingScreen loadingMessage={loadingMessage}/>
-            :
+            : Platform.OS === "ios" ?
             <RevenueCatComponent/>
+            :
+            <StripeComponent/>
             }
         </CustomHeaderView>
     );
@@ -286,16 +302,21 @@ const styles = StyleSheet.create({
         width: 100,
         textAlign: "center",
     },
+    packageScrollViewContainer: {
+        marginTop: 20
+    },
     packageContainer: {
         display: 'flex',
         flexDirection: 'row',
-        gap: 5,
-        width: '90%'
+        margin: 15,
+        width: '90%',
+        alignSelf: 'center',
+        alignItems: 'center',
     },
     packageTextContainer: {
         flex: 3
     },
     packageButton: {
-        flex: 1
+        flex: 2
     }
 });

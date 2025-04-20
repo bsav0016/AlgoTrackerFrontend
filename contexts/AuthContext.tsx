@@ -122,7 +122,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const logoutAfterLoginExpiration = async () => {
         addToast("Your login has expired after 30 days");
-        await logout();
+        try {
+            await logout();
+        } catch (error) {
+            console.error(error);
+            setUser(null);
+            setAccessToken(null);
+            router.push('/(screens)/login-screen');
+        }
     };
 
     const auth = async (fields: AuthFields, type: AuthType): Promise<boolean> => {

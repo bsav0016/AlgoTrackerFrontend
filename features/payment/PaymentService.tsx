@@ -3,7 +3,7 @@ import { PaymentSheetDTO } from "./dtos/PaymentSheetDTO"
 import { networkRequest } from "@/lib/networkRequests/NetworkRequest";
 import { RequestMethod } from "@/lib/networkRequests/RequestMethod";
 import { PaymentSheetResponseData, PaymentSheetResponseDTO } from "./dtos/PaymentSheetResponseDTO";
-import { RevenueCatDepositDTO } from "./dtos/RevenueCatDepositDTO";
+import { RevenueCatCustomerDTO } from './dtos/RevenueCatCustomerDTO';
 
 export const PaymentService = {
     async fetchPaymentSheetParams(accessToken: string, amount: number) {
@@ -26,19 +26,24 @@ export const PaymentService = {
         }
     },
 
-    async processRevenueCatDeposit(accessToken: string, transactionId: string) {
-        const body = new RevenueCatDepositDTO(transactionId).jsonify();
+    async processRevenueCatCustomer(accessToken: string, customerId: string) {
+        const body = new RevenueCatCustomerDTO(customerId).jsonify();
         const headers = {
             ...HEADERS().JSON,
             ...HEADERS(accessToken).AUTH
         };
         try {
-            await networkRequest(
-                URL_EXT.REVENUECAT_DEPOSIT,
+            const response = await networkRequest(
+                URL_EXT.REVENUECAT_CUSTOMER,
                 RequestMethod.POST,
                 headers,
                 body
             );
+            if (response.status === 200) {
+                return true;
+            } else {
+                return false;
+            }
         } catch (error) {
             throw error;
         }
