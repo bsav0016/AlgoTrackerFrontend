@@ -206,21 +206,73 @@ export default function DepositFundsScreen() {
         
         setLoadingMessage(null);
     };
-    
-    function StripeComponent() {
+
+    function RevenueCatComponent() {
         return (
-            <StripeProvider
+            <ThemedView style={styles.packageScrollViewContainer}>
+                {packages.map((pack) => (
+                    <TouchableOpacity 
+                        key={pack.product.identifier} 
+                        onPress={() => onPurchase(pack)}
+                        style={styles.packageContainer}
+                    >
+                        <ThemedView style={styles.packageTextContainer}>
+                            <ThemedText>{pack.product.title}:</ThemedText>
+                        </ThemedView>
+                        <ThemedView style={styles.packageButton}>
+                            <GeneralButton title={pack.product.priceString} onPress={() => onPurchase(pack)} />
+                        </ThemedView>
+                    </TouchableOpacity>
+                ))}
+            </ThemedView>
+        );
+    }
+
+    return (
+        <StripeProvider
                 publishableKey={stripePublicKey}
                 merchantIdentifier={merchantId}
             >
+            <CustomHeaderView header="Deposit Funds">
+                { loadingMessage !== null ?
+                <LoadingScreen loadingMessage={loadingMessage}/>
+                : Platform.OS === "ios" ?
+                <ScrollView keyboardShouldPersistTaps="handled">
+                    <ThemedText style={styles.iosText}>Option 1: $1=100 credits:</ThemedText>
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                        <KeyboardAvoidingView
+                            behavior="padding"
+                            style={styles.container}
+                        >
+                            <ThemedView style={styles.mainView}>
+                                <ThemedView style={styles.addAmountView}>
+                                    <ThemedText>Amount to add:</ThemedText>
+                                    <TextInput
+                                        style={[styles.input, { color: textInputColor }]}
+                                        keyboardType="numeric"
+                                        returnKeyType="done"
+                                        value={addAmount}
+                                        onChangeText={handleAmountChange}
+                                        onSubmitEditing={Keyboard.dismiss}
+                                    />
+                                    <ThemedText>Credits: {additionalCredits}</ThemedText>
+                                </ThemedView>
+                                
+                                <GeneralButton title="Enter Card Details" onPress={clickedEnterCardDetails} />
+                            </ThemedView>
+                        </KeyboardAvoidingView>
+                    </TouchableWithoutFeedback>
+                    <ThemedView style={{ borderWidth: 1, width: '100%', marginBottom: 10, borderColor: textInputColor }}/>
+                    <ThemedText style={styles.iosText}>Option 2: $1=70 credits (due to commission fees):</ThemedText>
+                    <RevenueCatComponent/>
+                </ScrollView>
+                :
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
                     <KeyboardAvoidingView
-                        behavior={Platform.OS === "ios" ? "padding" : "height"}
+                        behavior="height"
                         style={styles.container}
                     >
                         <ThemedView style={styles.mainView}>
-                            <ThemedText>{`Available credits: ${userRef.current?.accountCredits}`}</ThemedText>
-
                             <ThemedView style={styles.addAmountView}>
                                 <ThemedText>Amount to add:</ThemedText>
                                 <TextInput
@@ -238,46 +290,23 @@ export default function DepositFundsScreen() {
                         </ThemedView>
                     </KeyboardAvoidingView>
                 </TouchableWithoutFeedback>
-            </StripeProvider>
-        );
-    }
-
-    function RevenueCatComponent() {
-        return (
-            <ScrollView style={styles.packageScrollViewContainer}>
-                {packages.map((pack) => (
-                    <TouchableOpacity 
-                        key={pack.product.identifier} 
-                        onPress={() => onPurchase(pack)}
-                        style={styles.packageContainer}
-                    >
-                        <ThemedView style={styles.packageTextContainer}>
-                            <ThemedText>{pack.product.title}:</ThemedText>
-                        </ThemedView>
-                        <ThemedView style={styles.packageButton}>
-                            <GeneralButton title={pack.product.priceString} onPress={() => onPurchase(pack)} />
-                        </ThemedView>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-        );
-    }
-
-    return (
-        <CustomHeaderView header="Deposit Funds">
-            { loadingMessage !== null ?
-            <LoadingScreen loadingMessage={loadingMessage}/>
-            : Platform.OS === "ios" ?
-            <RevenueCatComponent/>
-            :
-            <StripeComponent/>
-            }
-        </CustomHeaderView>
+                }
+            </CustomHeaderView>
+        </StripeProvider>
     );
     
 }
 
 const styles = StyleSheet.create({
+    iosView: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    iosText: {
+        fontSize: 18,
+        textAlign: 'center',
+        fontWeight: 600
+    },
     container: {
         flex: 1,
     },
@@ -303,7 +332,8 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     packageScrollViewContainer: {
-        marginTop: 20
+        marginTop: 20,
+        width: '100%'
     },
     packageContainer: {
         display: 'flex',

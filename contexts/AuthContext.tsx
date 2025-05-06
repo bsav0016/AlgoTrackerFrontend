@@ -27,8 +27,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const [updatingToken, setUpdatingToken] = useState<boolean>(false);
 
-    const accessTokenTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const refreshTokenTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const accessTokenTimerRef = useRef<number | null>(null);
+    const refreshTokenTimerRef = useRef<number | null>(null);
 
     useEffect(() => {
         const getStoredAuthData = async () => {

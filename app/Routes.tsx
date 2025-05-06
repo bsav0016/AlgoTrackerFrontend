@@ -10,3 +10,8 @@ export enum Routes {
     Profile = 'profile-screen',
     HowItWorks = 'how-it-works-screen',
 }
+
+//Only used to get rid of the warning
+export default function RoutesScreen() {
+    return null;
+}

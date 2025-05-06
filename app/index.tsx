@@ -1,12 +1,12 @@
-import { useRootNavigationState, Redirect } from 'expo-router';
-
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 
 export default function Index() {
-  const rootNavigationState = useRootNavigationState();
+  const router = useRouter();
 
+  useEffect(() => {
+    router.replace('/(screens)/login-screen');
+  }, [router]);
 
-  if (!rootNavigationState?.key) return null;
-
-
-  return <Redirect href="/(screens)/login-screen" />
+  return null;
 }

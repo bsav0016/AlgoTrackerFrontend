@@ -14,7 +14,7 @@ export const HEADERS = (token: string | null = null) => {
 export const URL_EXT = {
     LOGIN: 'login/',
     REGISTER: 'register/',
-    PROMO_CODE_AVAILABILITY: 'promo-code-availability',
+    PROMO_CODE_AVAILABILITY: 'promo-code-availability/',
     LOGOUT: 'logout/',
     DELETE_ACCOUNT: 'delete-account/',
     USER_DETAILS: 'user-details/',
