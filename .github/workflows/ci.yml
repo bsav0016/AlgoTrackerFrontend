@@ -1,0 +1,55 @@
+name: CI
+
+# Pull-request checks only. Releases stay manual (EAS builds: `npm run build-prod`).
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: "true"
+  EXPO_NO_TELEMETRY: "1"
+
+jobs:
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: No private-network URLs or secret keys in tracked files
+        run: |
+          if git grep -nIE 'https?://(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)|sk_(live|test)_[A-Za-z0-9]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----' -- . ':!*.md' ':!.env.example' ':!*.test.*' ':!package-lock.json'; then
+            echo "::error::Hard-coded private URL or secret key found; use .env / EAS environment variables."
+            exit 1
+          fi
+      # Existing warnings are reported but do not fail the build; errors do.
+      - name: Lint
+        run: npm run lint
+      # Informational for now: the project has existing type errors (see the README).
+      - name: Type-check
+        run: npm run typecheck
+        continue-on-error: true
+      # Mocks fetch and config; never contacts the backend, Stripe or market data.
+      - name: Tests
+        run: npm test
+      # Bundles the JS exactly as a release would, with the production defaults and no secrets.
+      # Native store builds need EAS credentials and stay a manual release step.
+      - name: Production bundle (Android)
+        run: npx expo export --platform android --output-dir dist
+        env:
+          APP_ENV: production

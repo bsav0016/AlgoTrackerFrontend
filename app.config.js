@@ -1,10 +1,7 @@
-export const API_URL = (process.env.EAS_BUILD_PROFILE === 'production')
-  ? "https://algo-tracker-api.collagecreations.org/"
-  : "http://192.168.1.144:8000/";
-export const STRIPE_PUBLIC_KEY = (process.env.EAS_BUILD_PROFILE === 'production')
-  ? "pk_live_51K3Z43KQPt6SvxbCYjiFsRWquBwI7abgPdxwRC4Qlma9myzEzKUwr0uCIc3URtyIF9O4Xkxws9fSyusrbr0aU22x00BOzYDqU7"
-  : "pk_test_51K3Z43KQPt6SvxbCq2DWQAxjj2fSskBhazWMiBI4WM6XRgOoDUSckkHxZzWaSXgIO55qf3EAi0lo2X4iab44nHIl00amJ9PVxZ"
+const { resolveConfig } = require("./config/resolveConfig");
 
+// API_URL and STRIPE_PUBLIC_KEY come from .env (see .env.example) or the EAS build environment.
+const { API_URL, STRIPE_PUBLIC_KEY } = resolveConfig(process.env);
 
 export default {
   expo: {
