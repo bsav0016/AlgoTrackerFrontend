@@ -6,7 +6,7 @@ Mobile app for building simple technical-indicator trading strategies, back-test
 
 ## Why it exists
 
-<!-- TODO: in your own words, why you built it (learning, a product idea, personal use?) -->
+Trying out a technical-indicator trading idea usually takes code or a desktop charting tool. AlgoTracker lets you assemble a strategy from standard indicators on your phone, back-test it on historical prices, and subscribe to it so you get a push notification when it signals a trade instead of watching charts.
 
 ## What it does
 
