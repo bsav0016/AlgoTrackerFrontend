@@ -2,8 +2,6 @@
 
 Mobile app for building simple technical-indicator trading strategies, back-testing them on historical price data, and subscribing to a strategy so you get a push notification when it signals a trade. Built with Expo / React Native; the API lives in [AlgoTrackerBackend](https://github.com/bsav0016/AlgoTrackerBackend).
 
-<!-- TODO: add screenshots (strategy builder, backtest results, subscriptions list) -->
-
 ## Why it exists
 
 Trying out a technical-indicator trading idea usually takes code or a desktop charting tool. AlgoTracker lets you assemble a strategy from standard indicators on your phone, back-test it on historical prices, and subscribe to it so you get a push notification when it signals a trade instead of watching charts.
@@ -74,8 +72,7 @@ The tests cover environment resolution (`config/resolveConfig.test.js`) and API 
 
 - Development API URL is hard-coded in `app.config.js` and must be edited.
 - npm scripts assume a POSIX shell.
-- Back-test results are historical simulations, not investment advice. <!-- TODO: confirm wording you want here -->
-- <!-- TODO: current status – is the app published, and is the production backend still running? Last commit here is May 2025. -->
+- Back-test results are historical simulations, not investment advice.
 
 ## License
 
