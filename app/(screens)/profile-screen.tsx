@@ -9,7 +9,7 @@ import { Routes } from "../Routes";
 import { Keyboard, Modal, StyleSheet, TextInput, TouchableWithoutFeedback } from "react-native";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useToast } from "@/contexts/ToastContext";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
@@ -28,8 +28,6 @@ export default function Profile() {
         return;
     }
     const timeRemaining = (userRef.current.resetMonthlyCredits.getTime() - Date.now()) / 1000;
-
-    useEffect(() => {}, [userRef.current]);
 
     const logoutUser = async () => {
         setLoading(true);
