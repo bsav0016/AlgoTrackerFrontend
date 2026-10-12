@@ -59,3 +59,7 @@ Production builds: `npm run build-prod` (EAS).
 - The `package-lock.json` is git-ignored, so installs are not fully reproducible.
 - Back-test results are historical simulations, not investment advice. <!-- TODO: confirm wording you want here -->
 - <!-- TODO: current status – is the app published, and is the production backend still running? Last commit here is May 2025. -->
+
+## License
+
+MIT. See [LICENSE](LICENSE).
