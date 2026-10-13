@@ -26,6 +26,9 @@ updates:
         update-types: ["version-update:semver-minor"]
       - dependency-name: "@react-native-*"
         update-types: ["version-update:semver-minor"]
+      # Payments SDK: Expo SDK 53 pins 0.45.x; later versions need newer React Native, Kotlin and
+      # Android/iOS toolchains. Upgrade it with the Expo SDK (`npx expo install @stripe/stripe-react-native`).
+      - dependency-name: "@stripe/stripe-react-native"
       - dependency-name: "react-native"
       - dependency-name: "react"
       - dependency-name: "react-dom"
