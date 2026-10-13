@@ -2,6 +2,14 @@
 
 Mobile app for building simple technical-indicator trading strategies, back-testing them on historical price data, and subscribing to a strategy so you get a push notification when it signals a trade. Built with Expo / React Native; the API lives in [AlgoTrackerBackend](https://github.com/bsav0016/AlgoTrackerBackend).
 
+## Project status
+
+**This is a portfolio project and it is not currently connected to a live backend.** The production API server is paused, so a build of this app has nothing to sign in to unless you run the backend yourself.
+
+- **What works without any accounts:** type-checking and the Jest tests (`npm test`) need no keys, no network and no backend.
+- **To run the app end to end** you need the [AlgoTrackerBackend](https://github.com/bsav0016/AlgoTrackerBackend) running locally and your own keys: a Stripe publishable key for card payments, and RevenueCat keys for store purchases. A development build is required, because the app uses native modules (Stripe, RevenueCat, notifications) that Expo Go does not include.
+- **No secrets are stored in this repository.** The values in `.env.example` are placeholders, and the Stripe key is a publishable key (`pk_...`), which is meant to ship inside an app. The one RevenueCat key in the code (`APIKeys` in `app/(screens)/deposit-funds-screen.tsx`) is RevenueCat's public SDK key for the original project, which is also designed to ship inside an app. Replace it, and the Google placeholder next to it, with keys from your own RevenueCat project. It is hard-coded rather than read from the environment, which is a known shortcut.
+
 ## Why it exists
 
 Trying out a technical-indicator trading idea usually takes code or a desktop charting tool. AlgoTracker lets you assemble a strategy from standard indicators on your phone, back-test it on historical prices, and subscribe to it so you get a push notification when it signals a trade instead of watching charts.
