@@ -8,15 +8,25 @@ updates:
       npm-minor-and-patch:
         update-types: [minor, patch]
     ignore:
-      # Expo pins the compatible React Native / React / Expo module versions per SDK.
-      # Move these together with an Expo SDK upgrade (`npx expo install --fix`), not one by one.
+      # Major upgrades are manual: they are breaking, and several here must stay on the
+      # version the Expo SDK / expo-router expects (e.g. query-string 7 is the last CommonJS release).
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # Expo pins matching versions of these per SDK. Move them together with an SDK
+      # upgrade (`npx expo install --fix`); patch updates are still allowed.
       - dependency-name: "expo"
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-minor"]
       - dependency-name: "expo-*"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-native"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "@expo/*"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "jest-expo"
+        update-types: ["version-update:semver-minor"]
       - dependency-name: "react-native-*"
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "@react-native-*"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "react-native"
       - dependency-name: "react"
       - dependency-name: "react-dom"
       - dependency-name: "react-test-renderer"
