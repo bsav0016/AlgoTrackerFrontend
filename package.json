@@ -77,5 +77,10 @@
     "react-test-renderer": "19.0.0",
     "typescript": "^5.8.2"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "@expo/metro-config": {
+      "postcss": "^8.5.23"
+    }
+  }
 }
