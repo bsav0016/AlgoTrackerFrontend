@@ -22,7 +22,7 @@ interface Field<T> {
     field: keyof T;
     text: string;
     value: string | undefined;
-    ref: RefObject<TextInput>;
+    ref: RefObject<TextInput | null>;
 }
 
 export default function LoginScreen() {
@@ -72,7 +72,7 @@ export default function LoginScreen() {
         checkPromoCodeAvailability();
     }, [])
 
-    const focusNextField = (nextField: React.RefObject<TextInput>) => {
+    const focusNextField = (nextField: React.RefObject<TextInput | null>) => {
         nextField.current?.focus();
     };
 

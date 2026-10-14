@@ -23,8 +23,10 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 
 
 Notifications.setNotificationHandler({
-    handleNotification: async () => ({
+    handleNotification: async (): Promise<Notifications.NotificationBehavior> => ({
         shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
     }),

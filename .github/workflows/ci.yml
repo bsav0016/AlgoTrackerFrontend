@@ -40,10 +40,8 @@ jobs:
       # Existing warnings are reported but do not fail the build; errors do.
       - name: Lint
         run: npm run lint
-      # Informational for now: the project has existing type errors (see the README).
       - name: Type-check
         run: npm run typecheck
-        continue-on-error: true
       # Mocks fetch and config; never contacts the backend, Stripe or market data.
       - name: Tests
         run: npm test

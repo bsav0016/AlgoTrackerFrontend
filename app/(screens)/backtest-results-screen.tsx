@@ -8,7 +8,7 @@ import { useRouteTo } from "@/contexts/RouteContext";
 import { useToast } from "@/contexts/ToastContext";
 import { Routes } from "@/app/Routes";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
-import ReactNativeZoomableView from '@openspacelabs/react-native-zoomable-view/src/ReactNativeZoomableView';
+import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
 import BacktestResultsTable from "@/features/strategy/components/backtestResultsTable";
 
 
