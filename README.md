@@ -64,14 +64,14 @@ Production builds (`npm run build-prod`, which runs `eas build --profile product
 npm test             # one run (CI-friendly)
 npm run test:watch   # re-run on change
 npm run lint         # expo lint (ESLint); existing warnings are tolerated, errors fail
-npm run typecheck    # tsc --noEmit; currently reports pre-existing type errors
+npm run typecheck    # tsc --noEmit (clean; CI fails on any error)
 ```
 
 The tests cover environment resolution (`config/resolveConfig.test.js`) and API error handling (`lib/networkRequests/NetworkRequest.test.ts`). They mock `fetch` and never contact a backend.
 
 ### CI
 
-`.github/workflows/ci.yml` runs on pull requests and on pushes to `master`: `npm ci` (from the committed `package-lock.json`, Node version from `.nvmrc`), a check for hard-coded private URLs or secret keys, lint, type-check (informational until the existing type errors are fixed), tests, and a production JavaScript bundle (`expo export`). It needs no secrets. Store builds are not part of CI; releases stay manual with `npm run build-prod`. Commit changes to `package-lock.json` along with `package.json`.
+`.github/workflows/ci.yml` runs on pull requests and on pushes to `master`: `npm ci` (from the committed `package-lock.json`, Node version from `.nvmrc`), a check for hard-coded private URLs or secret keys, lint, type-check (must pass), tests, and a production JavaScript bundle (`expo export`). It needs no secrets. Store builds are not part of CI; releases stay manual with `npm run build-prod`. Commit changes to `package-lock.json` along with `package.json`.
 
 ## Design decisions
 
