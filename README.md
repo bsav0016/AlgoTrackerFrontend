@@ -2,6 +2,10 @@
 
 Mobile app for building simple technical-indicator trading strategies, back-testing them on historical price data, and subscribing to a strategy so you get a push notification when it signals a trade. Built with Expo / React Native; the API lives in [AlgoTrackerBackend](https://github.com/bsav0016/AlgoTrackerBackend).
 
+<p><img src="docs/screenshots/home.png" alt="Home screen: credits, shortcuts and the list of subscribed strategies with position and return" width="24%"> <img src="docs/screenshots/strategy-builder.png" alt="Building a strategy: symbol, candle interval, buy and sell signals and a date range" width="24%"> <img src="docs/screenshots/backtest-results.png" alt="Backtest results: price chart with buy and sell markers, and return, Sharpe and Sortino ratios" width="24%"> <img src="docs/screenshots/strategy-detail.png" alt="A subscribed strategy: strategy return against asset return, and its trades" width="24%"></p>
+
+*Screenshots are from the Android build running against a local copy of the backend with a demo account and real historical prices. The positions, returns and trades on the home and strategy screens are each strategy's one-year backtest result, not live signals. More in [docs/screenshots](docs/screenshots) (for example the [signal builder](docs/screenshots/signal-builder.png)).*
+
 ## Project status
 
 **This is a portfolio project and it is not currently connected to a live backend.** The production API server is paused, so a build of this app has nothing to sign in to unless you run the backend yourself.
