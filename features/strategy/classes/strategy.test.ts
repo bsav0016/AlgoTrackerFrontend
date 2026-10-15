@@ -170,3 +170,32 @@ describe("Strategy.fromData", () => {
     expect([strategy.strategyReturn, strategy.assetReturn, strategy.position]).toEqual([1.2, 1.1, 2]);
   });
 });
+
+// The backend's charge_user_date is already the next charge date (api/models.py: it defaults to now + 30 days and is
+// reset to now + 30 days on renewal; a charge is due once now passes it). The strategy screen counts down to it, so
+// it must be shown as received.
+describe("Strategy.chargeUserDate", () => {
+  const SERVER_DATE = "2025-06-01T00:00:00Z";
+  const fromServer = () => Strategy.fromData({
+    id: 1, title: "t", symbol: "AAPL", interval: "1day", buy_signals: [], sell_signals: [], trades: [],
+    strategy_return: 1, asset_return: 1, position: 1, charge_user_date: SERVER_DATE, active: true,
+  });
+
+  it("is kept exactly as the server sent it", () => {
+    expect(fromServer().chargeUserDate).toEqual(new Date(SERVER_DATE));
+  });
+
+  it("does not change the Date it is given", () => {
+    const given = new Date(SERVER_DATE);
+    new Strategy(1, "t", "AAPL", "1day", [], [], [], 1, 1, 1, given);
+    expect(given).toEqual(new Date(SERVER_DATE));
+  });
+
+  it("defaults to 30 days from now for a strategy that has not been charged yet", () => {
+    const before = Date.now();
+    const strategy = makeStrategy();
+    const days = (strategy.chargeUserDate.getTime() - before) / (24 * 60 * 60 * 1000);
+    expect(days).toBeGreaterThan(29.99);
+    expect(days).toBeLessThan(30.01);
+  });
+});
