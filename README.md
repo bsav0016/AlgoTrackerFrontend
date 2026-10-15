@@ -82,8 +82,6 @@ The tests cover environment resolution (`config/resolveConfig.test.js`) and API 
 
 ## Limitations
 
-- Development API URL is hard-coded in `app.config.js` and must be edited.
-- npm scripts assume a POSIX shell.
 - Back-test results are historical simulations, not investment advice.
 
 ## License
