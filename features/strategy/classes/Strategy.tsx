@@ -16,6 +16,12 @@ export interface StrategyData {
     active: boolean;
 }
 
+// A strategy that has not been charged yet is next charged a subscription period from now: exactly 30 x 24 hours, as
+// the backend computes it (timedelta(days=30)), not 30 local calendar days, which is an hour off across a daylight
+// saving change. A date that comes from the server is already the next charge date and is used as it is.
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const thirtyDaysFromNow = () => new Date(Date.now() + THIRTY_DAYS_MS);
+
 export const PositionMapping: Record<number, string> = {
     0: "Sell",
     1: "Hold (Sold)",
@@ -48,7 +54,7 @@ export class Strategy {
         strategyReturn: number = 1,
         assetReturn: number = 1,
         position: number = 1,
-        chargeUserDate: Date = new Date(),
+        chargeUserDate: Date = thirtyDaysFromNow(),
         active: boolean = true
     ) {
         this.id = id;
@@ -61,7 +67,6 @@ export class Strategy {
         this.strategyReturn = strategyReturn;
         this.assetReturn = assetReturn;
         this.position = position;
-        chargeUserDate.setDate(chargeUserDate.getDate() + 30);
         this.chargeUserDate = chargeUserDate;
         this.active = active;
     }
