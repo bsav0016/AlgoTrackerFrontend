@@ -1,14 +1,13 @@
 import React, { useState } from "react";
 import { CustomHeaderView } from "@/components/CustomHeaderView";
-import { ThemedView } from "@/components/ThemedView";
 import { useToast } from "@/contexts/ToastContext";
 import { useRouteTo } from "@/contexts/RouteContext";
 import { Routes } from "@/app/Routes";
 import { ThemedText } from "@/components/ThemedText";
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableWithoutFeedback } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
 import { GeneralButton } from "@/components/GeneralButton";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { TextField } from "@/components/TextField";
+import { Spacing } from "@/constants/Theme";
 import { AuthService } from "@/features/auth/AuthService";
 
 
@@ -16,7 +15,6 @@ export default function ForgotPassword() {
     const { addToast } = useToast();
     const { routeTo } = useRouteTo();
 
-    const color = useThemeColor({}, 'text');
     const [sentEmail, setSentEmail] = useState<boolean>(false);
     const [email, setEmail] = useState<string>('');
     const [username, setUsername] = useState<string>('');
@@ -115,118 +113,104 @@ export default function ForgotPassword() {
       
 
     return (
-        <CustomHeaderView header={"Forgot Password"}>
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <CustomHeaderView header={"Forgot Password"} displayFunds={false}>
+            <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+                <KeyboardAvoidingView
+                    style={styles.container}
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+                >
+                    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} accessible={false}>
+                        <View style={styles.authView}>
+                            <ThemedText type="muted" style={styles.intro}>
+                                {sentEmail
+                                    ? "Enter the one-time password from your email and choose a new password."
+                                    : "Enter your account email and we'll send you a one-time password."}
+                            </ThemedText>
 
-            <KeyboardAvoidingView
-                style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-            >
-                <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-                    <ThemedView style={styles.authView}>
-                        { sentEmail ?
-                        <ThemedView style={styles.formView}>
-                            {(resetFields.map((field, i) => (
-                                <ThemedView style={styles.fieldView} key={i}>
-                                    <ThemedView style={styles.textView}>
-                                        <ThemedText>{field.text}: </ThemedText>
-                                    </ThemedView>
-                                    <TextInput
+                            {sentEmail ?
+                            <View style={styles.formView}>
+                                {resetFields.map((field, i) => (
+                                    <TextField
+                                        key={i}
+                                        label={field.text}
                                         value={field.value}
                                         onChangeText={(newText) => field.setValue(newText)}
-                                        style={[
-                                            styles.textInput,
-                                            { color: color, borderColor: color }
-                                        ]}
+                                        autoCapitalize="none"
+                                        autoCorrect={false}
                                         textContentType={"oneTimeCode"}
-                                        keyboardType={field.textKeyboard ? "default" : "email-address"}
+                                        keyboardType={field.textKeyboard ? "default" : "number-pad"}
                                         returnKeyType={i === resetFields.length - 1 ? 'done' : 'next'}
-                                        secureTextEntry={i >= 2}
+                                        secureTextEntry={field.hidden}
                                         onSubmitEditing={() => Keyboard.dismiss()}
                                     />
-                                </ThemedView>
-                            )))}
+                                ))}
 
-                            { processing ? 
-                            <LoadingSpinner />
+                                <View style={styles.submit}>
+                                    <GeneralButton
+                                        title={"Reset Password"}
+                                        onPress={confirmReset}
+                                        loading={!!processing}
+                                        autoWidth={false}
+                                    />
+                                </View>
+                            </View>
                             :
-                            <GeneralButton title={"Reset Password"} onPress={confirmReset} />
-                            }  
-                        </ThemedView>
-
-                        :
-
-                        <ThemedView style={styles.formView}>
-                            <ThemedView style={styles.fieldView}>
-                                <ThemedView style={styles.textView}>
-                                    <ThemedText>Email: </ThemedText>
-                                </ThemedView>
-                                <TextInput
+                            <View style={styles.formView}>
+                                <TextField
+                                    label="Email"
                                     value={email}
                                     onChangeText={(newText) => setEmail(newText)}
-                                    style={[
-                                        styles.textInput,
-                                        { color: color, borderColor: color }
-                                    ]}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
                                     textContentType={"oneTimeCode"}
                                     keyboardType={"email-address"}
                                     returnKeyType={'done'}
                                     onSubmitEditing={() => Keyboard.dismiss()}
                                 />
-                            </ThemedView>
 
-                            { processing ? 
-                            <LoadingSpinner />
-                            : 
-                            <GeneralButton title={"Request Reset"} onPress={sendResetEmail} />
-                            }  
-                        </ThemedView>
-                        }
-                    </ThemedView>
-                </TouchableWithoutFeedback>
-            </KeyboardAvoidingView>
+                                <View style={styles.submit}>
+                                    <GeneralButton
+                                        title={"Request Reset"}
+                                        onPress={sendResetEmail}
+                                        loading={!!processing}
+                                        autoWidth={false}
+                                    />
+                                </View>
+                            </View>
+                            }
+                        </View>
+                    </TouchableWithoutFeedback>
+                </KeyboardAvoidingView>
             </ScrollView>
         </CustomHeaderView>
-    );    
+    );
 }
 
 const styles = StyleSheet.create({
+    scrollContent: {
+        flexGrow: 1,
+    },
+
     container: {
         flex: 1,
     },
 
     authView: {
         flex: 1,
-        justifyContent: 'center',
-        marginBottom: 60
+        padding: Spacing.xl,
+        gap: Spacing.xl,
+    },
+
+    intro: {
+        textAlign: 'center',
     },
 
     formView: {
-        alignItems: 'center',
-        paddingHorizontal: 30,
-        gap: 10,
+        gap: Spacing.lg,
     },
 
-    fieldView: {
-        flexDirection: 'row',
-        alignItems: 'flex-end'
+    submit: {
+        marginTop: Spacing.sm,
     },
-
-    textView: {
-        flex: 1,
-        alignItems: 'flex-end',
-        justifyContent: 'flex-end',
-        textAlign:'right'
-    },
-
-    textInput: {
-        flex: 2,
-        borderWidth: 1,
-        borderRadius: 3,
-        padding: 3,
-        fontSize: 20,
-        height: 30,
-        width: '30%',
-    }
 })

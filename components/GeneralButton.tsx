@@ -11,6 +11,8 @@ interface GeneralButtonProps {
   disabled?: boolean;
   loading?: boolean;
   autoWidth?: boolean;
+  /** Less horizontal padding, for lists of short chips. */
+  compact?: boolean;
   fontSize?: number;
   /** Legacy override; prefer `variant`. */
   backgroundColor?: string;
@@ -23,6 +25,7 @@ export function GeneralButton({
   disabled = false,
   loading = false,
   autoWidth = true,
+  compact = false,
   fontSize = 16,
   backgroundColor = undefined,
 }: GeneralButtonProps) {
@@ -32,7 +35,7 @@ export function GeneralButton({
     primary: { bg: theme.primary, fg: theme.onPrimary, border: theme.primary },
     secondary: { bg: theme.neutralSoft, fg: theme.text, border: theme.neutralSoft },
     outline: { bg: "transparent", fg: theme.primary, border: theme.primary },
-    danger: { bg: theme.danger, fg: "#ffffff", border: theme.danger },
+    danger: { bg: theme.danger, fg: theme.onDanger, border: theme.danger },
     ghost: { bg: "transparent", fg: theme.primary, border: "transparent" },
   }[variant];
 
@@ -49,6 +52,7 @@ export function GeneralButton({
           borderColor: backgroundColor ?? palette.border,
         },
         inactive && styles.disabled,
+        compact && styles.compact,
         !autoWidth && { width: "100%" },
       ]}
       onPress={onPress}
@@ -75,6 +79,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  compact: {
+    paddingHorizontal: Spacing.md,
   },
   text: {
     fontWeight: "600",

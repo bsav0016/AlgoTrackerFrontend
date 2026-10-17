@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Animated } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import { useTheme } from '@/constants/Theme';
 
 export function LoadingSpinner() {
     const [spinValue] = useState(new Animated.Value(0));
+    const theme = useTheme();
 
     useEffect(() => {
         Animated.loop(
@@ -22,9 +23,10 @@ export function LoadingSpinner() {
 
     return (
         <Animated.View
+            accessibilityRole="progressbar"
             style={[
                 styles.spinner,
-                { transform: [{ rotate: spin }] },
+                { borderColor: theme.border, borderTopColor: theme.primary, transform: [{ rotate: spin }] },
             ]}
         />
     );
@@ -34,9 +36,7 @@ const styles = StyleSheet.create({
     spinner: {
         width: 50,
         height: 50,
-        borderWidth: 8,
-        borderColor: 'rgba(0, 0, 0, 0.1)',
+        borderWidth: 6,
         borderRadius: 50,
-        borderTopColor: Colors.button.background,
     },
 });

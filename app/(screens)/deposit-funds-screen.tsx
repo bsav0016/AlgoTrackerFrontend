@@ -1,11 +1,12 @@
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
+import { Card } from "@/components/Card";
+import { TextField } from "@/components/TextField";
+import { Spacing, Type } from "@/constants/Theme";
 import { useUser } from "@/contexts/UserContext";
-import { StyleSheet, TextInput, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, ScrollView, TouchableOpacity } from "react-native";
+import { StyleSheet, Keyboard, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, ScrollView, View } from "react-native";
 import { useEffect, useState } from "react";
 import { GeneralButton } from "@/components/GeneralButton";
-import { useThemeColor } from "@/hooks/useThemeColor";
 import { initPaymentSheet, presentPaymentSheet, StripeProvider }  from "@stripe/stripe-react-native";
 import Constants from 'expo-constants';
 import { PaymentService } from "@/features/payment/PaymentService";
@@ -36,7 +37,6 @@ export default function DepositFundsScreen() {
     const { addToast } = useToast();
     const { accessToken } = useAuth();
     const { routeReplace } = useRouteTo();
-    const textInputColor = useThemeColor({}, 'text');
     const [addAmount, setAddAmount] = useState<string>("$0.00");
     const [additionalCredits, setAdditionalCredits] = useState<number>(0);
     const [paymentSheet, setPaymentSheet] = useState<PaymentSheetResponseDTO | null>(null);
@@ -209,24 +209,35 @@ export default function DepositFundsScreen() {
 
     function RevenueCatComponent() {
         return (
-            <ThemedView style={styles.packageScrollViewContainer}>
+            <View style={styles.packages}>
                 {packages.map((pack) => (
-                    <TouchableOpacity 
-                        key={pack.product.identifier} 
-                        onPress={() => onPurchase(pack)}
-                        style={styles.packageContainer}
-                    >
-                        <ThemedView style={styles.packageTextContainer}>
-                            <ThemedText>{pack.product.title}:</ThemedText>
-                        </ThemedView>
-                        <ThemedView style={styles.packageButton}>
-                            <GeneralButton title={pack.product.priceString} onPress={() => onPurchase(pack)} />
-                        </ThemedView>
-                    </TouchableOpacity>
+                    <Card key={pack.product.identifier} style={styles.packageCard}>
+                        <ThemedText style={styles.packageTitle}>{pack.product.title}</ThemedText>
+                        <View style={styles.packageButton}>
+                            <GeneralButton title={pack.product.priceString} onPress={() => onPurchase(pack)} autoWidth={false} />
+                        </View>
+                    </Card>
                 ))}
-            </ThemedView>
+            </View>
         );
     }
+
+    const amountForm = (
+        <Card style={styles.formCard}>
+            <TextField
+                label="Amount to add"
+                keyboardType="numeric"
+                returnKeyType="done"
+                value={addAmount}
+                onChangeText={handleAmountChange}
+                onSubmitEditing={Keyboard.dismiss}
+            />
+            <ThemedText type="muted" style={styles.creditsPreview}>
+                {`You'll receive ${additionalCredits.toLocaleString("en-US")} credits ($1 = 100 credits, $5 minimum)`}
+            </ThemedText>
+            <GeneralButton title="Enter Card Details" onPress={clickedEnterCardDetails} autoWidth={false} />
+        </Card>
+    );
 
     return (
         <StripeProvider
@@ -236,117 +247,67 @@ export default function DepositFundsScreen() {
             <CustomHeaderView header="Deposit Funds">
                 { loadingMessage !== null ?
                 <LoadingScreen loadingMessage={loadingMessage}/>
-                : Platform.OS === "ios" ?
-                <ScrollView keyboardShouldPersistTaps="handled">
-                    <ThemedText style={styles.iosText}>Option 1: $1=100 credits:</ThemedText>
-                    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                        <KeyboardAvoidingView
-                            behavior="padding"
-                            style={styles.container}
-                        >
-                            <ThemedView style={styles.mainView}>
-                                <ThemedView style={styles.addAmountView}>
-                                    <ThemedText>Amount to add:</ThemedText>
-                                    <TextInput
-                                        style={[styles.input, { color: textInputColor }]}
-                                        keyboardType="numeric"
-                                        returnKeyType="done"
-                                        value={addAmount}
-                                        onChangeText={handleAmountChange}
-                                        onSubmitEditing={Keyboard.dismiss}
-                                    />
-                                    <ThemedText>Credits: {additionalCredits}</ThemedText>
-                                </ThemedView>
-                                
-                                <GeneralButton title="Enter Card Details" onPress={clickedEnterCardDetails} />
-                            </ThemedView>
-                        </KeyboardAvoidingView>
-                    </TouchableWithoutFeedback>
-                    <ThemedView style={{ borderWidth: 1, width: '100%', marginBottom: 10, borderColor: textInputColor }}/>
-                    <ThemedText style={styles.iosText}>Option 2: $1=70 credits (due to commission fees):</ThemedText>
-                    <RevenueCatComponent/>
-                </ScrollView>
                 :
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                    <KeyboardAvoidingView
-                        behavior="height"
-                        style={styles.container}
-                    >
-                        <ThemedView style={styles.mainView}>
-                            <ThemedView style={styles.addAmountView}>
-                                <ThemedText>Amount to add:</ThemedText>
-                                <TextInput
-                                    style={[styles.input, { color: textInputColor }]}
-                                    keyboardType="numeric"
-                                    returnKeyType="done"
-                                    value={addAmount}
-                                    onChangeText={handleAmountChange}
-                                    onSubmitEditing={Keyboard.dismiss}
-                                />
-                                <ThemedText>Credits: {additionalCredits}</ThemedText>
-                            </ThemedView>
-                            
-                            <GeneralButton title="Enter Card Details" onPress={clickedEnterCardDetails} />
-                        </ThemedView>
-                    </KeyboardAvoidingView>
-                </TouchableWithoutFeedback>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.container}
+                >
+                    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+                        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                            <View style={styles.stack}>
+                                { Platform.OS === "ios" &&
+                                    <ThemedText style={styles.optionTitle}>Option 1: card ($1 = 100 credits)</ThemedText>
+                                }
+                                {amountForm}
+                                { Platform.OS === "ios" &&
+                                <>
+                                    <ThemedText style={styles.optionTitle}>Option 2: in-app purchase ($1 = 70 credits, after store fees)</ThemedText>
+                                    <RevenueCatComponent/>
+                                </>
+                                }
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </ScrollView>
+                </KeyboardAvoidingView>
                 }
             </CustomHeaderView>
         </StripeProvider>
     );
-    
+
 }
 
 const styles = StyleSheet.create({
-    iosView: {
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    iosText: {
-        fontSize: 18,
-        textAlign: 'center',
-        fontWeight: 600
-    },
     container: {
         flex: 1,
     },
-    mainView: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: 50
+    content: {
+        padding: Spacing.lg,
     },
-    addAmountView: {
-        alignItems: "center",
-        gap: 10,
-        marginTop: 50,
-        marginBottom: 30,
+    stack: {
+        gap: Spacing.lg,
     },
-    input: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 10,
-        fontSize: 18,
-        width: 100,
-        textAlign: "center",
+    optionTitle: {
+        ...Type.bodyStrong,
     },
-    packageScrollViewContainer: {
-        marginTop: 20,
-        width: '100%'
+    formCard: {
+        gap: Spacing.lg,
     },
-    packageContainer: {
-        display: 'flex',
+    creditsPreview: {
+        fontSize: 14,
+    },
+    packages: {
+        gap: Spacing.md,
+    },
+    packageCard: {
         flexDirection: 'row',
-        margin: 15,
-        width: '90%',
-        alignSelf: 'center',
         alignItems: 'center',
+        gap: Spacing.md,
     },
-    packageTextContainer: {
-        flex: 3
+    packageTitle: {
+        flex: 3,
+        ...Type.bodyStrong,
     },
     packageButton: {
-        flex: 2
-    }
+        flex: 2,
+    },
 });

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Animated } from 'react-native';
 import { ThemedView } from './ThemedView';
-import { Colors } from '@/constants/Colors';
 import { ThemedText } from './ThemedText';
+import { Spacing, useTheme } from '@/constants/Theme';
 
 interface LoadingScreenProps {
     loadingMessage: string | null
@@ -10,6 +10,7 @@ interface LoadingScreenProps {
 
 export function LoadingScreen({ loadingMessage }: LoadingScreenProps) {
     const [spinValue] = useState(new Animated.Value(0));
+    const theme = useTheme();
 
     useEffect(() => {
         Animated.loop(
@@ -29,14 +30,15 @@ export function LoadingScreen({ loadingMessage }: LoadingScreenProps) {
     return (
         <ThemedView style={styles.loadingScreen}>
             <Animated.View
+                accessibilityRole="progressbar"
                 style={[
                     styles.spinner,
-                    { transform: [{ rotate: spin }] },
+                    { borderColor: theme.border, borderTopColor: theme.primary, transform: [{ rotate: spin }] },
                 ]}
             />
 
             { loadingMessage &&
-                <ThemedText>{loadingMessage}</ThemedText>
+                <ThemedText type="muted">{loadingMessage}</ThemedText>
             }
         </ThemedView>
     );
@@ -50,14 +52,13 @@ const styles = StyleSheet.create({
         width: '100%',
         justifyContent: 'center',
         alignItems: 'center',
+        gap: Spacing.lg,
     },
 
     spinner: {
-        width: 75,
-        height: 75,
-        borderWidth: 8,
-        borderColor: 'rgba(0, 0, 0, 0.1)',
+        width: 64,
+        height: 64,
+        borderWidth: 7,
         borderRadius: 50,
-        borderTopColor: Colors.button.background,
     },
 });

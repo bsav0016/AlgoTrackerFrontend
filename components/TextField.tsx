@@ -5,9 +5,10 @@ import { MIN_TOUCH, Radius, Spacing, Type, useTheme } from "@/constants/Theme";
 interface TextFieldProps extends TextInputProps {
   label?: string;
   error?: string;
+  inputRef?: React.Ref<TextInput>;
 }
 
-export function TextField({ label, error, style, onFocus, onBlur, ...rest }: TextFieldProps) {
+export function TextField({ label, error, style, onFocus, onBlur, inputRef, ...rest }: TextFieldProps) {
   const theme = useTheme();
   const [focused, setFocused] = useState(false);
 
@@ -17,6 +18,7 @@ export function TextField({ label, error, style, onFocus, onBlur, ...rest }: Tex
     <View style={styles.wrapper}>
       {label && <Text style={[styles.label, { color: theme.mutedText }]}>{label}</Text>}
       <TextInput
+        ref={inputRef}
         accessibilityLabel={label}
         placeholderTextColor={theme.mutedText}
         style={[
