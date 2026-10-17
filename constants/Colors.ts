@@ -1,44 +1,48 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const primaryLight = '#2563eb';
+const primaryDark = '#60a5fa';
 
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: '#0f172a',
+    mutedText: '#64748b',
+    background: '#f8fafc',
+    surface: '#ffffff',
+    border: '#e2e8f0',
+    tint: primaryLight,
+    primary: primaryLight,
+    onPrimary: '#ffffff',
+    danger: '#b91c1c',
+    gain: '#15803d',
+    gainSoft: '#dcfce7',
+    loss: '#b91c1c',
+    lossSoft: '#fee2e2',
+    neutralSoft: '#e2e8f0',
+    icon: '#64748b',
+    tabIconDefault: '#64748b',
+    tabIconSelected: primaryLight,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: '#f1f5f9',
+    mutedText: '#94a3b8',
+    background: '#0b1220',
+    surface: '#151e2e',
+    border: '#263247',
+    tint: primaryDark,
+    primary: primaryDark,
+    onPrimary: '#0b1220',
+    danger: '#f87171',
+    gain: '#4ade80',
+    gainSoft: '#14532d',
+    loss: '#f87171',
+    lossSoft: '#7f1d1d',
+    neutralSoft: '#263247',
+    icon: '#94a3b8',
+    tabIconDefault: '#94a3b8',
+    tabIconSelected: primaryDark,
   },
+  // Legacy keys used by screens that have not moved to the theme tokens yet.
   button: {
     text: 'white',
-    background: '#007bff'
+    background: primaryLight,
   },
-  board: {
-    background: '#0000aa',
-    player1: 'red',//'#d96c6c',
-    player2: 'yellow',//'#27b84d',
-    valid: '#9127b8',
-    empty: '#007bff',
-    borderColor: '#0000dd'
-  },
-  onlinePlay: {
-    general: '#9127b8',
-    loss: '#de3c3c',
-    win: '#49de60',
-    text: 'black'
-  }
 };

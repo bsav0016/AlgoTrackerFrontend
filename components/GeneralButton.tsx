@@ -1,56 +1,86 @@
-import { Colors } from "@/constants/Colors";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { MIN_TOUCH, Radius, Spacing, useTheme } from "@/constants/Theme";
+
+export type ButtonVariant = "primary" | "secondary" | "outline" | "danger" | "ghost";
 
 interface GeneralButtonProps {
   title: string;
   onPress: () => void;
+  variant?: ButtonVariant;
   disabled?: boolean;
+  loading?: boolean;
   autoWidth?: boolean;
   fontSize?: number;
+  /** Legacy override; prefer `variant`. */
   backgroundColor?: string;
 }
 
-export function GeneralButton({ 
-  title, 
-  onPress, 
-  disabled=false, 
-  autoWidth=true, 
-  fontSize=20,
-  backgroundColor=undefined
+export function GeneralButton({
+  title,
+  onPress,
+  variant = "primary",
+  disabled = false,
+  loading = false,
+  autoWidth = true,
+  fontSize = 16,
+  backgroundColor = undefined,
 }: GeneralButtonProps) {
+  const theme = useTheme();
+
+  const palette = {
+    primary: { bg: theme.primary, fg: theme.onPrimary, border: theme.primary },
+    secondary: { bg: theme.neutralSoft, fg: theme.text, border: theme.neutralSoft },
+    outline: { bg: "transparent", fg: theme.primary, border: theme.primary },
+    danger: { bg: theme.danger, fg: "#ffffff", border: theme.danger },
+    ghost: { bg: "transparent", fg: theme.primary, border: "transparent" },
+  }[variant];
+
+  const inactive = disabled || loading;
+
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityState={{ disabled: inactive, busy: loading }}
       style={[
-        styles.generalButton, 
-        { backgroundColor: backgroundColor ?? Colors.button.background },
-        disabled && styles.disabled, 
-        !autoWidth && { width: '100%' }
+        styles.button,
+        {
+          backgroundColor: backgroundColor ?? palette.bg,
+          borderColor: backgroundColor ?? palette.border,
+        },
+        inactive && styles.disabled,
+        !autoWidth && { width: "100%" },
       ]}
       onPress={onPress}
-      disabled={disabled}
+      disabled={inactive}
+      activeOpacity={0.8}
     >
-      <Text style={[styles.buttonText, { fontSize: fontSize }]}>{title}</Text>
+      {loading ? (
+        <ActivityIndicator color={palette.fg} />
+      ) : (
+        <Text style={[styles.text, { color: backgroundColor ? "#ffffff" : palette.fg, fontSize }]}>
+          {title}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  generalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 3,
+  button: {
+    minHeight: MIN_TOUCH,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 20,
-    textAlign: 'center'
+  text: {
+    fontWeight: "600",
+    textAlign: "center",
   },
   disabled: {
-    backgroundColor: '#cccccc',
-    color: '#666666',
-  }
+    opacity: 0.45,
+  },
 });
