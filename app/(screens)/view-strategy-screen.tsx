@@ -3,13 +3,17 @@ import { useRouteTo } from "@/contexts/RouteContext";
 import { useStrategy } from "@/contexts/StrategyContext";
 import { useToast } from "@/contexts/ToastContext";
 import React from "react";
-import { ThemedView } from "@/components/ThemedView";
-import { ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { GeneralButton } from "@/components/GeneralButton";
+import { Card } from "@/components/Card";
+import { Badge } from "@/components/Badge";
+import { EmptyState } from "@/components/EmptyState";
 import { StrategyService } from "@/features/strategy/StrategyService";
+import { PositionMapping } from "@/features/strategy/classes/Strategy";
 import { useAuth } from "@/contexts/AuthContext";
+import { Spacing, Type, useTheme } from "@/constants/Theme";
 
 
 export default function ViewStrategy() {
@@ -17,6 +21,7 @@ export default function ViewStrategy() {
     const { accessToken } = useAuth()
     const { routeBack } = useRouteTo();
     const { addToast } = useToast();
+    const theme = useTheme();
 
     if (!strategy) {
         addToast("Could not load strategy. Returning home...");
@@ -24,20 +29,37 @@ export default function ViewStrategy() {
         return;
     }
 
-    const calculatePercentage = (value: number): string => {
-        return ((value - 1) * 100).toFixed(2);
+    const toPercent = (value: number): number => (value - 1) * 100;
+
+    const formatPercent = (value: number): string => {
+        const percent = toPercent(value);
+        return `${percent >= 0 ? "+" : ""}${percent.toFixed(2)}%`;
     }
 
+    const returnColor = (value: number): string => toPercent(value) >= 0 ? theme.gain : theme.loss;
+
+    // Daily and longer candles carry no meaningful time of day (and are stamped in UTC), so show the date only.
+    const isDailyOrLonger = /day|week|month/i.test(strategy.interval);
+
     const formattedDate = (date: Date): string => {
+        if (isDailyOrLonger) {
+            return date.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                timeZone: "UTC",
+            });
+        }
         return date.toLocaleString("en-US", {
             month: "short",
-            day: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
+            day: "numeric",
+            hour: "numeric",
             minute: "2-digit",
-            second: "2-digit",
-            hour12: false,
         });
+    }
+
+    const formattedPrice = (price: number): string => {
+        return `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
     const confirmStopStrategy = () => {
@@ -57,122 +79,166 @@ export default function ViewStrategy() {
         routeBack();
     }
 
-
     return (
         <CustomHeaderView header={strategy.title}>
-            <ThemedView>
-                <ThemedText style={styles.returnText}>Strategy Return: {calculatePercentage(strategy.strategyReturn)}%</ThemedText>
-                <ThemedText style={styles.returnText}>Asset Return: {calculatePercentage(strategy.assetReturn)}%</ThemedText>
+            <ScrollView contentContainerStyle={styles.content}>
+                <Card style={styles.summaryCard}>
+                    <View style={styles.summaryHeader}>
+                        <ThemedText type="muted">{`${strategy.symbol} · ${strategy.interval}`}</ThemedText>
+                        <Badge
+                            label={PositionMapping[strategy.position] ?? "Hold"}
+                            tone={strategy.position < 1 ? "loss" : strategy.position > 2 ? "gain" : "neutral"}
+                        />
+                    </View>
 
-                <ThemedView style={styles.rechargeContainer}>
-                    <ThemedText>Strategy subscription charged again in:</ThemedText>
-                    <CountdownTimer timeRemaining={(strategy.chargeUserDate.getTime() - Date.now()) / 1000}/>
-                </ThemedView>
-                
+                    <View style={styles.metrics}>
+                        <View style={styles.metric}>
+                            <ThemedText type="muted" style={styles.metricLabel}>Strategy return</ThemedText>
+                            <ThemedText style={[styles.metricValue, { color: returnColor(strategy.strategyReturn) }]}>
+                                {formatPercent(strategy.strategyReturn)}
+                            </ThemedText>
+                        </View>
+                        <View style={styles.metric}>
+                            <ThemedText type="muted" style={styles.metricLabel}>Asset return</ThemedText>
+                            <ThemedText style={[styles.metricValue, { color: returnColor(strategy.assetReturn) }]}>
+                                {formatPercent(strategy.assetReturn)}
+                            </ThemedText>
+                        </View>
+                    </View>
 
-                <GeneralButton title="Stop Strategy" onPress={confirmStopStrategy} />
+                    <View style={[styles.renewRow, { borderColor: theme.border }]}>
+                        <ThemedText type="muted" style={styles.renewLabel}>Next charge in</ThemedText>
+                        <CountdownTimer timeRemaining={(strategy.chargeUserDate.getTime() - Date.now()) / 1000}/>
+                    </View>
+                </Card>
 
-                <ThemedView style={styles.tradeHeaderContainer}>
-                    <ThemedText style={styles.tradeHeaderText}>Trade Data:</ThemedText>
-                </ThemedView>
-                
-                <ThemedView style={[styles.tradeContainer, { marginTop: 10 }]}>
-                    <ThemedText style={[styles.dateText, styles.headerText]}>Date</ThemedText>
-                    <ThemedText style={[styles.priceText, styles.headerText]}>Price</ThemedText>
-                    <ThemedText style={[styles.actionText, styles.headerText]}>Action</ThemedText>
-                </ThemedView>
+                <ThemedText style={styles.sectionTitle}>
+                    {`Trades${strategy.trades.length > 0 ? ` (${strategy.trades.length})` : ""}`}
+                </ThemedText>
 
-                <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-                    {strategy.trades.length > 0 ?
-                        <>
-                            {strategy.trades.map((trade, index) => (
-                                <React.Fragment key={index}>
-                                    <ThemedView style={styles.tradeContainer}>
-                                        <ThemedText style={styles.dateText}>{formattedDate(trade.date)}</ThemedText>
-                                        <ThemedText style={styles.priceText}>{trade.price}</ThemedText>
-                                        <ThemedText style={styles.actionText}>{trade.isBuy ? "Buy" : "Sell"}</ThemedText>
-                                    </ThemedView>
+                {strategy.trades.length > 0 ?
+                    <Card style={styles.tradesCard}>
+                        <View style={[styles.tradeRow, styles.tradeHeaderRow, { borderColor: theme.border }]}>
+                            <ThemedText type="muted" style={[styles.dateCell, styles.headerText]}>Date</ThemedText>
+                            <ThemedText type="muted" style={[styles.priceCell, styles.headerText]}>Price</ThemedText>
+                            <ThemedText type="muted" style={[styles.actionCell, styles.headerText]}>Action</ThemedText>
+                        </View>
 
-                                    {index < strategy.trades.length - 1 && 
-                                        <ThemedView style={[
-                                            styles.divider,
-                                            { backgroundColor: '#ccc' }
-                                        ]}/>
-                                    }
-                                </React.Fragment>
-                            ))}
-                        </>
-                        
-                        :
+                        {strategy.trades.map((trade, index) => (
+                            <View
+                                key={index}
+                                style={[
+                                    styles.tradeRow,
+                                    index < strategy.trades.length - 1 && { borderColor: theme.border, borderBottomWidth: StyleSheet.hairlineWidth },
+                                ]}
+                            >
+                                <ThemedText style={styles.dateCell}>{formattedDate(trade.date)}</ThemedText>
+                                <ThemedText style={styles.priceCell}>{formattedPrice(trade.price)}</ThemedText>
+                                <View style={styles.actionCell}>
+                                    <Badge label={trade.isBuy ? "Buy" : "Sell"} tone={trade.isBuy ? "gain" : "loss"} />
+                                </View>
+                            </View>
+                        ))}
+                    </Card>
+                    :
+                    <EmptyState title="No trades yet" message="Trades appear here when your signals trigger." />
+                }
 
-                        <ThemedText style={styles.noTradesText}>No trades have been triggered</ThemedText>
-                    }
-                </ScrollView>
-            </ThemedView>
+                <View style={styles.stopSection}>
+                    <GeneralButton title="Stop Strategy" variant="danger" onPress={confirmStopStrategy} autoWidth={false} />
+                </View>
+            </ScrollView>
         </CustomHeaderView>
     )
 }
 
 const styles = StyleSheet.create({
-    returnText: {
-        marginTop: 10,
-        textAlign: 'center',
-        fontSize: 24,
-        fontWeight: 700
+    content: {
+        padding: Spacing.lg,
+        gap: Spacing.lg,
     },
 
-    rechargeContainer: {
-        marginVertical: 15,
-        alignItems: 'center'
+    summaryCard: {
+        gap: Spacing.lg,
     },
 
-    tradeHeaderContainer: {
-        marginTop: 30
-    },
-
-    tradeHeaderText: {
-        fontWeight: 600,
-        fontSize: 24,
-        textAlign: 'center',
-        textDecorationLine: 'underline'
-    },
-
-    tradeContainer: {
-        display: 'flex',
+    summaryHeader: {
         flexDirection: 'row',
-        gap: 10,
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
 
-    dateText: {
-        flex: 1,
-        textAlign: 'center'
+    metrics: {
+        flexDirection: 'row',
+        gap: Spacing.lg,
     },
 
-    priceText: {
+    metric: {
         flex: 1,
-        textAlign: 'center'
+        gap: Spacing.xs,
     },
 
-    actionText: {
-        flex: 1,
-        textAlign: 'center'
+    metricLabel: {
+        ...Type.caption,
+        fontWeight: '600',
+    },
+
+    metricValue: {
+        ...Type.title,
+    },
+
+    renewRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderTopWidth: StyleSheet.hairlineWidth,
+        paddingTop: Spacing.md,
+    },
+
+    renewLabel: {
+        fontSize: 14,
+    },
+
+    sectionTitle: {
+        ...Type.subtitle,
+    },
+
+    tradesCard: {
+        paddingVertical: Spacing.sm,
+    },
+
+    tradeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+        paddingVertical: Spacing.md,
+    },
+
+    tradeHeaderRow: {
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        paddingVertical: Spacing.sm,
     },
 
     headerText: {
-        fontWeight: 600,
-        fontSize: 22,
-        textDecorationLine: 'underline'
+        ...Type.caption,
+        fontWeight: '600',
     },
 
-    noTradesText: {
-        textAlign: 'center'
+    dateCell: {
+        flex: 3,
     },
-    
-    divider: {
-        height: 1,
-        marginVertical: 8
+
+    priceCell: {
+        flex: 2,
+        textAlign: 'right',
+    },
+
+    actionCell: {
+        flex: 2,
+        alignItems: 'flex-start',
+    },
+
+    stopSection: {
+        marginTop: Spacing.lg,
     },
 })

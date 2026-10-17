@@ -1,11 +1,11 @@
 import { ThemedText } from "@/components/ThemedText";
 import { Signal } from "../classes/Signal";
 import { ThemedView } from "@/components/ThemedView";
-import { StyleSheet, TouchableOpacity } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { GeneralButton } from "@/components/GeneralButton";
-import { FontAwesome } from '@expo/vector-icons';
-import { Colors } from "@/constants/Colors";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { Card } from "@/components/Card";
+import { Ionicons } from "@expo/vector-icons";
+import { MIN_TOUCH, Radius, Spacing, Type, useTheme } from "@/constants/Theme";
 
 interface SignalSectionProps {
     sectionTitle: string;
@@ -14,6 +14,7 @@ interface SignalSectionProps {
     buttonText: string;
     buttonAction: () => void;
     setIndicatorIndex: (index: number) => void;
+    tone: "gain" | "loss";
 }
 
 export function IndicatorSection({
@@ -22,116 +23,104 @@ export function IndicatorSection({
     setSignals,
     buttonText,
     buttonAction,
-    setIndicatorIndex
-}: SignalSectionProps) {  
+    setIndicatorIndex,
+    tone
+}: SignalSectionProps) {
+    const theme = useTheme();
+
     const deleteIndicator = (index: number) => {
         const newSignals: Signal[] = signals.filter((_, i) => i !== index);
         setSignals(newSignals);
     }
 
     const signalParameterString = (signal: Signal) => {
-        let variables = []
-        if (signal.window) {
-            variables.push(signal.window);
-        }
-        if (signal.fastWindow) {
-            variables.push(signal.fastWindow)
-        }
-        if (signal.slowWindow) {
-            variables.push(signal.slowWindow);
-        }
-        if (signal.signalWindow) {
-            variables.push(signal.signalWindow);
-        }
-        if (signal.aboveTarget) {
-            variables.push(`Above ${signal.targetValue}`);
-        } else {
-            variables.push(`Below ${signal.targetValue}`);
-        }
-        
-        if (variables.length === 0) {
-            return ""
-        }
-        let parameterString = "("
-        for (let i = 0; i < variables.length - 1; i++) {
-            parameterString += `${variables[i]}, `
-        }
-        parameterString += `${variables[variables.length - 1]})`
-        return parameterString;
+        const windows = [signal.window, signal.fastWindow, signal.slowWindow, signal.signalWindow]
+            .filter((value) => value);
+        const target = `${signal.aboveTarget ? "Above" : "Below"} ${signal.targetValue}`;
+        return windows.length > 0 ? `Window ${windows.join("/")} · ${target}` : target;
     }
-    
+
     return (
-        <ThemedView style={styles.indicatorSectionContainer}>
-            <ThemedText style={styles.signalSectionHeader}>{sectionTitle}</ThemedText>
+        <ThemedView style={styles.section}>
+            <View style={styles.titleRow}>
+                <View style={[styles.dot, { backgroundColor: tone === "gain" ? theme.gain : theme.loss }]} />
+                <ThemedText style={styles.title}>{sectionTitle}</ThemedText>
+            </View>
+
             {signals.map((signal, index) => (
-                <ThemedView key={index} style={styles.signalContainer}>
-                    <ThemedView style={styles.nameContainer}>
-                        <ThemedText>{signal.indicator.name}</ThemedText>
-                    </ThemedView>
-                    
-                    <ThemedView style={styles.parameterContainer}>
-                        <ThemedText style={styles.parameterText}>{signalParameterString(signal)}</ThemedText>
-                    </ThemedView>
-                    
-                    <ThemedView style={styles.buttonsContainer}>
-                        <TouchableOpacity onPress={() => deleteIndicator(index)}>
-                            <FontAwesome name="trash" size={28} color="red" />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setIndicatorIndex(index)}>
-                            <FontAwesome name="pencil-square-o" size={28} color={Colors.button.background} />
-                        </TouchableOpacity>
-                    </ThemedView>
-                </ThemedView>
+                <Card key={index} style={styles.signalCard}>
+                    <View style={styles.signalInfo}>
+                        <ThemedText type="defaultSemiBold">{signal.indicator.displayName}</ThemedText>
+                        <ThemedText type="muted" style={styles.parameterText}>{signalParameterString(signal)}</ThemedText>
+                    </View>
+
+                    <TouchableOpacity
+                        style={styles.iconButton}
+                        onPress={() => setIndicatorIndex(index)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Edit ${signal.indicator.displayName}`}
+                    >
+                        <Ionicons name="create-outline" size={22} color={theme.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.iconButton}
+                        onPress={() => deleteIndicator(index)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${signal.indicator.displayName}`}
+                    >
+                        <Ionicons name="trash-outline" size={22} color={theme.danger} />
+                    </TouchableOpacity>
+                </Card>
             ))}
-            
+
             {signals.length < 3 &&
-                <ThemedView style={{ alignItems: 'center' }}><GeneralButton title={buttonText} onPress={buttonAction}/></ThemedView>
+                <GeneralButton title={buttonText} variant="ghost" onPress={buttonAction} autoWidth={false} />
             }
         </ThemedView>
     )
 }
 
 const styles = StyleSheet.create({
-    indicatorSectionContainer: {
-        gap: 5,
+    section: {
+        gap: Spacing.sm,
     },
 
-    signalSectionHeader: {
-        textAlign: 'center', 
-        fontWeight: 700, 
-        fontSize: 24,
-        paddingTop: 0,
-        marginTop: 0
-    },
-
-    signalContainer: {
-        display: 'flex',
+    titleRow: {
         flexDirection: 'row',
-        width: '90%'
+        alignItems: 'center',
+        gap: Spacing.sm,
     },
 
-    nameContainer: {
+    dot: {
+        width: 10,
+        height: 10,
+        borderRadius: Radius.pill,
+    },
+
+    title: {
+        ...Type.subtitle,
+    },
+
+    signalCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: Spacing.sm,
+        paddingLeft: Spacing.lg,
+        paddingRight: Spacing.sm,
+    },
+
+    signalInfo: {
         flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center'
-    },
-
-    parameterContainer: {
-        flex: 2,
-        alignItems: 'center',
-        justifyContent: 'center'
     },
 
     parameterText: {
-        textAlign: 'center'
+        fontSize: 14,
     },
 
-    buttonsContainer: {
-        display: 'flex',
-        flexDirection: 'row',
-        flex: 1,
-        gap: 20,
+    iconButton: {
+        width: MIN_TOUCH,
+        height: MIN_TOUCH,
         alignItems: 'center',
-        justifyContent: 'center'
-    }
+        justifyContent: 'center',
+    },
 })

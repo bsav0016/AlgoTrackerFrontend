@@ -1,9 +1,8 @@
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
-import { Keyboard, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import { Keyboard, ScrollView, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
 import { useEffect, useState } from 'react';
 import { Signal } from "@/features/strategy/classes/Signal";
-import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { indicators } from "@/features/strategy/enums/Indicator";
 import { GeneralButton } from "@/components/GeneralButton";
@@ -21,7 +20,11 @@ import { Routes } from "@/app/Routes";
 import { useToast } from "@/contexts/ToastContext";
 import { SymbolModal } from "@/features/strategy/components/symbolModal";
 import { useBacktest } from "@/contexts/BacktestContext";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { Card } from "@/components/Card";
+import { TextField } from "@/components/TextField";
+import { SelectField } from "@/components/SelectField";
+import { SegmentedControl } from "@/components/SegmentedControl";
+import { Spacing, Type } from "@/constants/Theme";
 import { EditIndicator } from "@/features/strategy/components/editIndicator";
 import { Interval } from "@/features/strategy/dtos/SymbolsAndIntervalsResponseDTO";
 import { useUser } from "@/contexts/UserContext";
@@ -33,7 +36,6 @@ export default function StrategySelectionScreen() {
     const { updateAccountCredits } = useUser();
     const { routeTo } = useRouteTo();
     const { addToast } = useToast();
-    const textInputColor = useThemeColor({}, 'text');
     const { backtestData, setBacktestData } = useBacktest();
     const router = useRouter();
     
@@ -243,14 +245,6 @@ export default function StrategySelectionScreen() {
         }
     }
 
-    const switchStrategyType = () => {
-        if (functionType === StrategyType.Backtest) {
-            setFunctionType(StrategyType.Subscription)
-        } else {
-            setFunctionType(StrategyType.Backtest);
-        }
-    }
-
     const routeBack = () => {
         if (buyIndicatorIndex !== null) {
             setBuyIndicatorIndex(null);
@@ -262,18 +256,17 @@ export default function StrategySelectionScreen() {
         }
     }
 
-    function LineBreak() {
-        return (
-            <View style={{ borderBottomWidth: 1, borderColor: textInputColor, width: '100%'}} />
-        );
-    }
+    const formatCredits = (value: number) => `${+value.toFixed(2)}`;
+    const costNote = functionType === StrategyType.Backtest
+        ? `Costs ${formatCredits(backtestBaseCost)} credits per 5,000 data points queried, up to ${formatCredits(backtestBaseCost * backtestIterations)}.`
+        : `Costs ${interval?.monthly_charge ?? 1} credits per month until stopped or credits run out.`;
 
     return (
-        <CustomHeaderView 
+        <CustomHeaderView
             header={`Build Your ${buyIndicatorIndex === null && sellIndicatorIndex === null ? 'Strategy' : 'Signal'}`}
             goBack={routeBack}
         >
-            {loading ? 
+            {loading ?
             <LoadingScreen loadingMessage={loadingMessage} />
             : buyIndicatorIndex !== null ?
             <EditIndicator
@@ -290,191 +283,149 @@ export default function StrategySelectionScreen() {
                 setIndicatorIndex={setSellIndicatorIndex}
             />
             :
-            <ThemedView>
-                <ScrollView
-                    contentContainerStyle={{ flexGrow: 1 }} 
-                    keyboardShouldPersistTaps="handled"
-                    keyboardDismissMode="interactive"
-                    automaticallyAdjustContentInsets={false}
-                    contentInsetAdjustmentBehavior="never"
-                    maintainVisibleContentPosition={{ minIndexForVisible: 0, autoscrollToTopThreshold: 100 }}
-                    automaticallyAdjustKeyboardInsets={true}
-                >
-                    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>                
-                        <ThemedView style={styles.strategyView}>
-                            <GeneralButton
-                                title={`Convert to ${functionType === StrategyType.Backtest ? "Strategy" : "Backtest"}`}
-                                onPress={switchStrategyType}
-                            />
+            <ScrollView
+                contentContainerStyle={styles.content}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                automaticallyAdjustKeyboardInsets={true}
+            >
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                    <View style={styles.form}>
+                        <SegmentedControl
+                            options={[
+                                { value: StrategyType.Backtest, label: "Backtest" },
+                                { value: StrategyType.Subscription, label: "Subscribe" },
+                            ]}
+                            value={functionType}
+                            onChange={setFunctionType}
+                        />
 
-                            { functionType === StrategyType.Subscription &&
-                                <ThemedView style={styles.symbolContainer}>
-                                    <ThemedText>Title:</ThemedText>
-                                    <TextInput
-                                        style={[styles.input, { color: textInputColor }]}
-                                        returnKeyType="done"
-                                        value={title}
-                                        onChangeText={setTitle}
-                                        onSubmitEditing={Keyboard.dismiss}
-                                    />
-                                </ThemedView>
+                        <Card style={styles.marketCard}>
+                            {functionType === StrategyType.Subscription &&
+                                <TextField
+                                    label="Title"
+                                    placeholder="Name your strategy"
+                                    returnKeyType="done"
+                                    value={title}
+                                    onChangeText={setTitle}
+                                    onSubmitEditing={Keyboard.dismiss}
+                                />
                             }
 
-                            <ThemedView style={styles.symbolContainer}>
-                                <ThemedText>Symbol:</ThemedText>
-                                <TouchableOpacity style={[styles.dropdown, {flexDirection: 'row'}]} onPress={() => setSymbolModal(true)}>
-                                    <ThemedText>{symbol}</ThemedText>
-                                    <ThemedText>▼</ThemedText>
-                                </TouchableOpacity>
-                            </ThemedView>
+                            <View style={styles.row}>
+                                <View style={styles.rowItem}>
+                                    <SelectField label="Symbol" value={symbol} onPress={() => setSymbolModal(true)} />
+                                </View>
+                                <View style={styles.rowItem}>
+                                    <SelectField label="Candle interval" value={interval?.interval} onPress={() => setIntervalModal(true)} />
+                                </View>
+                            </View>
+                        </Card>
 
-                            <SymbolModal 
-                                availableSymbols={availableSymbols}
-                                setSymbol={setSymbol} 
-                                symbolModal={symbolModal} 
-                                setSymbolModal={setSymbolModal}
-                            />                                    
+                        <SymbolModal
+                            availableSymbols={availableSymbols}
+                            setSymbol={setSymbol}
+                            symbolModal={symbolModal}
+                            setSymbolModal={setSymbolModal}
+                            selectedSymbol={symbol}
+                        />
 
-                            <ThemedView style={styles.symbolContainer}>
-                                <ThemedText>Candle Interval:</ThemedText>
-                                <TouchableOpacity style={[styles.dropdown, {flexDirection: 'row'}]} onPress={() => setIntervalModal(true)}>
-                                    <ThemedText>{interval?.interval || ""}</ThemedText>
-                                    <ThemedText>▼</ThemedText>
-                                </TouchableOpacity>
-                            </ThemedView>
+                        <IntervalModal
+                            availableIntervals={availableIntervals}
+                            setIntervalLength={setInterval}
+                            intervalModal={intervalModal}
+                            setIntervalModal={setIntervalModal}
+                            selectedInterval={interval?.interval}
+                        />
 
-                            <LineBreak />
+                        <IndicatorSection
+                            sectionTitle="Buy signals"
+                            tone="gain"
+                            signals={buySignals}
+                            setSignals={setBuySignals}
+                            buttonText="Add buy indicator"
+                            buttonAction={addBuyIndicator}
+                            setIndicatorIndex={setBuyIndicatorIndex}
+                        />
 
-                            <IntervalModal 
-                                availableIntervals={availableIntervals}
-                                setIntervalLength={setInterval} 
-                                intervalModal={intervalModal} 
-                                setIntervalModal={setIntervalModal}
-                            />
+                        <IndicatorSection
+                            sectionTitle="Sell signals"
+                            tone="loss"
+                            signals={sellSignals}
+                            setSignals={setSellSignals}
+                            buttonText="Add sell indicator"
+                            buttonAction={addSellIndicator}
+                            setIndicatorIndex={setSellIndicatorIndex}
+                        />
 
-                            <IndicatorSection
-                                sectionTitle="Buy Signal(s)"
-                                signals={buySignals}
-                                setSignals={setBuySignals}
-                                buttonText="Add Buy Indicator"
-                                buttonAction={addBuyIndicator}
-                                setIndicatorIndex={setBuyIndicatorIndex}
-                            />
-                            <LineBreak />
-                            <IndicatorSection 
-                                sectionTitle="Sell Signal(s)"
-                                signals={sellSignals}
-                                setSignals={setSellSignals}
-                                buttonText="Add Sell Indicator"
-                                buttonAction={addSellIndicator}
-                                setIndicatorIndex={setSellIndicatorIndex}
-                            />
-                            <LineBreak />
+                        {functionType === StrategyType.Backtest &&
+                            <View style={styles.dateSection}>
+                                <ThemedText style={styles.sectionTitle}>Date range</ThemedText>
+                                <Card>
+                                    <DateInput
+                                        startDateMonth={startDateMonth} setStartDateMonth={setStartDateMonth}
+                                        startDateDay={startDateDay} setStartDateDay={setStartDateDay}
+                                        startDateYear={startDateYear} setStartDateYear={setStartDateYear}
+                                        endDateMonth={endDateMonth} setEndDateMonth={setEndDateMonth}
+                                        endDateDay={endDateDay} setEndDateDay={setEndDateDay}
+                                        endDateYear={endDateYear} setEndDateYear={setEndDateYear}
+                                    />
+                                </Card>
+                            </View>
+                        }
 
-                            { functionType === StrategyType.Backtest &&
-                            <>
-                                <DateInput
-                                    startDateMonth={startDateMonth} setStartDateMonth={setStartDateMonth}
-                                    startDateDay={startDateDay} setStartDateDay={setStartDateDay}
-                                    startDateYear={startDateYear} setStartDateYear={setStartDateYear}
-                                    endDateMonth={endDateMonth} setEndDateMonth={setEndDateMonth}
-                                    endDateDay={endDateDay} setEndDateDay={setEndDateDay}
-                                    endDateYear={endDateYear} setEndDateYear={setEndDateYear}
-                                />
-                            </>}
-
+                        <View style={styles.cta}>
+                            <ThemedText type="muted" style={styles.costNote}>{costNote}</ThemedText>
                             <GeneralButton
                                 title={functionType === StrategyType.Backtest ? "Run Backtest" : "Subscribe to Strategy"}
                                 onPress={clickedNext}
+                                autoWidth={false}
                             />
-                            
-                        </ThemedView> 
-                    </TouchableWithoutFeedback>
-                </ScrollView>
-            </ThemedView>
+                        </View>
+                    </View>
+                </TouchableWithoutFeedback>
+            </ScrollView>
             }
         </CustomHeaderView>
     )
 }
 
 const styles = StyleSheet.create({
-    strategyView: {
-        flex: 1,
-        flexDirection: 'column',
-        gap: 15,
-        alignItems: 'center'
+    content: {
+        padding: Spacing.lg,
     },
 
-    symbolContainer: {
-        flex: 1,
-        display: 'flex',
+    form: {
+        gap: Spacing.xl,
+    },
+
+    marketCard: {
+        gap: Spacing.lg,
+    },
+
+    row: {
         flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 5
+        gap: Spacing.md,
     },
 
-    input: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 10,
-        fontSize: 18,
-        width: 100,
-        textAlign: "center",
+    rowItem: {
+        flex: 1,
     },
 
-    dropdown: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
-        width: 100,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
+    sectionTitle: {
+        ...Type.subtitle,
     },
 
-    dateInputContainer: {
-        marginBottom: 10,
+    dateSection: {
+        gap: Spacing.sm,
     },
 
-    inputLabel: {
+    cta: {
+        gap: Spacing.sm,
+    },
+
+    costNote: {
         fontSize: 14,
-        color: '#555',
-    },
-
-    dateInputsRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-
-    dateInput: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        padding: 10,
-        fontSize: 16,
-        width: 50,
         textAlign: 'center',
     },
-
-    saveButton: {
-        backgroundColor: '#4CAF50',
-        padding: 10,
-        borderRadius: 8,
-        marginTop: 20,
-        alignItems: 'center',
-    },
-
-    saveButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-    },
-
-    costNoteView: {
-        width: '90%',
-        alignSelf: 'center'
-    }
 })

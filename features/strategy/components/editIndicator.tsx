@@ -1,11 +1,16 @@
 import { ThemedText } from "@/components/ThemedText";
 import { Signal } from "../classes/Signal";
 import { ThemedView } from "@/components/ThemedView";
-import { Modal, StyleSheet, Switch, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import { StyleSheet } from "react-native";
 import { indicators, defaultParams, fastWindowString, signalWindowString, slowWindowString, targetValueString, windowString, IndicatorName } from "../enums/Indicator";
 import { GeneralButton } from "@/components/GeneralButton";
-import { useState } from "react";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { useEffect, useState } from "react";
+import { TextField } from "@/components/TextField";
+import { SelectField } from "@/components/SelectField";
+import { OptionModal } from "@/components/OptionModal";
+import { SegmentedControl } from "@/components/SegmentedControl";
+import { Card } from "@/components/Card";
+import { Spacing } from "@/constants/Theme";
 import { useToast } from "@/contexts/ToastContext";
 
 interface EditIndicatorProps {
@@ -21,14 +26,41 @@ export function EditIndicator({
     indicatorIndex,
     setIndicatorIndex
 }: EditIndicatorProps) {  
-    const textInputColor = useThemeColor({}, 'text');
     const { addToast } = useToast();
     const [modal, setModal] = useState<boolean>(false);
     const signal = signals[indicatorIndex];
-    const [formInput, setFormInput] = useState<string>('');
+    const [formInput, setFormInput] = useState<string>(String(signals[indicatorIndex]?.targetValue ?? ''));
+
+    useEffect(() => {
+        setFormInput(String(signal.targetValue));
+    }, [signal.indicator.name]);
+
+    const updateSignal = (changes: Partial<{
+        indicator: typeof signal.indicator;
+        targetValue: number;
+        aboveTarget: boolean;
+        window: number | null;
+        fastWindow: number | null;
+        slowWindow: number | null;
+        signalWindow: number | null;
+    }>) => {
+        const merged = { ...signal, ...changes };
+        const newSignal = new Signal(
+            merged.indicator,
+            merged.targetValue,
+            merged.aboveTarget,
+            merged.window,
+            merged.fastWindow,
+            merged.slowWindow,
+            merged.signalWindow
+        );
+        const newSignals = [...signals];
+        newSignals[indicatorIndex] = newSignal;
+        setSignals(newSignals);
+    };
 
     const maxWindow = 200;
-    const validateInput = () => {
+    const validateInput = (targetValue: number) => {
         if (signal.window !== null && (signal.window < 1 || signal.window > maxWindow)) {
             addToast(`Window size must be between 1 and ${maxWindow}`);
             return;
@@ -37,23 +69,23 @@ export function EditIndicator({
         if (
             [IndicatorName.rsi, IndicatorName.so, IndicatorName.adx].includes(signal.indicator.name)
         ) {
-            if (signal.targetValue <= 0 || signal.targetValue >= 100) {
+            if (targetValue <= 0 || targetValue >= 100) {
                 addToast("Target value must be between 0 and 100, non-inclusive");
                 return;
             }
         }
 
         if ([IndicatorName.sma, IndicatorName.ema].includes(signal.indicator.name)) {
-            if (signal.targetValue <= 0) {
+            if (targetValue <= 0) {
                 addToast("Target value must be greater than 0");
                 return;
-            } else if (signal.targetValue <= 0.5 || signal.targetValue >= 1.5) {
+            } else if (targetValue <= 0.5 || targetValue >= 1.5) {
                 addToast("Warning: Your target value is acceptable, but extreme. 1.0 is the default");
             }
         }
 
         if (signal.indicator.name === IndicatorName.bbp) {
-            if (signal.targetValue < -3.0 || signal.targetValue > 3.0) {
+            if (targetValue < -3.0 || targetValue > 3.0) {
                 addToast("Warning: Your target value is acceptable, but extreme. -2.0 or 2.0 is default, and anything outside of 3.0 standard deviations will rarely trigger a signal")
             }
         }
@@ -75,271 +107,148 @@ export function EditIndicator({
             }
         }
 
+        if (targetValue !== signal.targetValue) {
+            updateSignal({ targetValue });
+        }
         setIndicatorIndex(null);
     }
     
+    const windowFields: { label: string; key: "window" | "fastWindow" | "slowWindow" | "signalWindow" }[] = [
+        { label: windowString, key: "window" },
+        { label: fastWindowString, key: "fastWindow" },
+        { label: slowWindowString, key: "slowWindow" },
+        { label: signalWindowString, key: "signalWindow" },
+    ];
+
+    const parseTargetValue = (): number => {
+        let cleanedText = formInput.replace(/[^0-9.-]/g, '');
+        cleanedText = cleanedText.replace(/(?!^)-/g, '');
+        if ((cleanedText.match(/\./g) || []).length > 1) {
+            cleanedText = cleanedText.replace(/\.+$/, '');
+        }
+
+        let newNumber: number;
+        if ([IndicatorName.rsi, IndicatorName.adx, IndicatorName.so].includes(signal.indicator.name)) {
+            cleanedText = cleanedText.replace(/-/g, '');
+            cleanedText = cleanedText.replace(/^(\d{0,2})(\.\d{0,4})?.*$/, '$1$2');
+            newNumber = cleanedText === "" ? 0 : parseFloat(cleanedText);
+        } else if ([IndicatorName.ema, IndicatorName.sma].includes(signal.indicator.name)) {
+            cleanedText = cleanedText.replace(/-/g, '');
+            cleanedText = cleanedText.replace(/^(\d{0,1})(\.\d{0,4})?.*$/, '$1$2');
+            newNumber = cleanedText === "" ? 0 : parseFloat(cleanedText);
+        } else {
+            newNumber = cleanedText === "" || cleanedText === "-" ? 0 : parseFloat(cleanedText);
+        }
+
+        return newNumber;
+    };
+
+    const commitTargetValue = () => {
+        const newNumber = parseTargetValue();
+        setFormInput(newNumber.toString());
+        updateSignal({ targetValue: newNumber });
+    };
+
+    // Save must not rely on the field having blurred first: tapping a button does not blur a TextInput on Android.
+    const saveSignal = () => {
+        const newNumber = parseTargetValue();
+        setFormInput(newNumber.toString());
+        validateInput(newNumber);
+    };
+
     return (
-        <ThemedView style={styles.signalContainer}>
-            <ThemedView style={styles.parameterContainer}>
-                <TouchableOpacity 
-                    style={[styles.dropdown, {flexDirection: 'row'}]} 
+        <ThemedView style={styles.container}>
+            <Card style={styles.card}>
+                <SelectField
+                    label="Indicator"
+                    value={signal.indicator.displayName}
                     onPress={() => setModal(true)}
-                >
-                    <ThemedText>{signal.indicator.displayName}</ThemedText>
-                    <ThemedText>▼</ThemedText>
-                </TouchableOpacity>
-            </ThemedView>
+                />
 
-            <Modal
-                visible={modal}
-                animationType="fade"
-                transparent={true}
-                onRequestClose={() => setModal(false)}
-            >
-                <TouchableWithoutFeedback onPress={() => setModal(false)}>
-                    <ThemedView style={styles.modalOverlay}>
-                        <ThemedView style={styles.modalContainer}>
-                            {indicators.map((indicator) => (
-                                <TouchableOpacity
-                                    key={indicator.name}
-                                    style={styles.modalOption}
-                                    onPress={() => {
-                                        const newSignal = new Signal(
-                                            indicator, 
-                                            defaultParams[indicator.name][targetValueString] ?? 0, 
-                                            true, 
-                                            defaultParams[indicator.name][windowString],
-                                            defaultParams[indicator.name][fastWindowString],
-                                            defaultParams[indicator.name][slowWindowString],
-                                            defaultParams[indicator.name][signalWindowString]
-                                        );
-                                        const newSignals = [...signals];
-                                        newSignals[indicatorIndex] = newSignal;
-                                        setSignals(newSignals);
-                                        setModal(false);
-                                    }}
-                                >
-                                    <ThemedText>{indicator.displayName}</ThemedText>
-                                </TouchableOpacity>
-                            ))}
-                        </ThemedView>
-                    </ThemedView>
-                </TouchableWithoutFeedback>
-            </Modal>
-
-            {[
-                { label: windowString, value: signal.window },
-                { label: fastWindowString, value: signal.fastWindow },
-                { label: slowWindowString, value: signal.slowWindow },
-                { label: signalWindowString, value: signal.signalWindow }
-            ].map(({ label, value }) => (
-                value !== null && (
-                    <ThemedView key={label} style={styles.parameterContainer}>
-                        <ThemedText>{label}:</ThemedText>
-                        <TextInput
-                            style={[styles.input, { color: textInputColor }]}
+                {windowFields.map(({ label, key }) => (
+                    signal[key] !== null && (
+                        <TextField
+                            key={label}
+                            label={label}
                             keyboardType="numeric"
                             returnKeyType="done"
-                            value={value.toString()}
+                            value={String(signal[key])}
                             onChangeText={(text) => {
-                                const cleanedText = text.replace(/\D/g, '').slice(0, 3);                            
+                                const cleanedText = text.replace(/\D/g, '').slice(0, 3);
                                 const newNumber = cleanedText === '' ? 0 : parseInt(cleanedText, 10);
-                            
-                                const newSignal = new Signal(
-                                    signal.indicator, 
-                                    signal.targetValue, 
-                                    signal.aboveTarget, 
-                                    label === windowString ? newNumber : signal.window,
-                                    label === fastWindowString ? newNumber : signal.fastWindow,
-                                    label === slowWindowString ? newNumber : signal.slowWindow,
-                                    label === signalWindowString ? newNumber : signal.signalWindow
-                                );
-                            
-                                const newSignals = [...signals];
-                                newSignals[indicatorIndex] = newSignal;
-                                setSignals(newSignals);
+                                updateSignal({ [key]: newNumber });
                             }}
                         />
-                    </ThemedView>
-                )
-            ))}
+                    )
+                ))}
 
-            <ThemedView style={styles.parameterContainer}>
-                <ThemedText>Target Value:</ThemedText>
-                <TextInput
-                    style={[styles.input, { color: textInputColor }]}
+                <TextField
+                    label="Target value"
                     keyboardType={[IndicatorName.macd, IndicatorName.bbp].includes(signal.indicator.name) ? "default" : "numeric"}
                     returnKeyType="done"
                     value={formInput}
-                    onChangeText={(text) => setFormInput(text)}
-                    onBlur={() => {
-                        let cleanedText = formInput.replace(/[^0-9.-]/g, '');
-                        cleanedText = cleanedText.replace(/(?!^)-/g, '');
-                        if ((cleanedText.match(/\./g) || []).length > 1) {
-                            cleanedText = cleanedText.replace(/\.+$/, '');
-                        }
-            
-                        let newNumber: number;
-                        if ([IndicatorName.rsi, IndicatorName.adx, IndicatorName.so].includes(signal.indicator.name)) {  
-                            cleanedText = cleanedText.replace(/-/g, '');
-                            cleanedText = cleanedText.replace(/^(\d{0,2})(\.\d{0,4})?.*$/, '$1$2');
-                            newNumber = cleanedText === "" ? 0 : parseFloat(cleanedText);
-                        } else if ([IndicatorName.ema, IndicatorName.sma].includes(signal.indicator.name)) {
-                            cleanedText = cleanedText.replace(/-/g, '');
-                            cleanedText = cleanedText.replace(/^(\d{0,1})(\.\d{0,4})?.*$/, '$1$2');
-                            newNumber = cleanedText === "" ? 0 : parseFloat(cleanedText);
-                        } else {
-                            newNumber = cleanedText === "" || cleanedText === "-" ? 0 : parseFloat(cleanedText);
-                        }
-            
-                        setFormInput(newNumber.toString());
-            
-                        const newSignal = new Signal(
-                            signal.indicator, 
-                            newNumber, 
-                            signal.aboveTarget, 
-                            signal.window,
-                            signal.fastWindow,
-                            signal.slowWindow,
-                            signal.signalWindow
-                        );
-            
-                        const newSignals = [...signals];
-                        newSignals[indicatorIndex] = newSignal;
-                        setSignals(newSignals);
-                    }}
+                    onChangeText={setFormInput}
+                    onBlur={commitTargetValue}
                 />
-            </ThemedView>
 
-
-            <ThemedView style={styles.triggerText}>
-                <ThemedText>Trigger when signal greater than or less than target?</ThemedText>
-            </ThemedView>
-            
-            <ThemedView style={styles.buttonContainer}>
-                <ThemedView style={styles.symbolContainer}>
-                    <ThemedText>Greater</ThemedText>
-                    <Switch value={signal.aboveTarget} onValueChange={(value) => {
-                        const newSignal = new Signal(
-                            signal.indicator, 
-                            signal.targetValue, 
-                            value,
-                            signal.window,
-                            signal.fastWindow,
-                            signal.slowWindow,
-                            signal.signalWindow
-                        );
-                        const newSignals = [...signals];
-                        newSignals[indicatorIndex] = newSignal;
-                        setSignals(newSignals);
-                    }}/>
+                <ThemedView style={styles.triggerGroup}>
+                    <ThemedText type="muted" style={styles.triggerLabel}>Trigger when the signal is</ThemedText>
+                    <SegmentedControl
+                        options={[
+                            { value: "above", label: "Greater than target" },
+                            { value: "below", label: "Less than target" },
+                        ]}
+                        value={signal.aboveTarget ? "above" : "below"}
+                        onChange={(value) => updateSignal({ aboveTarget: value === "above" })}
+                    />
                 </ThemedView>
+            </Card>
 
-                <ThemedView style={styles.symbolContainer}>
-                    <ThemedText>Less</ThemedText>
-                    <Switch value={!signal.aboveTarget} onValueChange={(value) => {
-                        const newSignal = new Signal(
-                            signal.indicator, 
-                            signal.targetValue, 
-                            !value, 
-                            signal.window,
-                            signal.fastWindow,
-                            signal.slowWindow,
-                            signal.signalWindow
-                        );
-                        const newSignals = [...signals];
-                        newSignals[indicatorIndex] = newSignal;
-                        setSignals(newSignals);
-                    }}/>
-                </ThemedView>
-            </ThemedView>
+            <GeneralButton title="Save" onPress={saveSignal} autoWidth={false} />
 
-            <GeneralButton title="Save" onPress={validateInput}/>
-            
+            <OptionModal
+                visible={modal}
+                title="Indicator"
+                options={indicators.map((indicator) => ({ key: indicator.name, label: indicator.displayName }))}
+                selectedKey={signal.indicator.name}
+                onSelect={(key) => {
+                    const indicator = indicators.find((i) => i.name === key);
+                    if (!indicator) {
+                        return;
+                    }
+                    updateSignal({
+                        indicator,
+                        targetValue: defaultParams[indicator.name][targetValueString] ?? 0,
+                        aboveTarget: true,
+                        window: defaultParams[indicator.name][windowString],
+                        fastWindow: defaultParams[indicator.name][fastWindowString],
+                        slowWindow: defaultParams[indicator.name][slowWindowString],
+                        signalWindow: defaultParams[indicator.name][signalWindowString],
+                    });
+                }}
+                onClose={() => setModal(false)}
+            />
         </ThemedView>
     )
 }
 
 const styles = StyleSheet.create({
-    signalContainer: {
-        gap: 15,
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center'
+    container: {
+        padding: Spacing.lg,
+        gap: Spacing.lg,
     },
 
-    parameterContainer: {
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 10,
-        marginTop: 20
+    card: {
+        gap: Spacing.lg,
     },
 
-    buttonContainer: {
-        display: 'flex',
-        flexDirection: 'row',
-        gap: 100,
-        marginBottom: 20
+    triggerGroup: {
+        gap: Spacing.xs,
+        backgroundColor: 'transparent',
     },
 
-    firstContainer: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'center',
+    triggerLabel: {
+        fontSize: 12,
+        fontWeight: '600',
     },
-
-    symbolContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 5
-    },
-
-    input: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        padding: 10,
-        fontSize: 18,
-        width: 100,
-        textAlign: "center",
-    },
-
-    triggerText: {
-        maxWidth: '80%', 
-        alignSelf: 'center', 
-        marginTop: 10
-    },
-
-    dropdown: {
-        borderWidth: 1,
-        borderColor: "#ccc",
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
-        width: 100,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-    },
-
-    modalOverlay: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-    },
-
-    modalContainer: {
-        padding: 20,
-        borderRadius: 10,
-        width: 250,
-    },
-
-    modalOption: {
-        padding: 10,
-        borderBottomWidth: 1,
-        borderColor: "#ccc",
-    }
-})
+});
