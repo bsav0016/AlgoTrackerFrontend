@@ -2,7 +2,7 @@
 
 Mobile app for building simple technical-indicator trading strategies, back-testing them on historical price data, and subscribing to a strategy so you get a push notification when it signals a trade. Built with Expo / React Native; the API lives in [AlgoTrackerBackend](https://github.com/bsav0016/AlgoTrackerBackend).
 
-<p><img src="docs/screenshots/home.png" alt="Home screen: credits, shortcuts and the list of subscribed strategies with position and return" width="24%"> <img src="docs/screenshots/strategy-builder.png" alt="Building a strategy: symbol, candle interval, buy and sell signals and a date range" width="24%"> <img src="docs/screenshots/backtest-results.png" alt="Backtest results: price chart with buy and sell markers, and return, Sharpe and Sortino ratios" width="24%"> <img src="docs/screenshots/strategy-detail.png" alt="A subscribed strategy: strategy return against asset return, and its trades" width="24%"></p>
+<p><img src="docs/screenshots/home.png" alt="Home screen: credits, backtest and subscribe actions, and a card per subscribed strategy with its position and return" width="24%"> <img src="docs/screenshots/strategy-builder.png" alt="Building a strategy: symbol, candle interval, buy and sell signals, a date range and the cost of running it" width="24%"> <img src="docs/screenshots/backtest-results.png" alt="Backtest results: price chart with buy and sell markers, and return, Sharpe and Sortino ratios" width="24%"> <img src="docs/screenshots/strategy-detail.png" alt="A subscribed strategy: strategy return against asset return, next charge date and its trades" width="24%"></p>
 
 *Screenshots are from the Android build running against a local copy of the backend with a demo account and real historical prices. The positions, returns and trades on the home and strategy screens are each strategy's one-year backtest result, not live signals. More in [docs/screenshots](docs/screenshots) (for example the [signal builder](docs/screenshots/signal-builder.png)).*
 
@@ -78,6 +78,7 @@ The tests cover environment resolution (`config/resolveConfig.test.js`) and API 
 - **Backtesting on the server.** Pricing data, indicators and metrics are computed by the backend (pandas); the app only configures strategies and renders results.
 - **Credits instead of subscriptions-per-feature.** Usage costs come from the backend (`backtestBaseCost`, `backtestIterations`), so pricing can change without an app release.
 - **Two payment paths.** Stripe for card payments and RevenueCat for store purchases, both crediting the same account balance.
+- **One small design system.** Colors (light and dark), spacing, radii and type sizes live in `constants/Colors.ts` and `constants/Theme.ts`; shared pieces (`Card`, `Badge`, `TextField`, `SelectField`, `SegmentedControl`, `GeneralButton`) live in `components/`. Screens use those instead of hard-coded styles.
 - **Config chosen by EAS build profile**, so the production build uses the production API and live Stripe key without code changes.
 
 ## Limitations
