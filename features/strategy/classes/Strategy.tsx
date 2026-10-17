@@ -88,6 +88,34 @@ export class Strategy {
         })
     }
 
+    /**
+     * Rebuilds a strategy from the copy kept in AsyncStorage (see UserProvider). JSON.stringify turned every Date
+     * into a string, wrote the signals in the API's shape (Signal.toJSON) and the rest in camelCase, so the dates and
+     * classes have to be put back before anything calls .getTime() or similar on them.
+     */
+    static fromStored(stored: any): Strategy {
+        const buySignals: Signal[] = (stored.buySignals ?? []).map((signal: SignalData) => Signal.fromData(signal));
+        const sellSignals: Signal[] = (stored.sellSignals ?? []).map((signal: SignalData) => Signal.fromData(signal));
+        const trades: Trade[] = (stored.trades ?? []).map(
+            (trade: { date: string; price: number; isBuy: boolean }) => new Trade(new Date(trade.date), trade.price, trade.isBuy)
+        );
+
+        return new Strategy(
+            stored.id,
+            stored.title,
+            stored.symbol,
+            stored.interval,
+            buySignals,
+            sellSignals,
+            trades,
+            stored.strategyReturn,
+            stored.assetReturn,
+            stored.position,
+            new Date(stored.chargeUserDate),
+            stored.active
+        );
+    }
+
     static fromData(data: StrategyData): Strategy {
         let buySignals: Signal[] = [];
         let sellSignals: Signal[] = [];
