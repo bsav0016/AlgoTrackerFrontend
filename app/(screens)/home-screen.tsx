@@ -5,10 +5,13 @@ import { ThemedText } from "@/components/ThemedText";
 import { useRouteTo } from "@/contexts/RouteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
-import { Platform, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Routes } from "@/app/Routes";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
-import { ThemedView } from "@/components/ThemedView";
+import { Card } from "@/components/Card";
+import { Badge, BadgeTone } from "@/components/Badge";
+import { EmptyState } from "@/components/EmptyState";
+import { Spacing, Type, useTheme } from "@/constants/Theme";
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
@@ -85,6 +88,7 @@ const HomeScreen = () => {
     const { addToast } = useToast();
     const { routeTo } = useRouteTo();
     const { setStrategy } = useStrategy();
+    const theme = useTheme();
 
     const [loading, setLoading] = useState<boolean>(false);
 
@@ -188,50 +192,56 @@ const HomeScreen = () => {
         }
     }
 
+    const positionTone = (position: number): BadgeTone =>
+        position < 1 ? "loss" : position > 2 ? "gain" : "neutral";
+
     return (
         <>
         { loading ?
         <LoadingScreen loadingMessage="Refreshing data"/>
         :
         <CustomHeaderView header={`Welcome back, ${userRef.current?.firstName}!`} canGoBack={false} goProfile={true}>
-            <ThemedView style={styles.buttonContainer}>
-                <GeneralButton title="How it Works" onPress={goToHowItWorks} />
-                <GeneralButton title="Run a Backtest" onPress={() => goToStrategySelection(StrategyType.Backtest)} />
-                <GeneralButton title="Subscribe to a Strategy" onPress={() => goToStrategySelection(StrategyType.Subscription)} />
-                <GeneralButton title="Support" onPress={goToSupport} />
-            </ThemedView>
-            
-            <ThemedText style={styles.strategiesHeader}>Strategy Subscriptions:</ThemedText>
-            <ThemedView style={styles.strategyContainer}>
-                <ThemedText style={[styles.strategyTitleText, styles.columnHeaderText]}>Title</ThemedText>
-                <ThemedText style={[styles.strategyPositionText, styles.columnHeaderText]}>Position</ThemedText>
-                <ThemedText style={[styles.strategyReturnText, styles.columnHeaderText]}>Return</ThemedText>
-            </ThemedView>
+            <ScrollView
+                contentContainerStyle={styles.content}
+                keyboardShouldPersistTaps="handled"
+            >
+                <GeneralButton title="Run a Backtest" onPress={() => goToStrategySelection(StrategyType.Backtest)} autoWidth={false} />
+                <GeneralButton title="Subscribe to a Strategy" variant="outline" onPress={() => goToStrategySelection(StrategyType.Subscription)} autoWidth={false} />
 
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-                <ThemedView style={styles.strategiesContainer}>
-                    
-                    {/*{TestStrategies.map((strategy, index) => ( can use example strategies here*/}
-                    {userRef.current?.strategies.map((strategy, index) => (
-                        <TouchableOpacity onPress={() => goToViewStrategy(index)} key={index}>
-                            <ThemedView style={[
-                                styles.strategyContainer,
-                                { backgroundColor: strategy.position < 1 ? 'red' : 
-                                    strategy.position === 1 ? '#e87474' :
-                                    strategy.position === 2 ? '#6dbf71':
-                                    '#14871a'
-                                }
-                            ]}>
-                                <ThemedText style={styles.strategyTitleText}>{strategy.title}</ThemedText>
-                                <ThemedText style={styles.strategyPositionText}>{PositionMapping[strategy.position] ?? "Hold"}</ThemedText>
-                                <ThemedText style={styles.strategyReturnText}>
-                                    {((strategy.strategyReturn - 1) * 100).toFixed(1)}%
+                <ThemedText style={styles.sectionHeader}>Your strategies</ThemedText>
+
+                {/*{TestStrategies.map((strategy, index) => ( can use example strategies here*/}
+                {userRef.current?.strategies.length ? userRef.current.strategies.map((strategy, index) => {
+                    const returnPct = (strategy.strategyReturn - 1) * 100;
+                    return (
+                        <TouchableOpacity
+                            onPress={() => goToViewStrategy(index)}
+                            key={index}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${strategy.title}, ${PositionMapping[strategy.position] ?? "Hold"}, return ${returnPct.toFixed(1)} percent`}
+                        >
+                            <Card style={styles.strategyCard}>
+                                <View style={styles.strategyInfo}>
+                                    <ThemedText type="defaultSemiBold" numberOfLines={1}>{strategy.title}</ThemedText>
+                                    <Badge label={PositionMapping[strategy.position] ?? "Hold"} tone={positionTone(strategy.position)} />
+                                </View>
+                                <ThemedText style={[styles.returnText, { color: returnPct >= 0 ? theme.gain : theme.loss }]}>
+                                    {`${returnPct >= 0 ? "+" : ""}${returnPct.toFixed(1)}%`}
                                 </ThemedText>
-                            </ThemedView>
+                            </Card>
                         </TouchableOpacity>
-                    ))
-                    }
-                </ThemedView>
+                    );
+                }) : (
+                    <EmptyState
+                        title="No subscriptions yet"
+                        message="Build a strategy and subscribe to get a push notification when it signals a trade."
+                    />
+                )}
+
+                <View style={styles.footerLinks}>
+                    <GeneralButton title="How it Works" variant="ghost" onPress={goToHowItWorks} />
+                    <GeneralButton title="Support" variant="ghost" onPress={goToSupport} />
+                </View>
             </ScrollView>
         </CustomHeaderView>
         }
@@ -240,56 +250,38 @@ const HomeScreen = () => {
 }
 
 const styles = StyleSheet.create({
-    buttonContainer: {
-        marginTop: 30,
-        gap: 5,
-        width: '75%',
-        alignSelf: 'center'
+    content: {
+        padding: Spacing.lg,
+        gap: Spacing.md,
     },
 
-    strategiesHeader: {
-        marginTop: 30,
-        marginBottom: 10,
-        textAlign: 'center',
-        fontSize: 22,
-        fontWeight: 600,
-        textDecorationLine: 'underline'
+    sectionHeader: {
+        ...Type.subtitle,
+        marginTop: Spacing.lg,
     },
 
-    columnHeaderText: {
-        fontWeight: 500,
-        fontSize: 20,
-        textDecorationLine: 'underline'
-    },
-
-    strategiesContainer: {
-        alignSelf: 'center',
-        width: '100%',
-        gap: 10
-    },    
-
-    strategyContainer: {
-        display: 'flex',
+    strategyCard: {
         flexDirection: 'row',
-        paddingVertical: 10,
-        paddingHorizontal: 10,
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: Spacing.md,
     },
 
-    strategyTitleText: {
-        flex: 4,
-        textAlign: 'center',
+    strategyInfo: {
+        flex: 1,
+        gap: Spacing.xs,
     },
 
-    strategyPositionText: {
-        flex: 3,
-        textAlign: 'center',
+    returnText: {
+        ...Type.subtitle,
     },
 
-    strategyReturnText: {
-        flex: 3,
-        textAlign: 'center',
-    }
+    footerLinks: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: Spacing.sm,
+        marginTop: Spacing.md,
+    },
 })
 
 export default HomeScreen;

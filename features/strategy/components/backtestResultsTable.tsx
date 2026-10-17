@@ -1,8 +1,8 @@
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { Card } from '@/components/Card';
+import { Spacing, Type, useTheme } from '@/constants/Theme';
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 interface BacktestResultsTableProps {
     percentReturn: number | null;
@@ -13,8 +13,6 @@ interface BacktestResultsTableProps {
     sortinoRatioAdj: number | null;
 }
 
-const desiredCellPadding = 6
-
 export default function BacktestResultsTable({
     percentReturn,
     percentReturnAdj,
@@ -23,77 +21,87 @@ export default function BacktestResultsTable({
     sortinoRatio,
     sortinoRatioAdj
 }: BacktestResultsTableProps) {
-    const borderColor = useThemeColor({}, "text");
+    const theme = useTheme();
+
+    const format = (value: number | null) => value !== null ? value.toFixed(2) : "-";
+    const gainLossColor = (value: number | null) =>
+        value === null ? theme.text : value >= 0 ? theme.gain : theme.loss;
+
+    const rows: { label: string; baseline: number | null; adjusted: number | null; colored?: boolean }[] = [
+        { label: "Percent gain", baseline: percentReturn, adjusted: percentReturnAdj, colored: true },
+        { label: "Sharpe ratio", baseline: sharpeRatio, adjusted: sharpeRatioAdj },
+        { label: "Sortino ratio", baseline: sortinoRatio, adjusted: sortinoRatioAdj },
+    ];
+
     return (
-        <ThemedView>
-            <ThemedView style={[styles.tableContainer, { borderColor: borderColor }]}>
-                <ThemedView style={[styles.row, { borderColor: borderColor}]}>
-                    <ThemedText style={[styles.cell, { borderColor: borderColor }]}> </ThemedText>
-                    <ThemedText style={[styles.cell, styles.boldText, { flex: 2, paddingHorizontal: desiredCellPadding * 2 }]}>Baseline</ThemedText>
-                </ThemedView>
-                <ThemedView style={[styles.row, { borderColor: borderColor}]}>
-                    <ThemedText style={[styles.cell, { borderColor: borderColor }]}> </ThemedText>
-                    <ThemedText style={[styles.cell, styles.boldText, { borderColor: borderColor }]}>vs. 0% Returns</ThemedText>
-                    <ThemedText style={[styles.cell, styles.boldText, { borderColor: borderColor }]}>vs. Asset Returns</ThemedText>
-                </ThemedView>
-                <ThemedView style={[styles.row, { borderColor: borderColor}]}>
-                    <ThemedText style={[styles.cell, styles.boldText, { borderColor: borderColor }]}>Percent Gain</ThemedText>
-                    <ThemedText style={[styles.cell, { borderColor: borderColor }]}>
-                        {percentReturn !== null ? percentReturn.toFixed(2) : "-"}
+        <Card style={styles.card}>
+            <View style={[styles.row, styles.headerRow, { borderColor: theme.border }]}>
+                <View style={styles.labelCell} />
+                <ThemedText type="muted" style={[styles.valueCell, styles.headerText]}>vs. 0% returns</ThemedText>
+                <ThemedText type="muted" style={[styles.valueCell, styles.headerText]}>vs. asset returns</ThemedText>
+            </View>
+
+            {rows.map((row, index) => (
+                <View
+                    key={row.label}
+                    style={[
+                        styles.row,
+                        index < rows.length - 1 && { borderColor: theme.border, borderBottomWidth: StyleSheet.hairlineWidth },
+                    ]}
+                >
+                    <ThemedText type="defaultSemiBold" style={styles.labelCell}>{row.label}</ThemedText>
+                    <ThemedText style={[styles.valueCell, styles.value, row.colored && { color: gainLossColor(row.baseline) }]}>
+                        {format(row.baseline)}
                     </ThemedText>
-                    <ThemedText style={[styles.cell, { borderColor: borderColor }]}>
-                        {percentReturnAdj !== null ? percentReturnAdj.toFixed(2) : "-"}
+                    <ThemedText style={[styles.valueCell, styles.value, row.colored && { color: gainLossColor(row.adjusted) }]}>
+                        {format(row.adjusted)}
                     </ThemedText>
-                </ThemedView>
-                <ThemedView style={[styles.row, { borderColor: borderColor}]}>
-                    <ThemedText style={[styles.cell, styles.boldText, { borderColor: borderColor }]}>Sharpe Ratio</ThemedText>
-                    <ThemedText style={[styles.cell, { borderColor: borderColor }]}>
-                        {sharpeRatio !== null ? sharpeRatio.toFixed(2) : "-"}
-                    </ThemedText>
-                    <ThemedText style={[styles.cell, { borderColor: borderColor }]}>
-                        {sharpeRatioAdj !== null ? sharpeRatioAdj.toFixed(2) : "-"}
-                    </ThemedText>
-                </ThemedView>
-                <ThemedView style={[styles.row, { borderColor: borderColor}]}>
-                    <ThemedText style={[styles.cell, styles.boldText, { borderColor: borderColor }]}>Sortino Ratio</ThemedText>
-                    <ThemedText style={[styles.cell, { borderColor: borderColor }]}>
-                        {sortinoRatio !== null ? sortinoRatio.toFixed(2) : "-"}
-                    </ThemedText>
-                    <ThemedText style={styles.cell}>
-                        {sortinoRatioAdj !== null ? sortinoRatioAdj.toFixed(2) : "-"}
-                    </ThemedText>
-                </ThemedView>
-            </ThemedView>
-            <ThemedText style={styles.noteText}>**All values are annualized**</ThemedText>
-        </ThemedView>
+                </View>
+            ))}
+
+            <ThemedText type="muted" style={styles.noteText}>All values are annualized</ThemedText>
+        </Card>
     );
 }
 
 const styles = StyleSheet.create({
-    tableContainer: {
-        margin: 10,
-        borderWidth: 1,
-        borderRadius: 4,
+    card: {
+        paddingVertical: Spacing.sm,
     },
 
     row: {
         flexDirection: 'row',
-        borderBottomWidth: 1,
+        alignItems: 'center',
+        paddingVertical: Spacing.md,
+        gap: Spacing.sm,
     },
 
-    cell: {
-        flex: 1,
-        textAlign: 'center',
-        padding: desiredCellPadding,
-        borderRightWidth: 1,
-        height: '100%'
+    headerRow: {
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        paddingVertical: Spacing.sm,
     },
 
-    boldText: {
-        fontWeight: 600
+    headerText: {
+        ...Type.caption,
+        fontWeight: '600',
+    },
+
+    labelCell: {
+        flex: 3,
+    },
+
+    valueCell: {
+        flex: 2,
+        textAlign: 'right',
+    },
+
+    value: {
+        ...Type.bodyStrong,
     },
 
     noteText: {
-        textAlign: 'center'
-    }
+        ...Type.caption,
+        textAlign: 'center',
+        paddingTop: Spacing.sm,
+    },
 });

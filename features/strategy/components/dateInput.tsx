@@ -1,8 +1,7 @@
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
-import { useThemeColor } from "@/hooks/useThemeColor";
+import { Radius, Spacing, MIN_TOUCH, useTheme } from "@/constants/Theme";
 import { useState, useRef } from "react";
-import { Keyboard, StyleSheet, TextInput } from "react-native";
+import { Keyboard, StyleSheet, TextInput, View } from "react-native";
 
 interface DateInputProps {
     startDateMonth: string;
@@ -33,7 +32,8 @@ export function DateInput({
     setEndDateDay,
     setEndDateYear
 }: DateInputProps) {
-    const textInputColor = useThemeColor({}, 'text');
+    const theme = useTheme();
+    const inputTheme = { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border };
 
     const [focusedInput, setFocusedInput] = useState<string>('');
 
@@ -169,18 +169,19 @@ export function DateInput({
     };
 
     return (
-        <ThemedView>
+        <View>
             {/* Start Date */}
-            <ThemedView style={styles.dateInputContainer}>
-                <ThemedText style={styles.inputLabel}>Start Date:</ThemedText>
-                <ThemedView style={styles.dateInputsRow}>
+            <View style={styles.dateInputContainer}>
+                <ThemedText style={styles.rowLabel}>Start</ThemedText>
+                <View style={styles.dateInputsRow}>
                     <TextInput
-                        style={[styles.dateInput, { color: textInputColor }]}
+                        style={[styles.dateInput, inputTheme]}
                         value={startDateMonth}
                         onChangeText={handleStartDateMonthChange}
                         maxLength={2}
                         placeholder="MM"
                         keyboardType="numeric"
+                        placeholderTextColor={theme.mutedText}
                         ref={startMonthRef}
                         onKeyPress={handleBackspace}
                         onFocus={() => handleFocus(startMonthString)}
@@ -188,12 +189,13 @@ export function DateInput({
                     />
                     <ThemedText style={styles.inputLabel}>/</ThemedText>
                     <TextInput
-                        style={[styles.dateInput, { color: textInputColor }]}
+                        style={[styles.dateInput, inputTheme]}
                         value={startDateDay}
                         onChangeText={handleStartDateDayChange}
                         maxLength={2}
                         placeholder="DD"
                         keyboardType="numeric"
+                        placeholderTextColor={theme.mutedText}
                         ref={startDayRef}
                         onKeyPress={handleBackspace}
                         onFocus={() => handleFocus(startDayString)}
@@ -201,31 +203,33 @@ export function DateInput({
                     />
                     <ThemedText style={styles.inputLabel}>/</ThemedText>
                     <TextInput
-                        style={[styles.dateInput, { width: 70, color: textInputColor }]}
+                        style={[styles.dateInput, { ...inputTheme, width: 70 }]}
                         value={startDateYear}
                         onChangeText={handleStartDateYearChange}
                         maxLength={4}
                         placeholder="YYYY"
                         keyboardType="numeric"
+                        placeholderTextColor={theme.mutedText}
                         ref={startYearRef}
                         onKeyPress={handleBackspace}
                         onFocus={() => handleFocus(startYearString)}
                         onBlur={handleBlur}
                     />
-                </ThemedView>
-            </ThemedView>
+                </View>
+            </View>
 
             {/* End Date */}
-            <ThemedView style={styles.dateInputContainer}>
-                <ThemedText style={styles.inputLabel}>End Date:</ThemedText>
-                <ThemedView style={styles.dateInputsRow}>
+            <View style={styles.dateInputContainer}>
+                <ThemedText style={styles.rowLabel}>End</ThemedText>
+                <View style={styles.dateInputsRow}>
                     <TextInput
-                        style={[styles.dateInput, { color: textInputColor }]}
+                        style={[styles.dateInput, inputTheme]}
                         value={endDateMonth}
                         onChangeText={handleEndDateMonthChange}
                         maxLength={2}
                         placeholder="MM"
                         keyboardType="numeric"
+                        placeholderTextColor={theme.mutedText}
                         ref={endMonthRef}
                         onKeyPress={handleBackspace}
                         onFocus={() => handleFocus(endMonthString)}
@@ -233,12 +237,13 @@ export function DateInput({
                     />
                     <ThemedText style={styles.inputLabel}>/</ThemedText>
                     <TextInput
-                        style={[styles.dateInput, { color: textInputColor }]}
+                        style={[styles.dateInput, inputTheme]}
                         value={endDateDay}
                         onChangeText={handleEndDateDayChange}
                         maxLength={2}
                         placeholder="DD"
                         keyboardType="numeric"
+                        placeholderTextColor={theme.mutedText}
                         ref={endDayRef}
                         onKeyPress={handleBackspace}
                         onFocus={() => handleFocus(endDayString)}
@@ -246,36 +251,42 @@ export function DateInput({
                     />
                     <ThemedText style={styles.inputLabel}>/</ThemedText>
                     <TextInput
-                        style={[styles.dateInput, { width: 70, color: textInputColor }]}
+                        style={[styles.dateInput, { ...inputTheme, width: 70 }]}
                         value={endDateYear}
                         onChangeText={handleEndDateYearChange}
                         maxLength={4}
                         placeholder="YYYY"
                         keyboardType="numeric"
+                        placeholderTextColor={theme.mutedText}
                         ref={endYearRef}
                         onKeyPress={handleBackspace}
                         onFocus={() => handleFocus(endYearString)}
                         onBlur={handleBlur}
                     />
-                </ThemedView>
-            </ThemedView>
-        </ThemedView>
+                </View>
+            </View>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     dateInputContainer: {
-        marginBottom: 10,
+        marginBottom: Spacing.sm,
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 5,
-        width: '90%'
+        gap: Spacing.sm,
+        width: '100%'
+    },
+
+    rowLabel: {
+        width: 48,
+        fontWeight: '600'
     },
 
     inputLabel: {
-        fontSize: 20
+        fontSize: 16
     },
 
     dateInputsRow: {
@@ -289,29 +300,12 @@ const styles = StyleSheet.create({
     dateInput: {
         flex: 1,
         borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        padding: 10,
+        minHeight: MIN_TOUCH,
+        borderRadius: Radius.md,
+        paddingHorizontal: Spacing.sm,
         fontSize: 16,
         width: 50,
         textAlign: 'center',
     },
 
-    saveButton: {
-        backgroundColor: '#4CAF50',
-        padding: 10,
-        borderRadius: 8,
-        marginTop: 20,
-        alignItems: 'center',
-    },
-
-    saveButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-    },
-
-    costNoteView: {
-        width: '90%',
-        alignSelf: 'center'
-    }
 });

@@ -1,13 +1,13 @@
 import React, { ReactNode } from "react";
-import { StyleSheet, TouchableOpacity, StyleProp, ViewStyle } from "react-native";
+import { StyleSheet, TouchableOpacity, StyleProp, ViewStyle, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useRouteTo } from "@/contexts/RouteContext";
 import { ThemedView } from "./ThemedView";
 import { ThemedText } from "./ThemedText";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "@/constants/Colors";
 import { Routes } from "@/app/Routes";
 import { useUser } from "@/contexts/UserContext";
+import { MIN_TOUCH, Radius, Spacing, Type, useTheme } from "@/constants/Theme";
 
 
 interface CustomHeaderProps {
@@ -20,9 +20,9 @@ interface CustomHeaderProps {
     displayFunds?: boolean;
 }
 
-export function CustomHeaderView({ 
-    header, 
-    children, 
+export function CustomHeaderView({
+    header,
+    children,
     canGoBack=true,
     goBack,
     style,
@@ -32,38 +32,54 @@ export function CustomHeaderView({
     const router = useRouter();
     const { routeTo } = useRouteTo();
     const { userRef } = useUser();
+    const theme = useTheme();
 
     const handleBackPress = goBack || router.back
+    const user = userRef?.current;
 
     return (
         <ThemedView style={[styles.screenView, style]}>
-            { (displayFunds && userRef && userRef.current) &&
-                <ThemedView style={styles.fundsHeaderView}>
-                        <ThemedText style={styles.fundsHeaderText}>
-                            {`Account/Monthly Credits: ${userRef.current.accountCredits}/${userRef.current.monthlyCredits}`}
-                        </ThemedText>
-                </ThemedView>
-            }
+            <View style={styles.headerView}>
+                <View style={styles.slot}>
+                    {canGoBack &&
+                        <TouchableOpacity
+                            onPress={handleBackPress}
+                            style={styles.iconButton}
+                            accessibilityRole="button"
+                            accessibilityLabel="Go back"
+                        >
+                            <Ionicons name="chevron-back" size={26} color={theme.primary} />
+                        </TouchableOpacity>
+                    }
+                </View>
 
-            <ThemedView style={styles.headerView}>
-                {canGoBack &&
-                    <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={30} color={Colors.button.text} />
-                        <ThemedText style={styles.backText}>Back</ThemedText>
-                    </TouchableOpacity>
-                }
-
-                <ThemedText style={[styles.headerText, canGoBack && styles.headerTextWithBack]}>
+                <ThemedText style={styles.headerText} numberOfLines={1}>
                     {header}
                 </ThemedText>
 
-                {goProfile &&
-                    <TouchableOpacity onPress={() => routeTo(Routes.Profile)} style={styles.profileButton}>
-                        <ThemedText style={styles.backText}>Profile</ThemedText>
-                        <Ionicons name="person" size={15} color={Colors.button.text} />
-                    </TouchableOpacity>
-                }
-            </ThemedView>
+                <View style={[styles.slot, styles.slotRight]}>
+                    {goProfile &&
+                        <TouchableOpacity
+                            onPress={() => routeTo(Routes.Profile)}
+                            style={styles.iconButton}
+                            accessibilityRole="button"
+                            accessibilityLabel="Profile"
+                        >
+                            <Ionicons name="person-circle-outline" size={28} color={theme.primary} />
+                        </TouchableOpacity>
+                    }
+                </View>
+            </View>
+
+            { (displayFunds && user) &&
+                <View style={[styles.creditsChip, { backgroundColor: theme.neutralSoft }]}>
+                    <Ionicons name="wallet-outline" size={14} color={theme.mutedText} />
+                    <ThemedText type="muted" style={styles.creditsText}>
+                        {`${user.accountCredits} credits · ${user.monthlyCredits} monthly`}
+                    </ThemedText>
+                </View>
+            }
+
             <ThemedView style={styles.contentView}>
                 {children}
             </ThemedView>
@@ -71,81 +87,57 @@ export function CustomHeaderView({
     )
 }
 
-const fontSize: number = 20;
-
 const styles = StyleSheet.create({
     screenView: {
         flex: 1,
         flexDirection: 'column'
     },
 
-    fundsHeaderView: {
-        display: 'flex',
-        flexDirection: 'row',
-        paddingVertical: 3,
-        justifyContent: 'center',
-        paddingTop: 2,
-        paddingBottom: 0
-    },
-
-    fundsHeaderText: {
-        fontSize: 14
-    },
-
     headerView: {
-        width: '100%',
-        height: 60,
-        justifyContent: 'center',
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 10,
+        minHeight: 56,
+        paddingHorizontal: Spacing.sm,
     },
 
-    backButton: {
-        position: 'absolute',
-        left: 10,
-        top: 10,
-        backgroundColor: Colors.button.background,
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-        width: 'auto',
-        height: 40,
-        paddingRight: 5,
-        borderRadius: 5
+    slot: {
+        width: MIN_TOUCH,
+        alignItems: 'flex-start',
     },
 
-    profileButton: {
-        position: 'absolute',
-        right: 10,
-        top: 10,
-        backgroundColor: Colors.button.background,
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-        width: 'auto',
-        height: 40,
-        paddingHorizontal: 5,
-        borderRadius: 5
+    slotRight: {
+        alignItems: 'flex-end',
     },
 
-    backText: {
-        fontSize: 14,
-        color: Colors.button.text
-    },
-
-    headerTextWithBack: {
-        marginHorizontal: 80, 
+    iconButton: {
+        width: MIN_TOUCH,
+        height: MIN_TOUCH,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 
     headerText: {
+        ...Type.subtitle,
         flex: 1,
-        textAlign: "center",
-        fontSize: fontSize,
-        fontWeight: 'bold'
+        textAlign: 'center',
+    },
+
+    creditsChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'center',
+        gap: Spacing.xs,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.xs,
+        borderRadius: Radius.pill,
+        marginBottom: Spacing.sm,
+    },
+
+    creditsText: {
+        ...Type.caption,
     },
 
     contentView: {
-        flex: 1
+        flex: 1,
     }
 })
