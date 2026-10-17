@@ -1,7 +1,8 @@
 import React, { createContext, useState, useCallback, useRef, ReactNode } from "react";
-import { StyleSheet, TouchableOpacity } from "react-native";
-import { ThemedView } from "@/components/ThemedView";
+import { StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
+import { GeneralButton } from "@/components/GeneralButton";
+import { Radius, Spacing, useTheme } from "@/constants/Theme";
 
 
 export interface ToastAction {
@@ -28,10 +29,11 @@ interface ToastProviderProps {
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastRef = useRef<((message: string, actions: ToastAction[]) => void) | undefined>(undefined);
+  const theme = useTheme();
 
   const addToast = useCallback(
     (
-      message: string, 
+      message: string,
       actions: ToastAction[] = []
     ) => {
       const id = Date.now();
@@ -49,31 +51,38 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   return (
     <ToastContext.Provider value={{ addToast }}>
       {children}
-      {toasts.length > 0 && <ThemedView style={styles.toastOverlay} />}
+      {toasts.length > 0 && <View style={styles.toastOverlay} />}
       {toasts.map((toast) => (
-        <ThemedView key={toast.id} style={styles.toastContainer}>
-          <ThemedText style={styles.toastContainerLabel}>{toast.message}</ThemedText>
-          <ThemedView style={[styles.buttonContainer, { flexDirection: toast.actions.length > 1 ? 'column' : 'row' }]}>
-            <TouchableOpacity
-              style={styles.dimButton}
-              onPress={() => removeToast(toast.id)}
-            >
-              <ThemedText style={styles.dimButtonText}>{toast.actions.length > 0 ? "Cancel" : "Dismiss"}</ThemedText>
-            </TouchableOpacity>
-            {toast.actions.map((action, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.boldButton}
-                onPress={() => {
-                  action.callback();
-                  removeToast(toast.id);
-                }}
-              >
-                <ThemedText style={styles.boldButtonText}>{action.label}</ThemedText>
-              </TouchableOpacity>
-            ))}
-          </ThemedView>
-        </ThemedView>
+        <View key={toast.id} style={styles.toastWrapper} pointerEvents="box-none">
+          <View
+            accessibilityRole="alert"
+            style={[styles.toastContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          >
+            <ThemedText style={styles.toastContainerLabel}>{toast.message}</ThemedText>
+            <View style={[styles.buttonContainer, toast.actions.length > 1 && styles.buttonContainerColumn]}>
+              <View style={styles.buttonItem}>
+                <GeneralButton
+                  title={toast.actions.length > 0 ? "Cancel" : "Dismiss"}
+                  variant={toast.actions.length > 0 ? "secondary" : "primary"}
+                  autoWidth={false}
+                  onPress={() => removeToast(toast.id)}
+                />
+              </View>
+              {toast.actions.map((action, index) => (
+                <View key={index} style={styles.buttonItem}>
+                  <GeneralButton
+                    title={action.label}
+                    autoWidth={false}
+                    onPress={() => {
+                      action.callback();
+                      removeToast(toast.id);
+                    }}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
       ))}
     </ToastContext.Provider>
   );
@@ -88,67 +97,46 @@ export const useToast = (): ToastContextType => {
 };
 
 const styles = StyleSheet.create({
-  toastContainer: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: '-50%' }, { translateY: '-50%' }],
-    zIndex: 9999,
-    maxWidth: '80%',
-    width: 'auto',
-    borderWidth: 1,
-    borderColor: 'black',
-    borderRadius: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    padding: 15,
-  },
-  toastContainerLabel: {
-    fontSize: 20,
-  },
   toastOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
     zIndex: 9998,
   },
-  buttonContainer: {
-    justifyContent: 'center',
+  toastWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
-    margin: 4,
-    gap: 4
+    justifyContent: 'center',
+    padding: Spacing.xl,
+    zIndex: 9999,
   },
-  boldButton: {
-    fontWeight: 'bold',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    backgroundColor: '#007bff',
-    color: 'white',
-    borderWidth: 0,
-    borderRadius: 4,
-  },
-  boldButtonText: {
-    color: 'white',
-    fontSize: 16,
-  },
-  dimButton: {
-    fontWeight: 'normal',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    backgroundColor: '#d9dde0',
-    color: '#5a6167',
+  toastContainer: {
+    width: '100%',
+    maxWidth: 380,
     borderWidth: 1,
-    borderColor: '#9da5ac',
-    borderRadius: 4,
-    marginLeft: 5,
+    borderRadius: Radius.lg,
+    padding: Spacing.xl,
+    gap: Spacing.xl,
   },
-  dimButtonText: {
-    color: '#5a6167',
-    fontSize: 16,
+  toastContainerLabel: {
+    fontSize: 17,
+    lineHeight: 24,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  buttonContainerColumn: {
+    flexDirection: 'column',
+  },
+  buttonItem: {
+    flex: 1,
   },
 });

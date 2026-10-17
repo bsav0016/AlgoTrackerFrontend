@@ -32,4 +32,19 @@ export class User {
         this.monthlyCredits = monthlyCredits;
         this.resetMonthlyCredits = resetMonthlyCredits
     }
+
+    /** Rebuilds a user from the JSON kept in AsyncStorage, where every Date has become a string. */
+    static fromStored(stored: any): User {
+        return new User(
+            stored.username,
+            stored.firstName,
+            stored.lastName,
+            stored.email,
+            new Date(stored.accountCreated),
+            (stored.strategies ?? []).map((strategy: any) => Strategy.fromStored(strategy)),
+            stored.accountCredits,
+            stored.monthlyCredits,
+            new Date(stored.resetMonthlyCredits)
+        );
+    }
 }

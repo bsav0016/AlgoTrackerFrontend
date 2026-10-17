@@ -27,19 +27,13 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const getStoredUser = async () => {
         const storedUser = await AsyncStorage.getItem('user');
         if (storedUser) {
-          const plainUser = JSON.parse(storedUser) as User;
-          const currentUser = new User (
-              plainUser.username,
-              plainUser.firstName,
-              plainUser.lastName,
-              plainUser.email,
-              plainUser.accountCreated,
-              plainUser.strategies,
-              plainUser.accountCredits,
-              plainUser.monthlyCredits,
-              plainUser.resetMonthlyCredits
-          );
-          setUser(currentUser);
+          try {
+            setUser(User.fromStored(JSON.parse(storedUser)));
+          } catch (error) {
+            // An unreadable copy (e.g. written by an older version) is dropped; the next login or refresh rewrites it.
+            console.log("Could not restore the stored user", error);
+            await AsyncStorage.removeItem('user');
+          }
         }
       };
   

@@ -1,18 +1,16 @@
 import React, { RefObject, useEffect, useState } from "react";
 import { CustomHeaderView } from "@/components/CustomHeaderView";
-import { ThemedView } from "@/components/ThemedView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useRouteTo } from "@/contexts/RouteContext";
 import { Routes } from "@/app/Routes";
 import { ThemedText } from "@/components/ThemedText";
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, TouchableWithoutFeedback, View } from "react-native";
 import { AuthFields } from "@/features/auth/AuthFields";
 import { AuthType } from "@/features/auth/AuthType";
 import { GeneralButton } from "@/components/GeneralButton";
-import { Colors } from "@/constants/Colors";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { TextField } from "@/components/TextField";
+import { Spacing, Type } from "@/constants/Theme";
 import { useUser } from "@/contexts/UserContext";
 import { AuthError } from "@/features/auth/AuthError";
 import { AuthService } from "@/features/auth/AuthService";
@@ -31,7 +29,6 @@ export default function LoginScreen() {
     const { routeTo, routeReplace } = useRouteTo();
     const { userRef } = useUser();
     const { accessToken } = useAuth();
-    const color = useThemeColor({}, 'text');
     const [formFields, setFormFields] = useState<AuthFields>({
         username: "",
         password: "",
@@ -171,33 +168,35 @@ export default function LoginScreen() {
 
     return (
         <CustomHeaderView header={header} canGoBack={false} displayFunds={false}>
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+            <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+                <KeyboardAvoidingView
+                    style={styles.container}
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+                >
+                    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()} accessible={false}>
+                        <View style={styles.authView}>
+                            <View style={styles.brand}>
+                                <ThemedText style={styles.brandName}>AlgoTracker</ThemedText>
+                                <ThemedText type="muted" style={styles.brandTagline}>
+                                    Build, back-test and follow trading strategies
+                                </ThemedText>
+                            </View>
 
-            <KeyboardAvoidingView
-                style={styles.container}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-            >
-                <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-                    <ThemedView style={styles.authView}>
-                        <ThemedView style={styles.formView}>
-                            {displayedFields.map((field, index) => {
-                                const isLastField = index === displayedFields.length - 1;
-                                if (field.field !== "promoCode" || promoCodeAvailability) {
-                                    return (
-                                        <ThemedView key={field.field} style={styles.fieldView}>
-                                            <ThemedView style={styles.textView}>
-                                                <ThemedText>{`${field.text}: `}</ThemedText>
-                                            </ThemedView>
-                                            <TextInput
-                                                ref={field.ref}
+                            <View style={styles.formView}>
+                                {displayedFields.map((field, index) => {
+                                    const isLastField = index === displayedFields.length - 1;
+                                    if (field.field !== "promoCode" || promoCodeAvailability) {
+                                        return (
+                                            <TextField
+                                                key={field.field}
+                                                label={field.text}
+                                                inputRef={field.ref}
                                                 value={field.value}
                                                 onChangeText={(value) => updateFormField(field.field, value)}
                                                 secureTextEntry={field.field.toLowerCase().includes("password")}
-                                                style={[
-                                                    styles.textInput,
-                                                    { color: color, borderColor: color }
-                                                ]}
+                                                autoCapitalize={field.field === "firstName" || field.field === "lastName" ? "words" : "none"}
+                                                autoCorrect={false}
                                                 textContentType={"oneTimeCode"}
                                                 keyboardType={field.field === "email" ? "email-address" : "default"}
                                                 returnKeyType={isLastField ? 'done' : 'next'}
@@ -210,49 +209,49 @@ export default function LoginScreen() {
                                                     }
                                                 }}
                                             />
-                                        </ThemedView>
-                                    );
-                                }
-                                else {
+                                        );
+                                    }
                                     return null;
+                                })}
+
+                                <View style={styles.submit}>
+                                    <GeneralButton
+                                        title={header}
+                                        onPress={authUser}
+                                        loading={!!processing}
+                                        autoWidth={false}
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={styles.links}>
+                                <View style={styles.switchView}>
+                                    <ThemedText type="muted">{bottomText}</ThemedText>
+                                    <GeneralButton title={bottomButtom} variant="ghost" compact onPress={switchType} />
+                                </View>
+
+                                {type === AuthType.Login &&
+                                    <GeneralButton
+                                        title="Forgot password?"
+                                        variant="ghost"
+                                        compact
+                                        onPress={() => routeTo(Routes.ForgotPassword)}
+                                    />
                                 }
-                            })}
-                            { processing ? 
-                            <LoadingSpinner />
-                            :
-                            <GeneralButton title={header} onPress={authUser} />
-                            }
-                            
-                        </ThemedView>
-
-                        <ThemedView style={styles.switchView}>
-                            <ThemedText>{bottomText}</ThemedText>
-                            <TouchableOpacity onPress={switchType}>
-                                <ThemedText style={[styles.switchButton, { color: Colors.button.background }]}>
-                                    {bottomButtom}
-                                </ThemedText>
-                            </TouchableOpacity>
-                        </ThemedView>
-
-                        {type === AuthType.Login &&
-                            <ThemedView style={styles.switchView}>
-                                <TouchableOpacity onPress={() => routeTo(Routes.ForgotPassword)}>
-                                    <ThemedText style={[styles.switchButton, { color: Colors.button.background }]}>
-                                        Forgot Password?
-                                    </ThemedText>
-                                </TouchableOpacity>
-                            </ThemedView>
-                        }
-
-                    </ThemedView>
-                </TouchableWithoutFeedback>
-            </KeyboardAvoidingView>
+                            </View>
+                        </View>
+                    </TouchableWithoutFeedback>
+                </KeyboardAvoidingView>
             </ScrollView>
         </CustomHeaderView>
-    );    
+    );
 }
 
 const styles = StyleSheet.create({
+    scrollContent: {
+        flexGrow: 1,
+    },
+
     container: {
         flex: 1,
     },
@@ -260,45 +259,39 @@ const styles = StyleSheet.create({
     authView: {
         flex: 1,
         justifyContent: 'center',
-        marginBottom: 60
+        paddingHorizontal: Spacing.xl,
+        paddingBottom: Spacing.xxl,
+        gap: Spacing.xl,
+    },
+
+    brand: {
+        alignItems: 'center',
+        gap: Spacing.xs,
+    },
+
+    brandName: {
+        ...Type.display,
+    },
+
+    brandTagline: {
+        textAlign: 'center',
     },
 
     formView: {
+        gap: Spacing.lg,
+    },
+
+    submit: {
+        marginTop: Spacing.sm,
+    },
+
+    links: {
         alignItems: 'center',
-        paddingHorizontal: 30,
-        gap: 10,
-    },
-
-    fieldView: {
-        flexDirection: 'row',
-        alignItems: 'flex-end'
-    },
-
-    textView: {
-        flex: 1,
-        alignItems: 'flex-end',
-        justifyContent: 'flex-end',
-        textAlign:'right'
-    },
-
-    textInput: {
-        flex: 1.75,
-        borderWidth: 1,
-        borderRadius: 3,
-        padding: 3,
-        fontSize: 20,
-        height: 30,
-        width: '30%',
     },
 
     switchView: {
-        justifyContent: 'center',
         flexDirection: 'row',
-        gap: 5,
-        marginTop: 20
-    },
-
-    switchButton: {
-        textDecorationLine: 'underline'
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 })

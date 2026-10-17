@@ -23,7 +23,7 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/images/adaptive-icon.png",
-        backgroundColor: "#ffffff"
+        backgroundColor: "#2563eb"
       },
       package: "com.bsav0016.AlgoTracker",
       googleServicesFile: "./google-services.json"
