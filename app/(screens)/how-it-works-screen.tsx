@@ -1,9 +1,10 @@
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { GeneralButton } from "@/components/GeneralButton";
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
+import { Card } from "@/components/Card";
 import React, { useState } from "react";
-import { Linking, Modal, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import { Linking, Modal, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import { Radius, Spacing, Type, useTheme } from "@/constants/Theme";
 
 interface HowItWorksDetails {
     title: string;
@@ -13,32 +14,36 @@ interface HowItWorksDetails {
 
 export default function HowItWorksScreen() {
     const [modalDetails, setModalDetails] = useState<HowItWorksDetails | null>(null);
+    const theme = useTheme();
 
     return (
         <CustomHeaderView header="How It Works" displayFunds={false}>
-            <ScrollView>
-                <ThemedView style={styles.overviewContainer}>
-                    <GeneralButton title="Backtest" onPress={() => setModalDetails(backtestDetails)} />
-                    <GeneralButton title="Strategy Subscription" onPress={() => setModalDetails(strategySubscriptionDetails)} />
-                </ThemedView>
+            <ScrollView contentContainerStyle={styles.content}>
+                <View style={styles.section}>
+                    <ThemedText style={styles.sectionTitle}>Overview</ThemedText>
+                    <GeneralButton title="Backtest" variant="outline" onPress={() => setModalDetails(backtestDetails)} autoWidth={false} />
+                    <GeneralButton title="Strategy Subscription" variant="outline" onPress={() => setModalDetails(strategySubscriptionDetails)} autoWidth={false} />
+                </View>
 
-                <ThemedView style={styles.inputOutputContainer}>
-                    <ThemedText type="subtitle">Inputs</ThemedText>
-                    <ThemedView style={styles.buttonsContainer}>
+                <View style={styles.section}>
+                    <ThemedText style={styles.sectionTitle}>Inputs</ThemedText>
+                    <ThemedText type="muted" style={styles.sectionHint}>The indicators you build signals from.</ThemedText>
+                    <View style={styles.chips}>
                         {inputsDetails.map((inputsDetails, index) => (
-                            <GeneralButton key={index} title={inputsDetails.title} onPress={() => setModalDetails(inputsDetails)} />
+                            <GeneralButton key={index} title={inputsDetails.title} variant="secondary" compact fontSize={15} onPress={() => setModalDetails(inputsDetails)} />
                         ))}
-                    </ThemedView>
-                </ThemedView>
+                    </View>
+                </View>
 
-                <ThemedView style={styles.inputOutputContainer}>
-                    <ThemedText type="subtitle">Outputs</ThemedText>
-                    <ThemedView style={styles.buttonsContainer}>
+                <View style={styles.section}>
+                    <ThemedText style={styles.sectionTitle}>Outputs</ThemedText>
+                    <ThemedText type="muted" style={styles.sectionHint}>The numbers a backtest reports.</ThemedText>
+                    <View style={styles.chips}>
                         {outputsDetails.map((outputsDetails, index) => (
-                            <GeneralButton key={index} title={outputsDetails.title} onPress={() => setModalDetails(outputsDetails)} />
+                            <GeneralButton key={index} title={outputsDetails.title} variant="secondary" compact fontSize={15} onPress={() => setModalDetails(outputsDetails)} />
                         ))}
-                    </ThemedView>
-                </ThemedView>
+                    </View>
+                </View>
 
                 <Modal
                     visible={modalDetails !== null}
@@ -47,17 +52,26 @@ export default function HowItWorksScreen() {
                     onRequestClose={() => setModalDetails(null)}
                 >
                     <TouchableWithoutFeedback onPress={() => setModalDetails(null)}>
-                        <ThemedView style={styles.modalOverlay}>
-                            <ThemedView style={styles.modalContainer}>
-                                <ThemedText type="subtitle">{modalDetails?.title || ""}</ThemedText>
-                                <ThemedText style={styles.descriptionText}>{modalDetails?.description || ""}</ThemedText>
-                                <ThemedText>Read more:</ThemedText>
-                                <TouchableOpacity onPress={() => Linking.openURL(modalDetails?.link || "www.google.com")}>
-                                    <ThemedText style={styles.linkText}>{modalDetails?.link || ""}</ThemedText>
-                                </TouchableOpacity>
-                                <GeneralButton title="Close" onPress={() => setModalDetails(null)} />
-                            </ThemedView>
-                        </ThemedView>
+                        <View style={styles.modalOverlay}>
+                            <TouchableWithoutFeedback accessible={false}>
+                                <Card style={styles.modalContainer}>
+                                    <ThemedText style={styles.modalTitle}>{modalDetails?.title || ""}</ThemedText>
+                                    <ScrollView style={styles.modalScroll}>
+                                        <ThemedText style={styles.descriptionText}>{modalDetails?.description || ""}</ThemedText>
+                                    </ScrollView>
+                                    <TouchableOpacity
+                                        accessibilityRole="link"
+                                        onPress={() => Linking.openURL(modalDetails?.link || "https://www.investopedia.com")}
+                                    >
+                                        <ThemedText type="muted" style={styles.readMore}>Read more</ThemedText>
+                                        <ThemedText style={[styles.linkText, { color: theme.primary }]} numberOfLines={1}>
+                                            {modalDetails?.link || ""}
+                                        </ThemedText>
+                                    </TouchableOpacity>
+                                    <GeneralButton title="Close" variant="secondary" onPress={() => setModalDetails(null)} autoWidth={false} />
+                                </Card>
+                            </TouchableWithoutFeedback>
+                        </View>
                     </TouchableWithoutFeedback>
                 </Modal>
             </ScrollView>
@@ -66,50 +80,66 @@ export default function HowItWorksScreen() {
 }
 
 const styles = StyleSheet.create({
-    overviewContainer: {
-        display: 'flex',
-        gap: 10,
-        padding: 20
+    content: {
+        padding: Spacing.lg,
+        gap: Spacing.xl,
     },
 
-    inputOutputContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20
+    section: {
+        gap: Spacing.sm,
     },
 
-    buttonsContainer: {
+    sectionTitle: {
+        ...Type.subtitle,
+    },
+
+    sectionHint: {
+        fontSize: 14,
+    },
+
+    chips: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'center',
-        gap: 8,
-        margin: 8
+        gap: Spacing.sm,
+        marginTop: Spacing.xs,
     },
 
     modalOverlay: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        backgroundColor: "rgba(0, 0, 0, 0.55)",
+        padding: Spacing.xl,
     },
 
     modalContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
-        borderRadius: 10,
-        width: '90%',
+        width: '100%',
+        maxWidth: 420,
+        maxHeight: '80%',
+        gap: Spacing.lg,
+        borderRadius: Radius.lg,
+    },
+
+    modalTitle: {
+        ...Type.subtitle,
+    },
+
+    modalScroll: {
+        flexGrow: 0,
     },
 
     descriptionText: {
-        textAlign: 'center',
-        marginVertical: 5
+        ...Type.body,
+    },
+
+    readMore: {
+        ...Type.caption,
+        fontWeight: '600',
     },
 
     linkText: {
-        color: 'blue',
         textDecorationLine: 'underline',
-        marginBottom: 5
+        fontSize: 14,
     }
 })
 
