@@ -14,6 +14,8 @@ export interface StrategyData {
     position: number;
     charge_user_date: string;
     active: boolean;
+    // Open time (Unix seconds) of the newest candle the server has checked; null until the first one. Older servers do not send it.
+    last_processed_ts?: number | null;
 }
 
 // A strategy that has not been charged yet is next charged a subscription period from now: exactly 30 x 24 hours, as
@@ -42,6 +44,7 @@ export class Strategy {
     position: number;
     chargeUserDate: Date;
     active: boolean;
+    lastProcessedAt: Date | null;
     
     constructor(
         id: number,
@@ -55,7 +58,8 @@ export class Strategy {
         assetReturn: number = 1,
         position: number = 1,
         chargeUserDate: Date = thirtyDaysFromNow(),
-        active: boolean = true
+        active: boolean = true,
+        lastProcessedAt: Date | null = null
     ) {
         this.id = id;
         this.title = title;
@@ -69,6 +73,7 @@ export class Strategy {
         this.position = position;
         this.chargeUserDate = chargeUserDate;
         this.active = active;
+        this.lastProcessedAt = lastProcessedAt;
     }
 
     toSubscribeJSON() {
@@ -112,7 +117,8 @@ export class Strategy {
             stored.assetReturn,
             stored.position,
             new Date(stored.chargeUserDate),
-            stored.active
+            stored.active,
+            stored.lastProcessedAt ? new Date(stored.lastProcessedAt) : null
         );
     }
 
@@ -148,7 +154,8 @@ export class Strategy {
             data.asset_return,
             data.position,
             new Date(data.charge_user_date),
-            data.active
+            data.active,
+            data.last_processed_ts != null ? new Date(data.last_processed_ts * 1000) : null
         )
     }
 }

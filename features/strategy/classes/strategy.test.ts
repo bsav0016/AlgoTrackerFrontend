@@ -171,6 +171,42 @@ describe("Strategy.fromData", () => {
   });
 });
 
+describe("Strategy.lastProcessedAt", () => {
+  const data = (extra: Partial<StrategyData> = {}): StrategyData => ({
+    id: 1, title: "t", symbol: "AAPL", interval: "1day", buy_signals: [], sell_signals: [], trades: [],
+    strategy_return: 1, asset_return: 1, position: 1, charge_user_date: "2025-06-01T00:00:00Z", active: true,
+    ...extra,
+  });
+
+  it("is the server's Unix-seconds timestamp as a Date", () => {
+    const strategy = Strategy.fromData(data({ last_processed_ts: 1700000000 }));
+    expect(strategy.lastProcessedAt).toEqual(new Date("2023-11-14T22:13:20Z"));
+  });
+
+  it("is null until the server has checked a candle", () => {
+    expect(Strategy.fromData(data({ last_processed_ts: null })).lastProcessedAt).toBeNull();
+  });
+
+  it("is null when an older server does not send the field", () => {
+    expect(Strategy.fromData(data()).lastProcessedAt).toBeNull();
+  });
+
+  it("survives the copy kept in storage", () => {
+    const original = Strategy.fromData(data({ last_processed_ts: 1700000000 }));
+    const restored = Strategy.fromStored(JSON.parse(JSON.stringify(original)));
+    expect(restored.lastProcessedAt).toEqual(original.lastProcessedAt);
+  });
+
+  it("stays null in storage when nothing was checked", () => {
+    const restored = Strategy.fromStored(JSON.parse(JSON.stringify(Strategy.fromData(data()))));
+    expect(restored.lastProcessedAt).toBeNull();
+  });
+
+  it("does not affect a strategy built for subscribing", () => {
+    expect(makeStrategy().lastProcessedAt).toBeNull();
+  });
+});
+
 // The backend's charge_user_date is already the next charge date (api/models.py: it defaults to now + 30 days and is
 // reset to now + 30 days on renewal; a charge is due once now passes it). The strategy screen counts down to it, so
 // it must be shown as received.

@@ -110,6 +110,13 @@ export default function ViewStrategy() {
                         <ThemedText type="muted" style={styles.renewLabel}>Next charge in</ThemedText>
                         <CountdownTimer timeRemaining={(strategy.chargeUserDate.getTime() - Date.now()) / 1000}/>
                     </View>
+
+                    <View style={[styles.renewRow, styles.checkedRow, { borderColor: theme.border }]}>
+                        <ThemedText type="muted" style={styles.renewLabel}>Last candle checked</ThemedText>
+                        <ThemedText style={styles.checkedValue}>
+                            {strategy.lastProcessedAt ? formattedDate(strategy.lastProcessedAt) : "Waiting for the first candle"}
+                        </ThemedText>
+                    </View>
                 </Card>
 
                 <ThemedText style={styles.sectionTitle}>
@@ -197,6 +204,16 @@ const styles = StyleSheet.create({
 
     renewLabel: {
         fontSize: 14,
+    },
+
+    checkedRow: {
+        gap: Spacing.md,
+    },
+
+    checkedValue: {
+        fontSize: 14,
+        flexShrink: 1,
+        textAlign: 'right',
     },
 
     sectionTitle: {
