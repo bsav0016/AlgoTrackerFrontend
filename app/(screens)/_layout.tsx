@@ -34,6 +34,7 @@ export default function PagesLayout() {
                                             <Stack.Screen name={Routes.ViewStrategy} options={{ headerShown: false }} />
                                             <Stack.Screen name={Routes.Profile} options={{ headerShown: false }} />
                                             <Stack.Screen name={Routes.HowItWorks} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.CreditHistory} options={{ headerShown: false }} />
                                         </Stack>
                                     </SafeAreaView>
                                 </ThemedView>

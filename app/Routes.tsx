@@ -9,6 +9,7 @@ export enum Routes {
     ViewStrategy = 'view-strategy-screen',
     Profile = 'profile-screen',
     HowItWorks = 'how-it-works-screen',
+    CreditHistory = 'credit-history-screen',
 }
 
 //Only used to get rid of the warning
