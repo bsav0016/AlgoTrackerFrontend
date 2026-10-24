@@ -261,7 +261,7 @@ export default function DepositFundsScreen() {
                                 {amountForm}
                                 { Platform.OS === "ios" &&
                                 <>
-                                    <ThemedText style={styles.optionTitle}>Option 2: in-app purchase ($1 = 70 credits, after store fees)</ThemedText>
+                                    <ThemedText style={styles.optionTitle}>Option 2: in-app purchase ($1 = 100 credits)</ThemedText>
                                     <RevenueCatComponent/>
                                 </>
                                 }
