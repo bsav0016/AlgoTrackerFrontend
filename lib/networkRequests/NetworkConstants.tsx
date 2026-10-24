@@ -27,4 +27,5 @@ export const URL_EXT = {
     PASSWORD_RESET_CONFIRM: 'password-reset-confirm/',
     PAYMENT_INTENT: 'payment-intent/',
     REVENUECAT_CUSTOMER: 'revenuecat-customer/',
+    CREDIT_HISTORY: 'credits/history/',
 }
