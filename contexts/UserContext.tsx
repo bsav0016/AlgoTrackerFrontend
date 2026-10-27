@@ -1,9 +1,12 @@
-import React, { createContext, ReactNode, useEffect, useRef } from 'react';
+import React, { createContext, ReactNode, useEffect, useRef, useState } from 'react';
 import { User } from '@/features/auth/User';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from '@/features/auth/AuthService';
 
 interface UserContextType {
+    // What to show: state, so a screen that renders the user updates when the user changes.
+    user: User | null;
+    // The latest value for event handlers and async code, which can run after a render and need the newest user.
     userRef: React.MutableRefObject<User | null>;
     setUser: (user: User | null) => void;
     updateUserData: (token: string) => Promise<void>;
@@ -13,9 +16,11 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [user, setUserState] = useState<User | null>(null);
     const userRef = useRef<User | null>(null);
     const setUser = async (newUser: User | null) => {
       userRef.current = newUser
+      setUserState(newUser)
       if (!userRef.current) {
         await AsyncStorage.removeItem('user')
       } else {
@@ -68,7 +73,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return (
-        <UserContext.Provider value={{ userRef, setUser, updateUserData, updateAccountCredits }}>
+        <UserContext.Provider value={{ user, userRef, setUser, updateUserData, updateAccountCredits }}>
             {children}
         </UserContext.Provider>
     );

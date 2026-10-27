@@ -83,7 +83,7 @@ async function registerForPushNotificationsAsync() {
 }
 
 const HomeScreen = () => {
-    const { userRef, updateUserData } = useUser();
+    const { user, updateUserData } = useUser();
     const { accessToken, logout } = useAuth();
     const { addToast } = useToast();
     const { routeTo } = useRouteTo();
@@ -176,7 +176,7 @@ const HomeScreen = () => {
     const goToViewStrategy = (index: number) => {
         try {
             //const viewedStrategy = TestStrategies[index]; //Can use example strategies here
-            const viewedStrategy = userRef.current?.strategies[index];
+            const viewedStrategy = user?.strategies[index];
             if (!viewedStrategy) {
                 addToast("Error opening strategy. Please try again later")
                 return;
@@ -196,7 +196,7 @@ const HomeScreen = () => {
         { loading ?
         <LoadingScreen loadingMessage="Refreshing data"/>
         :
-        <CustomHeaderView header={`Welcome back, ${userRef.current?.firstName}!`} canGoBack={false} goProfile={true}>
+        <CustomHeaderView header={`Welcome back, ${user?.firstName}!`} canGoBack={false} goProfile={true}>
             <ScrollView
                 contentContainerStyle={styles.content}
                 keyboardShouldPersistTaps="handled"
@@ -207,7 +207,7 @@ const HomeScreen = () => {
                 <ThemedText style={styles.sectionHeader}>Your strategies</ThemedText>
 
                 {/*{TestStrategies.map((strategy, index) => ( can use example strategies here*/}
-                {userRef.current?.strategies.length ? userRef.current.strategies.map((strategy, index) => {
+                {user?.strategies.length ? user.strategies.map((strategy, index) => {
                     const returnPct = (strategy.strategyReturn - 1) * 100;
                     return (
                         <TouchableOpacity

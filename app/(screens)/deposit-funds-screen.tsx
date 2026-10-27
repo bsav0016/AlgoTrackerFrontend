@@ -43,6 +43,50 @@ export default function DepositFundsScreen() {
     const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
     const [packages, setPackages] = useState<PurchasesPackage[]>([]);
 
+    const openPaymentSheet = async () => {
+        const { error } = await presentPaymentSheet();
+
+        if (error) {
+            addToast("Error completing payment");
+        } else {
+            addToast("Payment completed successfully!");
+            routeReplace(Routes.Home);
+        }
+        setLoadingMessage(null);
+    }
+
+    const updateCustomerInfo = async (customerInfo: CustomerInfo) => {
+        const latestTransaction = customerInfo.nonSubscriptionTransactions?.sort(
+            (a, b) => (new Date(b.purchaseDate)).getTime() - (new Date(a.purchaseDate)).getTime()
+        )?.[0];
+
+        if (!latestTransaction) {
+            return;
+        }
+    
+        if (Date.now() - new Date(latestTransaction.purchaseDate).getTime() < 20000) {
+            if (!accessToken) {
+                addToast("Please log back in. If your card has been charged, please contact the support team")
+                routeReplace(Routes.Login);
+                return;
+            }
+            try {
+                const completed = await PaymentService.processRevenueCatCustomer(accessToken, customerInfo.originalAppUserId);
+                if (completed) {
+                    addToast("Payment processed successfully");
+                } else {
+                    addToast("Payment confirmed, but not yet processed. Please reach out to support (at savidgeapps@gmail.com) if it hasn't been processed in the next 5 minutes")
+                }
+                routeReplace(Routes.Home);
+            } catch (error) {
+                console.error(error);
+                addToast("Error processing payment. If your card has been charged, please reach out to the support team at savidgeapps@gmail.com");
+            }
+        }
+        
+        setLoadingMessage(null);
+    };
+
     useEffect(() => {
         const setup = async () => {
             if (Platform.OS === "ios") {
@@ -60,7 +104,6 @@ export default function DepositFundsScreen() {
         };
 
         if (Platform.OS === "ios") {
-            setLoadingMessage("Preparing payment options...");
             Purchases.setLogLevel(LOG_LEVEL.DEBUG);
 
             const handleCustomerInfoUpdate = (customerInfo: CustomerInfo) => {
@@ -70,8 +113,6 @@ export default function DepositFundsScreen() {
 
             setup()
                 .catch(console.log);
-
-            setLoadingMessage(null);
 
             return () => {
                 Purchases.removeCustomerInfoUpdateListener(handleCustomerInfoUpdate);
@@ -139,18 +180,6 @@ export default function DepositFundsScreen() {
         }
     }
 
-    const openPaymentSheet = async () => {
-        const { error } = await presentPaymentSheet();
-
-        if (error) {
-            addToast("Error completing payment");
-        } else {
-            addToast("Payment completed successfully!");
-            routeReplace(Routes.Home);
-        }
-        setLoadingMessage(null);
-    }
-
     const purhcasePackage = async (pack: PurchasesPackage) => {
         try {
             setLoadingMessage("Processing payment...");
@@ -175,52 +204,18 @@ export default function DepositFundsScreen() {
         purhcasePackage!(pack)
     }
 
-    const updateCustomerInfo = async (customerInfo: CustomerInfo) => {
-        const latestTransaction = customerInfo.nonSubscriptionTransactions?.sort(
-            (a, b) => (new Date(b.purchaseDate)).getTime() - (new Date(a.purchaseDate)).getTime()
-        )?.[0];
-
-        if (!latestTransaction) {
-            return;
-        }
-    
-        if (Date.now() - new Date(latestTransaction.purchaseDate).getTime() < 20000) {
-            if (!accessToken) {
-                addToast("Please log back in. If your card has been charged, please contact the support team")
-                routeReplace(Routes.Login);
-                return;
-            }
-            try {
-                const completed = await PaymentService.processRevenueCatCustomer(accessToken, customerInfo.originalAppUserId);
-                if (completed) {
-                    addToast("Payment processed successfully");
-                } else {
-                    addToast("Payment confirmed, but not yet processed. Please reach out to support (at savidgeapps@gmail.com) if it hasn't been processed in the next 5 minutes")
-                }
-                routeReplace(Routes.Home);
-            } catch (error) {
-                console.error(error);
-                addToast("Error processing payment. If your card has been charged, please reach out to the support team at savidgeapps@gmail.com");
-            }
-        }
-        
-        setLoadingMessage(null);
-    };
-
-    function RevenueCatComponent() {
-        return (
-            <View style={styles.packages}>
-                {packages.map((pack) => (
-                    <Card key={pack.product.identifier} style={styles.packageCard}>
-                        <ThemedText style={styles.packageTitle}>{pack.product.title}</ThemedText>
-                        <View style={styles.packageButton}>
-                            <GeneralButton title={pack.product.priceString} onPress={() => onPurchase(pack)} autoWidth={false} />
-                        </View>
-                    </Card>
-                ))}
-            </View>
-        );
-    }
+    const revenueCatPackages = (
+        <View style={styles.packages}>
+            {packages.map((pack) => (
+                <Card key={pack.product.identifier} style={styles.packageCard}>
+                    <ThemedText style={styles.packageTitle}>{pack.product.title}</ThemedText>
+                    <View style={styles.packageButton}>
+                        <GeneralButton title={pack.product.priceString} onPress={() => onPurchase(pack)} autoWidth={false} />
+                    </View>
+                </Card>
+            ))}
+        </View>
+    );
 
     const amountForm = (
         <Card style={styles.formCard}>
@@ -262,7 +257,7 @@ export default function DepositFundsScreen() {
                                 { Platform.OS === "ios" &&
                                 <>
                                     <ThemedText style={styles.optionTitle}>Option 2: in-app purchase ($1 = 100 credits)</ThemedText>
-                                    <RevenueCatComponent/>
+                                    {revenueCatPackages}
                                 </>
                                 }
                             </View>

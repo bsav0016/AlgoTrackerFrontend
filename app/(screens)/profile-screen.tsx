@@ -10,12 +10,12 @@ import { Routes } from "../Routes";
 import { Keyboard, Modal, ScrollView, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { useToast } from "@/contexts/ToastContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { Radius, Spacing, Type, useTheme } from "@/constants/Theme";
 
 export default function Profile() {
-    const { userRef, updateUserData } = useUser();
+    const { user, updateUserData } = useUser();
     const { accessToken, logout, deleteCurrentAccount } = useAuth();
     const { routeTo, routeReplace } = useRouteTo();
     const { addToast } = useToast();
@@ -24,11 +24,12 @@ export default function Profile() {
     const [typedPassword, setTypedPassword] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
 
-    if (!userRef || !userRef.current) {
-        routeTo(Routes.Login);
-        return;
-    }
-    const timeRemaining = (userRef.current.resetMonthlyCredits.getTime() - Date.now()) / 1000;
+    // Not logged in: go to the login screen (after the render, not during it).
+    useEffect(() => {
+        if (!user) {
+            routeTo(Routes.Login);
+        }
+    }, [user]);
 
     const logoutUser = async () => {
         setLoading(true);
@@ -71,7 +72,9 @@ export default function Profile() {
         }
     }
 
-    const user = userRef.current;
+    if (!user) {
+        return null;
+    }
 
     return (
         <CustomHeaderView header="Profile" displayFunds={false}>
@@ -95,7 +98,7 @@ export default function Profile() {
                     </View>
                     <View style={[styles.creditRow, styles.creditRowDivider, { borderColor: theme.border }]}>
                         <ThemedText type="muted">Monthly credits reset in</ThemedText>
-                        <CountdownTimer timeRemaining={timeRemaining} whenZero={triggerUserUpdate} alignRight />
+                        <CountdownTimer key={user.resetMonthlyCredits.getTime()} endsAt={user.resetMonthlyCredits} whenZero={triggerUserUpdate} alignRight />
                     </View>
                 </Card>
 
