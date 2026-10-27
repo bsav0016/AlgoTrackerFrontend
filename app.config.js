@@ -12,7 +12,6 @@ export default {
     icon: "./assets/images/icon.png",
     scheme: "AlgoTracker",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.bsav0016.AlgoTracker",
