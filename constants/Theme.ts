@@ -19,5 +19,6 @@ export const MIN_TOUCH = 44;
 export type ThemeColors = typeof Colors.light;
 
 export function useTheme(): ThemeColors {
-  return Colors[useColorScheme() ?? 'light'];
+  // React Native 0.83 can also report 'unspecified'; treat anything but dark as light.
+  return Colors[useColorScheme() === 'dark' ? 'dark' : 'light'];
 }
