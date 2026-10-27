@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { ComponentRef, useEffect, useRef, useState } from "react";
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
@@ -42,7 +42,7 @@ export default function LoginScreen() {
     const [processing, setProcessing] = useState<Boolean>(false);
 
     // The text inputs by field name, filled in by each input's ref callback (used to move focus to the next field).
-    const inputRefs = useRef<Partial<Record<keyof AuthFields, TextInput | null>>>({});
+    const inputRefs = useRef<Partial<Record<keyof AuthFields, ComponentRef<typeof TextInput> | null>>>({});
 
     useEffect(() => {
         if (user && accessToken) {

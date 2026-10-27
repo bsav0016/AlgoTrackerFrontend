@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Spacing, Type, useTheme } from "@/constants/Theme";
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import { AndroidImportance } from 'expo-notifications';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthService } from "@/features/auth/AuthService";
@@ -44,7 +45,7 @@ async function registerForPushNotificationsAsync() {
     if (Platform.OS === 'android') {
         Notifications.setNotificationChannelAsync('default', {
             name: 'default',
-            importance: Notifications.AndroidImportance.MAX,
+            importance: AndroidImportance.MAX,
             vibrationPattern: [0, 250, 250, 250],
             lightColor: '#FF231F7C',
         });

@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { ComponentRef, useState } from "react";
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import { MIN_TOUCH, Radius, Spacing, Type, useTheme } from "@/constants/Theme";
 
 interface TextFieldProps extends TextInputProps {
   label?: string;
   error?: string;
-  inputRef?: React.Ref<TextInput>;
+  inputRef?: React.Ref<ComponentRef<typeof TextInput>>;
 }
 
 export function TextField({ label, error, style, onFocus, onBlur, inputRef, ...rest }: TextFieldProps) {

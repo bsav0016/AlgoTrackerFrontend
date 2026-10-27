@@ -34,7 +34,7 @@ export function CustomHeaderView({
     const { user } = useUser();
     const theme = useTheme();
 
-    const handleBackPress = goBack || router.back
+    const handleBackPress = goBack || (() => router.back())
 
     return (
         <ThemedView style={[styles.screenView, style]}>
