@@ -130,12 +130,8 @@ const HomeScreen = () => {
         });
     
         return () => {
-            if (notificationListener) {
-                Notifications.removeNotificationSubscription(notificationListener);
-            }
-            if (responseListener) {
-                Notifications.removeNotificationSubscription(responseListener);
-            }
+            notificationListener.remove();
+            responseListener.remove();
         };
     }, []);
 
