@@ -30,10 +30,13 @@ export function EditIndicator({
     const [modal, setModal] = useState<boolean>(false);
     const signal = signals[indicatorIndex];
     const [formInput, setFormInput] = useState<string>(String(signals[indicatorIndex]?.targetValue ?? ''));
-
-    useEffect(() => {
+    // Picking a different indicator resets the text box to that signal's target (React's pattern for resetting
+    // state when an input changes: set it during the render, not in an effect).
+    const [formIndicator, setFormIndicator] = useState<string>(signal.indicator.name);
+    if (formIndicator !== signal.indicator.name) {
+        setFormIndicator(signal.indicator.name);
         setFormInput(String(signal.targetValue));
-    }, [signal.indicator.name]);
+    }
 
     const updateSignal = (changes: Partial<{
         indicator: typeof signal.indicator;

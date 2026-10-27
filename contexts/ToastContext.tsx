@@ -1,4 +1,4 @@
-import React, { createContext, useState, useCallback, useRef, ReactNode } from "react";
+import React, { createContext, useState, useCallback, ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { GeneralButton } from "@/components/GeneralButton";
@@ -28,7 +28,6 @@ interface ToastProviderProps {
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const toastRef = useRef<((message: string, actions: ToastAction[]) => void) | undefined>(undefined);
   const theme = useTheme();
 
   const addToast = useCallback(
@@ -45,8 +44,6 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const removeToast = useCallback((id: number) => {
     setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
   }, []);
-
-  toastRef.current = addToast;
 
   return (
     <ToastContext.Provider value={{ addToast }}>

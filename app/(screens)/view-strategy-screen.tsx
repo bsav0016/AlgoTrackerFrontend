@@ -108,7 +108,7 @@ export default function ViewStrategy() {
 
                     <View style={[styles.renewRow, { borderColor: theme.border }]}>
                         <ThemedText type="muted" style={styles.renewLabel}>Next charge in</ThemedText>
-                        <CountdownTimer timeRemaining={(strategy.chargeUserDate.getTime() - Date.now()) / 1000}/>
+                        <CountdownTimer key={strategy.chargeUserDate.getTime()} endsAt={strategy.chargeUserDate} />
                     </View>
 
                     <View style={[styles.renewRow, styles.checkedRow, { borderColor: theme.border }]}>

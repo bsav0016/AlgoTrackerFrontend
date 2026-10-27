@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Image, Dimensions, Switch, StyleSheet, ScrollView, View } from "react-native";
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { ThemedText } from "@/components/ThemedText";
@@ -32,8 +32,14 @@ export default function BacktestResults() {
     const theme = useTheme();
     const [displaySignals, setDisplaySignals] = useState(true);
 
-    const [imageUri, setImageUri] = useState<string | null>(null);
-    const [imageUriNoSignals, setImageUriNoSignals] = useState<string | null>(null);
+    const imageUri = useMemo(
+        () => backtestData?.resultImage ? processImageString(backtestData.resultImage) : null,
+        [backtestData]
+    );
+    const imageUriNoSignals = useMemo(
+        () => backtestData?.resultImageNoSignals ? processImageString(backtestData.resultImageNoSignals) : null,
+        [backtestData]
+    );
 
     useEffect(() => {
         if (!backtestData) {
@@ -47,12 +53,6 @@ export default function BacktestResults() {
             routeTo(Routes.StrategySelection, { strategyType: StrategyType.Backtest });
             return;
         }
-
-        const processedImageUri = processImageString(backtestData.resultImage);
-        setImageUri(processedImageUri);      
-
-        const processedImageUriNoSignals = processImageString(backtestData.resultImageNoSignals);
-        setImageUriNoSignals(processedImageUriNoSignals)
     }, [backtestData]);
 
     return (

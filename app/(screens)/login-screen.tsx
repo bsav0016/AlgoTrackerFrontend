@@ -1,4 +1,4 @@
-import React, { RefObject, useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
@@ -20,14 +20,13 @@ interface Field<T> {
     field: keyof T;
     text: string;
     value: string | undefined;
-    ref: RefObject<TextInput | null>;
 }
 
 export default function LoginScreen() {
     const { auth } = useAuth();
     const { addToast } = useToast();
     const { routeTo, routeReplace } = useRouteTo();
-    const { userRef } = useUser();
+    const { user } = useUser();
     const { accessToken } = useAuth();
     const [formFields, setFormFields] = useState<AuthFields>({
         username: "",
@@ -42,19 +41,14 @@ export default function LoginScreen() {
     const [type, setType] = useState<AuthType>(AuthType.Login);
     const [processing, setProcessing] = useState<Boolean>(false);
 
-    const usernameRef = React.createRef<TextInput>();
-    const passwordRef = React.createRef<TextInput>();
-    const confirmPasswordRef = React.createRef<TextInput>();
-    const emailRef = React.createRef<TextInput>();
-    const firstNameRef = React.createRef<TextInput>();
-    const lastNameRef = React.createRef<TextInput>();
-    const promoCodeRef = React.createRef<TextInput>();
+    // The text inputs by field name, filled in by each input's ref callback (used to move focus to the next field).
+    const inputRefs = useRef<Partial<Record<keyof AuthFields, TextInput | null>>>({});
 
     useEffect(() => {
-        if (userRef.current && accessToken) {
+        if (user && accessToken) {
             routeReplace(Routes.Home);
         }
-    }, [userRef.current, accessToken]);
+    }, [user, accessToken]);
 
     useEffect(() => {
         const checkPromoCodeAvailability = async () => {
@@ -69,8 +63,8 @@ export default function LoginScreen() {
         checkPromoCodeAvailability();
     }, [])
 
-    const focusNextField = (nextField: React.RefObject<TextInput | null>) => {
-        nextField.current?.focus();
+    const focusNextField = (nextField: keyof AuthFields) => {
+        inputRefs.current[nextField]?.focus();
     };
 
     const updateFormField = (fieldName: keyof AuthFields, value: string) => {
@@ -81,17 +75,17 @@ export default function LoginScreen() {
     };
 
     const loginFields: Field<AuthFields>[] = [
-        { field: "username", text: "Username", value: formFields.username, ref: usernameRef },
-        { field: "password", text: "Password", value: formFields.password, ref: passwordRef },
+        { field: "username", text: "Username", value: formFields.username },
+        { field: "password", text: "Password", value: formFields.password },
     ];
 
     const registerFields: Field<AuthFields>[] = [
         ...loginFields,
-        { field: "confirmPassword", text: "Confirm Password", value: formFields.confirmPassword, ref: confirmPasswordRef },
-        { field: "firstName", text: "First Name", value: formFields.firstName, ref: firstNameRef },
-        { field: "lastName", text: "Last Name", value: formFields.lastName, ref: lastNameRef },
-        { field: "email", text: "Email", value: formFields.email, ref: emailRef },
-        { field: "promoCode", text: "Promo Code", value: formFields.promoCode, ref: promoCodeRef}
+        { field: "confirmPassword", text: "Confirm Password", value: formFields.confirmPassword },
+        { field: "firstName", text: "First Name", value: formFields.firstName },
+        { field: "lastName", text: "Last Name", value: formFields.lastName },
+        { field: "email", text: "Email", value: formFields.email },
+        { field: "promoCode", text: "Promo Code", value: formFields.promoCode }
     ];
 
     const authUser = async () => {
@@ -191,7 +185,7 @@ export default function LoginScreen() {
                                             <TextField
                                                 key={field.field}
                                                 label={field.text}
-                                                inputRef={field.ref}
+                                                inputRef={(input) => { inputRefs.current[field.field] = input; }}
                                                 value={field.value}
                                                 onChangeText={(value) => updateFormField(field.field, value)}
                                                 secureTextEntry={field.field.toLowerCase().includes("password")}
@@ -204,8 +198,7 @@ export default function LoginScreen() {
                                                     if (isLastField) {
                                                         Keyboard.dismiss();
                                                     } else {
-                                                        const nextField = displayedFields[index + 1].ref;
-                                                        focusNextField(nextField);
+                                                        focusNextField(displayedFields[index + 1].field);
                                                     }
                                                 }}
                                             />

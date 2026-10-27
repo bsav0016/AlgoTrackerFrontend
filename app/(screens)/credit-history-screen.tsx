@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { Badge } from "@/components/Badge";
 import { Card } from "@/components/Card";
@@ -22,26 +22,24 @@ export default function CreditHistoryScreen() {
     const [loading, setLoading] = useState<boolean>(true);
     const [loadingMore, setLoadingMore] = useState<boolean>(false);
 
-    const loadFirstPage = useCallback(async () => {
+    useEffect(() => {
         if (!accessToken) {
             addToast("Please log back in to see your credit history");
-            setLoading(false);
             return;
         }
-        try {
-            const page = await CreditService.fetchHistory(accessToken);
-            setEntries(page.entries);
-            setNextBefore(page.nextBefore);
-        } catch {
-            addToast("Could not load your credit history");
-        } finally {
-            setLoading(false);
-        }
-    }, [accessToken, addToast]);
-
-    useEffect(() => {
+        const loadFirstPage = async () => {
+            try {
+                const page = await CreditService.fetchHistory(accessToken);
+                setEntries(page.entries);
+                setNextBefore(page.nextBefore);
+            } catch {
+                addToast("Could not load your credit history");
+            } finally {
+                setLoading(false);
+            }
+        };
         loadFirstPage();
-    }, [loadFirstPage]);
+    }, [accessToken, addToast]);
 
     const loadMore = async () => {
         if (!accessToken || nextBefore === null) return;
@@ -59,7 +57,7 @@ export default function CreditHistoryScreen() {
 
     return (
         <CustomHeaderView header="Credit history" displayFunds={false}>
-            {loading ? (
+            {loading && accessToken ? (
                 <LoadingScreen loadingMessage="Loading..." />
             ) : entries.length === 0 ? (
                 <EmptyState title="No credit activity yet" message="Purchases, backtests and subscriptions will show up here." />

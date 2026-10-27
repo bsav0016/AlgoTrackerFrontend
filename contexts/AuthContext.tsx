@@ -25,62 +25,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { addToast } = useToast();
 
     const [accessToken, setAccessToken] = useState<string | null>(null);
-    const [updatingToken, setUpdatingToken] = useState<boolean>(false);
 
     const accessTokenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const refreshTokenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    useEffect(() => {
-        const getStoredAuthData = async () => {
-            const storedRefreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_STRING);
-            if (!storedRefreshToken) return;
-            await checkRefreshToken(storedRefreshToken, true);
-        };
-
-        getStoredAuthData();
-    }, []);
-
-    useEffect(() => {
-        if (!accessToken) return;
-
-        const buffer = 10 * 1000; // 10 seconds before expiration
-        let accessTokenExpiration = getTokenExpiration(accessToken) - buffer;
-
-        if (accessTokenTimerRef.current) {
-            clearTimeout(accessTokenTimerRef.current);
-        }
-
-        if (accessTokenExpiration <= 0) {
-            refreshAccessToken(); // Immediately refresh if expired
-        } else {
-            accessTokenTimerRef.current = setTimeout(refreshAccessToken, accessTokenExpiration);
-        }
-
-        return () => {
-            if (accessTokenTimerRef.current) {
-                clearTimeout(accessTokenTimerRef.current);
-            }
-        };
-    }, [accessToken]);
-
-    const refreshAccessToken = async () => {
-        setUpdatingToken(true);
-        const storedRefreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_STRING);
-        if (!storedRefreshToken) {
-            console.error('No refresh token available.');
-            setUpdatingToken(false);
-            return;
-        }
-
-        try {
-            const newAccessToken = await AuthService.resetToken(storedRefreshToken);
-            setAccessToken(newAccessToken);
-        } catch (error) {
-            console.error('Failed to update token:', error);
-        } finally {
-            setUpdatingToken(false);
-        }
-    };
 
     const getTokenExpiration = (token: string): number => {
         const decodedToken = jwtDecode(token);
@@ -88,6 +35,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return decodedToken.exp * 1000 - Date.now();
         }
         return -1;
+    };
+
+    const logout = async () => {
+        try {
+            if (!accessToken) return;
+            await SecureStore.deleteItemAsync(REFRESH_TOKEN_STRING);
+            await AuthService.logout(accessToken);
+        } catch (error) {
+            throw error;
+        } finally {
+            setUser(null);
+            setAccessToken(null);
+            router.push('/(screens)/login-screen');
+        }
+    };
+
+    const logoutAfterLoginExpiration = async () => {
+        addToast("Your login has expired after 30 days");
+        try {
+            await logout();
+        } catch (error) {
+            console.error(error);
+            setUser(null);
+            setAccessToken(null);
+            router.push('/(screens)/login-screen');
+        }
     };
 
     const checkRefreshToken = async (refreshToken: string, initialLoad: boolean) => {
@@ -112,6 +85,51 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+    const refreshAccessToken = async () => {
+        const storedRefreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_STRING);
+        if (!storedRefreshToken) {
+            console.error('No refresh token available.');
+            return;
+        }
+
+        try {
+            const newAccessToken = await AuthService.resetToken(storedRefreshToken);
+            setAccessToken(newAccessToken);
+        } catch (error) {
+            console.error('Failed to update token:', error);
+        }
+    };
+
+    useEffect(() => {
+        const getStoredAuthData = async () => {
+            const storedRefreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_STRING);
+            if (!storedRefreshToken) return;
+            await checkRefreshToken(storedRefreshToken, true);
+        };
+
+        getStoredAuthData();
+    }, []);
+
+    useEffect(() => {
+        if (!accessToken) return;
+
+        const buffer = 10 * 1000; // 10 seconds before expiration
+        let accessTokenExpiration = getTokenExpiration(accessToken) - buffer;
+
+        if (accessTokenTimerRef.current) {
+            clearTimeout(accessTokenTimerRef.current);
+        }
+
+        // A token that has already expired (delay of 0) is refreshed straight away, on the next tick.
+        accessTokenTimerRef.current = setTimeout(refreshAccessToken, Math.max(accessTokenExpiration, 0));
+
+        return () => {
+            if (accessTokenTimerRef.current) {
+                clearTimeout(accessTokenTimerRef.current);
+            }
+        };
+    }, [accessToken]);
+
     useEffect(() => {
         return () => {
             if (refreshTokenTimerRef.current) {
@@ -119,18 +137,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         };
     }, []);
-
-    const logoutAfterLoginExpiration = async () => {
-        addToast("Your login has expired after 30 days");
-        try {
-            await logout();
-        } catch (error) {
-            console.error(error);
-            setUser(null);
-            setAccessToken(null);
-            router.push('/(screens)/login-screen');
-        }
-    };
 
     const auth = async (fields: AuthFields, type: AuthType): Promise<boolean> => {
         try {
@@ -156,20 +162,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             }
             throw new Error('Network error');
-        }
-    };
-
-    const logout = async () => {
-        try {
-            if (!accessToken) return;
-            await SecureStore.deleteItemAsync(REFRESH_TOKEN_STRING);
-            await AuthService.logout(accessToken);
-        } catch (error) {
-            throw error;
-        } finally {
-            setUser(null);
-            setAccessToken(null);
-            router.push('/(screens)/login-screen');
         }
     };
 

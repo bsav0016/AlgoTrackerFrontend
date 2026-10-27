@@ -31,11 +31,10 @@ export function CustomHeaderView({
 }: CustomHeaderProps) {
     const router = useRouter();
     const { routeTo } = useRouteTo();
-    const { userRef } = useUser();
+    const { user } = useUser();
     const theme = useTheme();
 
     const handleBackPress = goBack || router.back
-    const user = userRef?.current;
 
     return (
         <ThemedView style={[styles.screenView, style]}>

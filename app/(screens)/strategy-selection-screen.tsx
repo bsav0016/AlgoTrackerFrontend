@@ -30,6 +30,9 @@ import { Interval } from "@/features/strategy/dtos/SymbolsAndIntervalsResponseDT
 import { useUser } from "@/contexts/UserContext";
 
 
+// A new signal with the default settings: the first indicator, target 50, a 14-period window.
+const newSignal = (aboveTarget: boolean) => new Signal(indicators[0], 50, aboveTarget, 14, null, null, null);
+
 export default function StrategySelectionScreen() {
     const { strategyType } = useLocalSearchParams(); 
     const { accessToken } = useAuth();
@@ -54,8 +57,11 @@ export default function StrategySelectionScreen() {
     const [interval, setInterval] = useState<Interval>();
     const [symbolModal, setSymbolModal] = useState<boolean>(false);
     const [intervalModal, setIntervalModal] = useState<boolean>(false);
-    const [buySignals, setBuySignals] = useState<Signal[]>([]);
-    const [sellSignals, setSellSignals] = useState<Signal[]>([]);
+    const [buySignals, setBuySignals] = useState<Signal[]>(() => [newSignal(true)]);
+    const [sellSignals, setSellSignals] = useState<Signal[]>(() => [newSignal(false)]);
+    // The lists always hold at least one signal: removing the last one puts a fresh default in its place.
+    const changeBuySignals = (next: Signal[]) => setBuySignals(next.length > 0 ? next : [newSignal(true)]);
+    const changeSellSignals = (next: Signal[]) => setSellSignals(next.length > 0 ? next : [newSignal(false)]);
     const [loading, setLoading] = useState<boolean>(false);
     const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
     const [startDateMonth, setStartDateMonth] = useState<string>('');
@@ -88,50 +94,17 @@ export default function StrategySelectionScreen() {
     }, []);
 
     useEffect(() => {
-        if (buySignals.length === 0) {
-            addBuyIndicator();
-        }
-        if (sellSignals.length === 0) {
-            addSellIndicator();
-        }
-    }, [buySignals, sellSignals]);
-
-    useEffect(() => {
         if (backtestData) {
             routeTo(Routes.BacktestResults);
         }
     }, [backtestData]);
 
     const addBuyIndicator = () => {
-        const additionalIndicator = indicators[0];
-        const additionalBuySignal = new Signal(
-            additionalIndicator, 
-            50, 
-            true,
-            14,
-            null,
-            null,
-            null
-        );
-        const prevBuySignals = [...buySignals]
-        prevBuySignals.push(additionalBuySignal);
-        setBuySignals(prevBuySignals);
+        setBuySignals([...buySignals, newSignal(true)]);
     }
 
     const addSellIndicator = () => {
-        const additionalIndicator = indicators[0];
-        const additionalSellSignal = new Signal(
-            additionalIndicator, 
-            50, 
-            false,
-            14,
-            null,
-            null,
-            null
-        );
-        const prevSellSignals = [...sellSignals]
-        prevSellSignals.push(additionalSellSignal);
-        setSellSignals(prevSellSignals);
+        setSellSignals([...sellSignals, newSignal(false)]);
     }
 
     const clickedNext = () => {
@@ -271,14 +244,14 @@ export default function StrategySelectionScreen() {
             : buyIndicatorIndex !== null ?
             <EditIndicator
                 signals={buySignals}
-                setSignals={setBuySignals}
+                setSignals={changeBuySignals}
                 indicatorIndex={buyIndicatorIndex}
                 setIndicatorIndex={setBuyIndicatorIndex}
             />
             : sellIndicatorIndex !== null ?
             <EditIndicator
                 signals={sellSignals}
-                setSignals={setSellSignals}
+                setSignals={changeSellSignals}
                 indicatorIndex={sellIndicatorIndex}
                 setIndicatorIndex={setSellIndicatorIndex}
             />
@@ -342,7 +315,7 @@ export default function StrategySelectionScreen() {
                             sectionTitle="Buy signals"
                             tone="gain"
                             signals={buySignals}
-                            setSignals={setBuySignals}
+                            setSignals={changeBuySignals}
                             buttonText="Add buy indicator"
                             buttonAction={addBuyIndicator}
                             setIndicatorIndex={setBuyIndicatorIndex}
@@ -352,7 +325,7 @@ export default function StrategySelectionScreen() {
                             sectionTitle="Sell signals"
                             tone="loss"
                             signals={sellSignals}
-                            setSignals={setSellSignals}
+                            setSignals={changeSellSignals}
                             buttonText="Add sell indicator"
                             buttonAction={addSellIndicator}
                             setIndicatorIndex={setSellIndicatorIndex}
