@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/ThemedText";
 import { Radius, Spacing, MIN_TOUCH, useTheme } from "@/constants/Theme";
-import { useState, useRef } from "react";
+import { ComponentRef, useState, useRef } from "react";
 import { Keyboard, StyleSheet, TextInput, View } from "react-native";
 
 interface DateInputProps {
@@ -44,13 +44,13 @@ export function DateInput({
     const endDayString = "endYear";
     const endYearString = "endYear";
 
-    const startMonthRef = useRef<TextInput>(null);
-    const startDayRef = useRef<TextInput>(null);
-    const startYearRef = useRef<TextInput>(null);
+    const startMonthRef = useRef<ComponentRef<typeof TextInput>>(null);
+    const startDayRef = useRef<ComponentRef<typeof TextInput>>(null);
+    const startYearRef = useRef<ComponentRef<typeof TextInput>>(null);
 
-    const endMonthRef = useRef<TextInput>(null);
-    const endDayRef = useRef<TextInput>(null);
-    const endYearRef = useRef<TextInput>(null);
+    const endMonthRef = useRef<ComponentRef<typeof TextInput>>(null);
+    const endDayRef = useRef<ComponentRef<typeof TextInput>>(null);
+    const endYearRef = useRef<ComponentRef<typeof TextInput>>(null);
 
     const formatDate = (text: string) => {
         return text.replace(/[^0-9]/g, '');
