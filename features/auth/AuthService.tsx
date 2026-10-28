@@ -66,7 +66,7 @@ export const AuthService = {
                 body
             );
             const data = response.data as TokenRefreshResponseData;
-            return data.access;
+            return { access: data.access, refresh: data.refresh ?? null };
         } catch (error) {
             throw(error);
         }
