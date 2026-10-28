@@ -28,4 +28,5 @@ export const URL_EXT = {
     PAYMENT_INTENT: 'payment-intent/',
     REVENUECAT_CUSTOMER: 'revenuecat-customer/',
     CREDIT_HISTORY: 'credits/history/',
+    NOTIFICATIONS: 'notifications/',
 }
