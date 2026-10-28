@@ -72,15 +72,18 @@ export const AuthService = {
         }
     },
 
-    async logout(token: string) {
+    /** Signs out on the server, which revokes `refreshToken` so it cannot be used again. */
+    async logout(token: string, refreshToken: string | null = null) {
         try {
             const headers = {
-                ...HEADERS(token).AUTH
+                ...HEADERS(token).AUTH,
+                ...HEADERS().JSON
             }
             await networkRequest(
                 URL_EXT.LOGOUT, 
                 RequestMethod.POST, 
-                headers
+                headers,
+                JSON.stringify({ refresh: refreshToken })
             );
             return true;
         } catch (error) {
