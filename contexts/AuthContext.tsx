@@ -10,6 +10,7 @@ import { jwtDecode } from 'jwt-decode';
 import { useToast } from './ToastContext';
 import { AuthError } from '@/features/auth/AuthError';
 import { registerPushToken, unregisterPushToken } from '@/features/notifications/PushRegistration';
+import { createTokenRenewer } from '@/features/auth/tokenRenewal';
 
 interface AuthContextType {
     accessToken: string | null;
@@ -30,6 +31,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const accessTokenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const refreshTokenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pushRegisteredRef = useRef(false);
+    // The expiry timer must call the current logout, not the one from the render that scheduled it.
+    const logoutExpiredRef = useRef<() => Promise<void>>(async () => {});
 
     const getTokenExpiration = (token: string): number => {
         const decodedToken = jwtDecode(token);
@@ -68,42 +71,55 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const checkRefreshToken = async (refreshToken: string, initialLoad: boolean) => {
-        let refreshExpiration = getTokenExpiration(refreshToken);
-
-        const buffer = 3600000 //3600 s
-        refreshExpiration = refreshExpiration - buffer;
-
-        if (refreshExpiration <= 0) {
-            await logoutAfterLoginExpiration();
-        } else {
-            refreshTokenTimerRef.current = setTimeout(logoutAfterLoginExpiration, refreshExpiration);
+    /** Signs the user out when the refresh token is about to expire; replaces any earlier timer. */
+    const scheduleLoginExpiry = async (refreshToken: string) => {
+        if (refreshTokenTimerRef.current) {
+            clearTimeout(refreshTokenTimerRef.current);
+            refreshTokenTimerRef.current = null;
         }
 
-        if (initialLoad) {
-            try {
-                const newAccessToken = await AuthService.resetToken(refreshToken);
-                setAccessToken(newAccessToken);
-            } catch (error) {
-                console.error("Could not get new access token: ", error);
-            }
+        const buffer = 3600000 //3600 s
+        const refreshExpiration = getTokenExpiration(refreshToken) - buffer;
+
+        if (refreshExpiration <= 0) {
+            await logoutExpiredRef.current();
+        } else {
+            refreshTokenTimerRef.current = setTimeout(() => logoutExpiredRef.current(), refreshExpiration);
         }
     };
 
-    const refreshAccessToken = async () => {
-        const storedRefreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_STRING);
-        if (!storedRefreshToken) {
-            console.error('No refresh token available.');
-            return;
-        }
+    const checkRefreshToken = async (refreshToken: string, initialLoad: boolean) => {
+        await scheduleLoginExpiry(refreshToken);
 
+        if (initialLoad) {
+            await refreshAccessToken();
+        }
+    };
+
+    // A rotated refresh token is saved as it arrives and starts a fresh login-expiry countdown.
+    const renewAccessTokenRef = useRef(createTokenRenewer({
+        readRefresh: () => SecureStore.getItemAsync(REFRESH_TOKEN_STRING),
+        saveRefresh: async (refreshToken) => {
+            await SecureStore.setItemAsync(REFRESH_TOKEN_STRING, refreshToken);
+            await scheduleLoginExpiry(refreshToken);
+        },
+        renew: (refreshToken) => AuthService.resetToken(refreshToken),
+    }));
+
+    const refreshAccessToken = async () => {
         try {
-            const newAccessToken = await AuthService.resetToken(storedRefreshToken);
+            const newAccessToken = await renewAccessTokenRef.current();
+            if (!newAccessToken) {
+                console.error('No refresh token available.');
+                return;
+            }
             setAccessToken(newAccessToken);
         } catch (error) {
             console.error('Failed to update token:', error);
         }
     };
+
+    logoutExpiredRef.current = logoutAfterLoginExpiration;
 
     useEffect(() => {
         const getStoredAuthData = async () => {

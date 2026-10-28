@@ -14,4 +14,6 @@ export class TokenRefreshDTO {
 
 export interface TokenRefreshResponseData{
     access: string;
+    /** Present only when the server rotates refresh tokens; it replaces the one that was sent. */
+    refresh?: string;
 }
