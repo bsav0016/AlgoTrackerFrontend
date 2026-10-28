@@ -105,6 +105,7 @@ export default function Profile() {
                 <View style={styles.actions}>
                     <GeneralButton title="Deposit Funds" onPress={() => routeTo(Routes.DepositFunds)} autoWidth={false} />
                     <GeneralButton title="Credit History" variant="secondary" onPress={() => routeTo(Routes.CreditHistory)} autoWidth={false} />
+                    <GeneralButton title="Signal Notifications" variant="secondary" onPress={() => routeTo(Routes.NotificationHistory)} autoWidth={false} />
                     <GeneralButton title="Log Out" variant="outline" onPress={logoutUser} autoWidth={false} />
                 </View>
 

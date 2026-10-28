@@ -143,9 +143,9 @@ export const AuthService = {
         }
     },
 
-    async addDeviceId(token: string, pushToken: string) {
+    async addDeviceId(token: string, pushToken: string, platform: string = "") {
         try {
-            const body = new DeviceIdDTO(pushToken).jsonify()
+            const body = new DeviceIdDTO(pushToken, platform).jsonify()
             const headers = {
                 ...HEADERS(token).AUTH,
                 ...HEADERS().JSON

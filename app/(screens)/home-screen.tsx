@@ -5,25 +5,21 @@ import { ThemedText } from "@/components/ThemedText";
 import { useRouteTo } from "@/contexts/RouteContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
-import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Routes } from "@/app/Routes";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
 import { Card } from "@/components/Card";
 import { Badge, BadgeTone } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { Spacing, Type, useTheme } from "@/constants/Theme";
-import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import { AndroidImportance } from 'expo-notifications';
-import Constants from 'expo-constants';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthService } from "@/features/auth/AuthService";
 import { PositionMapping } from "@/features/strategy/classes/Strategy";
 import { useStrategy } from "@/contexts/StrategyContext";
 import { useToast } from "@/contexts/ToastContext";
 import { TestStrategies } from "@/features/strategy/testStrategies";
 import { useFocusEffect } from "expo-router";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { useOpenStrategyOnNotificationTap } from "@/features/notifications/useOpenStrategy";
 
 
 Notifications.setNotificationHandler({
@@ -36,53 +32,6 @@ Notifications.setNotificationHandler({
     }),
 });
 
-function handleRegistrationError(errorMessage: string) {
-    alert(errorMessage);
-    throw new Error(errorMessage);
-}
-  
-async function registerForPushNotificationsAsync() {
-    if (Platform.OS === 'android') {
-        Notifications.setNotificationChannelAsync('default', {
-            name: 'default',
-            importance: AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#FF231F7C',
-        });
-    }
-
-    if (Device.isDevice) {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== 'granted') {
-            const { status } = await Notifications.requestPermissionsAsync();
-            finalStatus = status;
-        }
-        if (finalStatus !== 'granted') {
-            handleRegistrationError('Permission not granted to get push token for push notification!');
-            return;
-        }
-        const projectId =
-            Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-        if (!projectId) {
-            handleRegistrationError('Project ID not found');
-        }
-        try {
-            const pushTokenString = (
-                await Notifications.getExpoPushTokenAsync({
-                    projectId,
-                })
-            ).data;
-            console.log(pushTokenString);
-            return pushTokenString;
-        } catch (e: unknown) {
-            handleRegistrationError(`${e}`);
-        }
-    } else {
-        handleRegistrationError('Must use physical device for push notifications');
-    }
-}
-
 const HomeScreen = () => {
     const { user, updateUserData } = useUser();
     const { accessToken, logout } = useAuth();
@@ -94,47 +43,11 @@ const HomeScreen = () => {
     const [loading, setLoading] = useState<boolean>(false);
 
     useEffect(() => {
-        const expoPushTokenKey = 'expoPushToken';
-
-        const initializeNotifications = async () => {
-            let previousToken: string | null = null;
-            try {
-                previousToken = await AsyncStorage.getItem(expoPushTokenKey);
-            } catch {
-                console.log("Could not get stored push token");
-            }
-            const newPushToken = await registerForPushNotificationsAsync()
-
-            if (newPushToken && newPushToken !== previousToken) {
-                if (accessToken) {
-                    await AuthService.addDeviceId(accessToken, newPushToken);
-                    if (previousToken !== null) {
-                        await AuthService.deleteDeviceId(accessToken, previousToken);
-                    }
-                }
-                await AsyncStorage.setItem(expoPushTokenKey, newPushToken);
-            }
-        }
-
-        if (Platform.OS === "ios" || Platform.OS === "android") {
-            initializeNotifications();
-        }
-
         setStrategy(null);
-
-        const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-            console.log("Notification received:", notification);
-        });
-    
-        const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-            console.log("Notification clicked:", response);
-        });
-    
-        return () => {
-            notificationListener.remove();
-            responseListener.remove();
-        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- clear the selection once, when the screen opens
     }, []);
+
+    useOpenStrategyOnNotificationTap();
 
     useFocusEffect(
         useCallback(() => {

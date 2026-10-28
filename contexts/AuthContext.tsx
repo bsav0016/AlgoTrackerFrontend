@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { jwtDecode } from 'jwt-decode';
 import { useToast } from './ToastContext';
 import { AuthError } from '@/features/auth/AuthError';
+import { registerPushToken, unregisterPushToken } from '@/features/notifications/PushRegistration';
 
 interface AuthContextType {
     accessToken: string | null;
@@ -28,6 +29,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const accessTokenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const refreshTokenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pushRegisteredRef = useRef(false);
 
     const getTokenExpiration = (token: string): number => {
         const decodedToken = jwtDecode(token);
@@ -40,6 +42,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const logout = async () => {
         try {
             if (!accessToken) return;
+            await unregisterPushToken(accessToken);
             await SecureStore.deleteItemAsync(REFRESH_TOKEN_STRING);
             await AuthService.logout(accessToken);
         } catch (error) {
@@ -130,6 +133,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
     }, [accessToken]);
 
+    // Bind this phone's push token to whoever is signed in, once per sign-in (not on every access-token refresh).
+    useEffect(() => {
+        if (!accessToken) {
+            pushRegisteredRef.current = false;
+            return;
+        }
+        if (pushRegisteredRef.current) return;
+        pushRegisteredRef.current = true;
+        registerPushToken(accessToken);
+    }, [accessToken]);
+
     useEffect(() => {
         return () => {
             if (refreshTokenTimerRef.current) {
@@ -168,6 +182,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const deleteCurrentAccount = async (password: string) => {
         try {
             if (!accessToken) return;
+            await unregisterPushToken(accessToken);
             await SecureStore.deleteItemAsync(REFRESH_TOKEN_STRING);
             await AuthService.deleteUserAccount(accessToken, password);
             setUser(null);

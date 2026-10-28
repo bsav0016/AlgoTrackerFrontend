@@ -10,6 +10,7 @@ export enum Routes {
     Profile = 'profile-screen',
     HowItWorks = 'how-it-works-screen',
     CreditHistory = 'credit-history-screen',
+    NotificationHistory = 'notification-history-screen',
 }
 
 //Only used to get rid of the warning
