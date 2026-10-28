@@ -43,8 +43,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             if (!accessToken) return;
             await unregisterPushToken(accessToken);
+            // The server revokes the refresh token on logout, so read it before it is deleted from the phone.
+            const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_STRING);
             await SecureStore.deleteItemAsync(REFRESH_TOKEN_STRING);
-            await AuthService.logout(accessToken);
+            await AuthService.logout(accessToken, refreshToken);
         } catch (error) {
             throw error;
         } finally {

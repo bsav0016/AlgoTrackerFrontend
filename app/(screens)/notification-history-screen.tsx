@@ -24,10 +24,7 @@ export default function NotificationHistoryScreen() {
     const [loadingMore, setLoadingMore] = useState<boolean>(false);
 
     useEffect(() => {
-        if (!accessToken) {
-            addToast("Please log back in to see your notifications");
-            return;
-        }
+        if (!accessToken) return; // signed out (this screen can still be in the stack): nothing to load or say
         const loadFirstPage = async () => {
             try {
                 const page = await NotificationService.fetchHistory(accessToken);
