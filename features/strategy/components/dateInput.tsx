@@ -41,7 +41,7 @@ export function DateInput({
     const startDayString = "startDay";
     const startYearString = "startYear";
     const endMonthString = "endMonth";
-    const endDayString = "endYear";
+    const endDayString = "endDay";
     const endYearString = "endYear";
 
     const startMonthRef = useRef<ComponentRef<typeof TextInput>>(null);
