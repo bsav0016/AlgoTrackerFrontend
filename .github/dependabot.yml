@@ -12,26 +12,35 @@ updates:
       # version the Expo SDK / expo-router expects (e.g. query-string 7 is the last CommonJS release).
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
-      # Expo pins matching versions of these per SDK. Move them together with an SDK
-      # upgrade (`npx expo install --fix`); patch updates are still allowed.
+      # Expo tests one exact set of versions per SDK (its bundledNativeModules.json). Dependabot's patch
+      # bumps drifted these past that set (expo-doctor failed), so none of them moves on its own: they move
+      # together with an SDK upgrade or an `npx expo install --fix`. Security fixes for these need a manual bump.
       - dependency-name: "expo"
-        update-types: ["version-update:semver-minor"]
       - dependency-name: "expo-*"
-        update-types: ["version-update:semver-minor"]
       - dependency-name: "@expo/*"
-        update-types: ["version-update:semver-minor"]
+      - dependency-name: "babel-preset-expo"
+      - dependency-name: "eslint-config-expo"
       - dependency-name: "jest-expo"
-        update-types: ["version-update:semver-minor"]
-      - dependency-name: "react-native-*"
-        update-types: ["version-update:semver-minor"]
-      - dependency-name: "@react-native-*"
-        update-types: ["version-update:semver-minor"]
-      # Payments SDK: Expo SDK 53 pins 0.45.x; later versions need newer React Native, Kotlin and
-      # Android/iOS toolchains. Upgrade it with the Expo SDK (`npx expo install @stripe/stripe-react-native`).
-      - dependency-name: "@stripe/stripe-react-native"
-      - dependency-name: "react-native"
       - dependency-name: "react"
       - dependency-name: "react-dom"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-gesture-handler"
+      - dependency-name: "react-native-reanimated"
+      - dependency-name: "react-native-safe-area-context"
+      - dependency-name: "react-native-screens"
+      - dependency-name: "react-native-svg"
+      - dependency-name: "react-native-web"
+      - dependency-name: "react-native-webview"
+      - dependency-name: "react-native-worklets"
+      - dependency-name: "@react-native-async-storage/async-storage"
+      # Payments SDK: Expo pins it per SDK; later versions need newer React Native, Kotlin and
+      # Android/iOS toolchains. Upgrade it with the Expo SDK (`npx expo install @stripe/stripe-react-native`).
+      - dependency-name: "@stripe/stripe-react-native"
+      # Not pinned by Expo, but a native payments module: minor updates were blocked before this change
+      # (the old react-native-* rule), so keep them for a deliberate upgrade with a build and a purchase test.
+      - dependency-name: "react-native-purchases"
+        update-types: ["version-update:semver-minor"]
+      # Must match the react version above.
       - dependency-name: "react-test-renderer"
       - dependency-name: "@types/react"
   - package-ecosystem: github-actions
