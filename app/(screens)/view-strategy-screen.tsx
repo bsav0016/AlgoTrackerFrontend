@@ -2,8 +2,8 @@ import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { useRouteTo } from "@/contexts/RouteContext";
 import { useStrategy } from "@/contexts/StrategyContext";
 import { useToast } from "@/contexts/ToastContext";
-import React from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import React, { useState } from "react";
+import { Platform, ScrollView, Share, StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { GeneralButton } from "@/components/GeneralButton";
@@ -13,12 +13,17 @@ import { EmptyState } from "@/components/EmptyState";
 import { StrategyService } from "@/features/strategy/StrategyService";
 import { PositionMapping } from "@/features/strategy/classes/Strategy";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
+import { ShareService } from "@/features/sharing/ShareService";
+import { SHARE_DISCLAIMER, shareUrl, sharePayload } from "@/features/sharing/ShareLink";
 import { Spacing, Type, useTheme } from "@/constants/Theme";
 
 
 export default function ViewStrategy() {
     const { strategy, setStrategy } = useStrategy();
     const { accessToken } = useAuth()
+    const { updateUserData } = useUser();
+    const [busy, setBusy] = useState<boolean>(false);
     const { routeBack } = useRouteTo();
     const { addToast } = useToast();
     const theme = useTheme();
@@ -79,16 +84,70 @@ export default function ViewStrategy() {
         routeBack();
     }
 
+    const shareStrategy = async () => {
+        if (!accessToken) {
+            addToast("Please sign in first");
+            return;
+        }
+        try {
+            const url = shareUrl(await ShareService.createShare(strategy.id, accessToken));
+            await Share.share(sharePayload(strategy.title, url, Platform.OS));
+        } catch {
+            addToast("Could not create the share link. Please try again");
+        }
+    }
+
+    const confirmStopSharing = () => {
+        addToast("Anyone who has your link will no longer be able to open it. Turn the link off?", [{
+            label: 'Yes',
+            callback: () => stopSharing()
+        }])
+    }
+
+    const stopSharing = async () => {
+        if (!accessToken) {
+            addToast("Please sign in first");
+            return;
+        }
+        try {
+            await ShareService.revokeShare(strategy.id, accessToken);
+            addToast("The link is turned off");
+        } catch {
+            addToast("Could not turn the link off. Please try again");
+        }
+    }
+
+    const startTracking = async () => {
+        if (!accessToken) {
+            addToast("Please sign in first");
+            return;
+        }
+        setBusy(true);
+        try {
+            setStrategy(await ShareService.activate(strategy.id, accessToken));
+            await updateUserData(accessToken);
+            addToast("Tracking started. You will get a notification when it signals.");
+        } catch {
+            addToast("Could not start tracking. Please try again");
+        } finally {
+            setBusy(false);
+        }
+    }
+
     return (
         <CustomHeaderView header={strategy.title}>
             <ScrollView contentContainerStyle={styles.content}>
                 <Card style={styles.summaryCard}>
                     <View style={styles.summaryHeader}>
                         <ThemedText type="muted">{`${strategy.symbol} · ${strategy.interval}`}</ThemedText>
-                        <Badge
-                            label={PositionMapping[strategy.position] ?? "Hold"}
-                            tone={strategy.position < 1 ? "loss" : strategy.position > 2 ? "gain" : "neutral"}
-                        />
+                        {strategy.active ?
+                            <Badge
+                                label={PositionMapping[strategy.position] ?? "Hold"}
+                                tone={strategy.position < 1 ? "loss" : strategy.position > 2 ? "gain" : "neutral"}
+                            />
+                            :
+                            <Badge label="Draft" tone="neutral" />
+                        }
                     </View>
 
                     <View style={styles.metrics}>
@@ -106,17 +165,27 @@ export default function ViewStrategy() {
                         </View>
                     </View>
 
-                    <View style={[styles.renewRow, { borderColor: theme.border }]}>
-                        <ThemedText type="muted" style={styles.renewLabel}>Next charge in</ThemedText>
-                        <CountdownTimer key={strategy.chargeUserDate.getTime()} endsAt={strategy.chargeUserDate} />
-                    </View>
+                    {strategy.active ?
+                        <>
+                            <View style={[styles.renewRow, { borderColor: theme.border }]}>
+                                <ThemedText type="muted" style={styles.renewLabel}>Next charge in</ThemedText>
+                                <CountdownTimer key={strategy.chargeUserDate.getTime()} endsAt={strategy.chargeUserDate} />
+                            </View>
 
-                    <View style={[styles.renewRow, styles.checkedRow, { borderColor: theme.border }]}>
-                        <ThemedText type="muted" style={styles.renewLabel}>Last candle checked</ThemedText>
-                        <ThemedText style={styles.checkedValue}>
-                            {strategy.lastProcessedAt ? formattedDate(strategy.lastProcessedAt) : "Waiting for the first candle"}
-                        </ThemedText>
-                    </View>
+                            <View style={[styles.renewRow, styles.checkedRow, { borderColor: theme.border }]}>
+                                <ThemedText type="muted" style={styles.renewLabel}>Last candle checked</ThemedText>
+                                <ThemedText style={styles.checkedValue}>
+                                    {strategy.lastProcessedAt ? formattedDate(strategy.lastProcessedAt) : "Waiting for the first candle"}
+                                </ThemedText>
+                            </View>
+                        </>
+                        :
+                        <View style={[styles.renewRow, { borderColor: theme.border }]}>
+                            <ThemedText type="muted" style={styles.renewLabel}>
+                                This is a draft. It is not tracked or charged until you start it, and then the first monthly charge is 30 days away.
+                            </ThemedText>
+                        </View>
+                    }
                 </Card>
 
                 <ThemedText style={styles.sectionTitle}>
@@ -152,7 +221,13 @@ export default function ViewStrategy() {
                 }
 
                 <View style={styles.stopSection}>
-                    <GeneralButton title="Stop Strategy" variant="danger" onPress={confirmStopStrategy} autoWidth={false} />
+                    {!strategy.active &&
+                        <GeneralButton title="Start tracking" onPress={startTracking} loading={busy} disabled={busy} autoWidth={false} />
+                    }
+                    <GeneralButton title="Share" variant="outline" onPress={shareStrategy} autoWidth={false} />
+                    <GeneralButton title="Stop sharing" variant="ghost" onPress={confirmStopSharing} autoWidth={false} />
+                    <ThemedText type="muted" style={styles.shareNote}>{SHARE_DISCLAIMER}</ThemedText>
+                    <GeneralButton title={strategy.active ? "Stop Strategy" : "Delete draft"} variant="danger" onPress={confirmStopStrategy} autoWidth={false} />
                 </View>
             </ScrollView>
         </CustomHeaderView>
@@ -257,5 +332,11 @@ const styles = StyleSheet.create({
 
     stopSection: {
         marginTop: Spacing.lg,
+        gap: Spacing.sm,
+    },
+
+    shareNote: {
+        ...Type.caption,
+        textAlign: 'center',
     },
 })

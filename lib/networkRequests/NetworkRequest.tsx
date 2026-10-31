@@ -31,6 +31,11 @@ export const networkRequest = async (
       throw new NetworkError(message, response.status, errorResponse);
     }
 
+    // 204 No Content (for example, turning a share link off) has no body to read.
+    if (response.status === 204) {
+      return { data: null, status: response.status };
+    }
+
     const data = await response.json();
     return { data: data, status: response.status };
   } catch (error) {
