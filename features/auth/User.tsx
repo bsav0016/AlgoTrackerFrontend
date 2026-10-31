@@ -10,6 +10,8 @@ export class User {
     accountCredits: number;
     monthlyCredits: number;
     resetMonthlyCredits: Date;
+    // The name shown on the public leaderboard; null means the user is not on it.
+    leaderboardName: string | null;
 
     constructor(
         username: string,
@@ -20,7 +22,8 @@ export class User {
         strategies: Strategy[],
         accountCredits: number,
         monthlyCredits: number,
-        resetMonthlyCredits: Date
+        resetMonthlyCredits: Date,
+        leaderboardName: string | null = null
     ) {
         this.username = username;
         this.firstName = firstName;
@@ -31,6 +34,7 @@ export class User {
         this.accountCredits = accountCredits;
         this.monthlyCredits = monthlyCredits;
         this.resetMonthlyCredits = resetMonthlyCredits
+        this.leaderboardName = leaderboardName
     }
 
     /** Rebuilds a user from the JSON kept in AsyncStorage, where every Date has become a string. */
@@ -44,7 +48,8 @@ export class User {
             (stored.strategies ?? []).map((strategy: any) => Strategy.fromStored(strategy)),
             stored.accountCredits,
             stored.monthlyCredits,
-            new Date(stored.resetMonthlyCredits)
+            new Date(stored.resetMonthlyCredits),
+            stored.leaderboardName ?? null
         );
     }
 }

@@ -11,6 +11,7 @@ export interface AuthResponseData {
     account_credits: number;
     monthly_credits: number;
     reset_monthly_credits: string;
+    leaderboard_name?: string | null;
     refresh_token?: string;
     access_token?: string;
 }
@@ -38,7 +39,8 @@ export class AuthResponseDTO {
             strategies,
             data.account_credits,
             data.monthly_credits,
-            new Date(data.reset_monthly_credits)
+            new Date(data.reset_monthly_credits),
+            data.leaderboard_name ?? null
         )
 
         this.refreshToken = data.refresh_token;

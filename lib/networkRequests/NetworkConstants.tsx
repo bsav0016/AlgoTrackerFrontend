@@ -30,4 +30,6 @@ export const URL_EXT = {
     CREDIT_HISTORY: 'credits/history/',
     NOTIFICATIONS: 'notifications/',
     SHARED: 'shared/',
+    LEADERBOARD: 'leaderboard/',
+    LEADERBOARD_PROFILE: 'leaderboard/profile/',
 }

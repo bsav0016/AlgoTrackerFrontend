@@ -119,6 +119,7 @@ const HomeScreen = () => {
             >
                 <GeneralButton title="Run a Backtest" onPress={() => goToStrategySelection(StrategyType.Backtest)} autoWidth={false} />
                 <GeneralButton title="Subscribe to a Strategy" variant="outline" onPress={() => goToStrategySelection(StrategyType.Subscription)} autoWidth={false} />
+                <GeneralButton title="Leaderboard" variant="ghost" onPress={() => routeTo(Routes.Leaderboard)} autoWidth={false} />
 
                 <ThemedText style={styles.sectionHeader}>Your strategies</ThemedText>
 

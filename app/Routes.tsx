@@ -12,6 +12,7 @@ export enum Routes {
     CreditHistory = 'credit-history-screen',
     NotificationHistory = 'notification-history-screen',
     SharedStrategy = 'shared-strategy-screen',
+    Leaderboard = 'leaderboard-screen',
 }
 
 //Only used to get rid of the warning
