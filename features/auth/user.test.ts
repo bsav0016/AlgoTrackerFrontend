@@ -26,7 +26,8 @@ const makeUser = () => {
     new Date("2026-01-05T09:30:00.000Z"),
     [strategy],
     250, 407,
-    new Date("2026-11-16T08:00:00.000Z")
+    new Date("2026-11-16T08:00:00.000Z"),
+    "Quiet Trader"
   );
 };
 
@@ -39,6 +40,13 @@ describe("User.fromStored", () => {
     expect(restored.resetMonthlyCredits).toBeInstanceOf(Date);
     expect(restored.resetMonthlyCredits.getTime()).toBe(new Date("2026-11-16T08:00:00.000Z").getTime());
     expect(restored.accountCreated).toBeInstanceOf(Date);
+  });
+
+  it("keeps the leaderboard name, and treats a missing one as off", () => {
+    expect(restored.leaderboardName).toBe("Quiet Trader");
+    const { leaderboardName, ...older } = JSON.parse(JSON.stringify(makeUser()));
+    expect(leaderboardName).toBe("Quiet Trader");
+    expect(User.fromStored(older).leaderboardName).toBeNull();
   });
 
   it("keeps the plain fields", () => {

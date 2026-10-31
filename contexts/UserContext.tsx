@@ -66,7 +66,8 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         userRef.current.strategies,
         accountCredits,
         monthlyCredits,
-        userRef.current.resetMonthlyCredits
+        userRef.current.resetMonthlyCredits,
+        userRef.current.leaderboardName
       );
 
       setUser(updatedUser);
