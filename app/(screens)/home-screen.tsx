@@ -20,6 +20,7 @@ import { TestStrategies } from "@/features/strategy/testStrategies";
 import { useFocusEffect } from "expo-router";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { useOpenStrategyOnNotificationTap } from "@/features/notifications/useOpenStrategy";
+import { useOpenPendingShare } from "@/features/sharing/pendingShare";
 
 
 Notifications.setNotificationHandler({
@@ -48,6 +49,7 @@ const HomeScreen = () => {
     }, []);
 
     useOpenStrategyOnNotificationTap();
+    useOpenPendingShare();
 
     useFocusEffect(
         useCallback(() => {
@@ -133,7 +135,11 @@ const HomeScreen = () => {
                             <Card style={styles.strategyCard}>
                                 <View style={styles.strategyInfo}>
                                     <ThemedText type="defaultSemiBold" numberOfLines={1}>{strategy.title}</ThemedText>
-                                    <Badge label={PositionMapping[strategy.position] ?? "Hold"} tone={positionTone(strategy.position)} />
+                                    {strategy.active ?
+                                        <Badge label={PositionMapping[strategy.position] ?? "Hold"} tone={positionTone(strategy.position)} />
+                                        :
+                                        <Badge label="Draft" tone="neutral" />
+                                    }
                                 </View>
                                 <ThemedText style={[styles.returnText, { color: returnPct >= 0 ? theme.gain : theme.loss }]}>
                                     {`${returnPct >= 0 ? "+" : ""}${returnPct.toFixed(1)}%`}

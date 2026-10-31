@@ -56,6 +56,11 @@ describe("networkRequest", () => {
     });
   });
 
+  it("accepts 204 No Content without trying to read a body", async () => {
+    mockFetch.mockResolvedValueOnce({ status: 204, json: () => Promise.reject(new SyntaxError("Unexpected end of input")) });
+    await expect(networkRequest("strategy/1/share/", RequestMethod.DELETE)).resolves.toEqual({ data: null, status: 204 });
+  });
+
   it("raises a NetworkError carrying the server's `error` message", async () => {
     respond(417, { error: "Invalid or expired OTP" });
     const error = await networkRequest("x/", RequestMethod.POST).catch((e) => e);
@@ -104,8 +109,8 @@ describe("networkRequest", () => {
     await expect(networkRequest("x/", RequestMethod.GET)).rejects.toBe(failure);
   });
 
-  it("treats other 2xx codes as errors, as the app only expects 200/201", async () => {
-    respond(204, {});
+  it("treats other 2xx codes as errors, as the app only expects 200, 201 and 204", async () => {
+    respond(202, {});
     await expect(networkRequest("x/", RequestMethod.DELETE)).rejects.toBeInstanceOf(NetworkError);
   });
 });

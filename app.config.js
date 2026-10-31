@@ -10,7 +10,8 @@ export default {
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
-    scheme: "AlgoTracker",
+    // The lowercase one is what share links use (algotracker://shared/<id>); Android matches schemes case-sensitively.
+    scheme: ["algotracker", "AlgoTracker"],
     userInterfaceStyle: "automatic",
     ios: {
       supportsTablet: true,

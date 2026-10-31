@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 
 export const DB_URL = (Constants.expoConfig?.extra?.API_URL || '') + 'api/';
 
-export const ACCEPTABLE_STATUS_CODES: number[] = [200, 201]
+export const ACCEPTABLE_STATUS_CODES: number[] = [200, 201, 204]
 
 export const HEADERS = (token: string | null = null) => {
     return {
@@ -29,4 +29,5 @@ export const URL_EXT = {
     REVENUECAT_CUSTOMER: 'revenuecat-customer/',
     CREDIT_HISTORY: 'credits/history/',
     NOTIFICATIONS: 'notifications/',
+    SHARED: 'shared/',
 }
