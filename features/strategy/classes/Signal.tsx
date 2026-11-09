@@ -8,7 +8,11 @@ export interface SignalData {
     fast_window: number | null;
     slow_window: number | null;
     signal_window: number | null;
+    version?: number;
 }
+
+export const CURRENT_SIGNAL_VERSION = 2;
+export const LEGACY_SIGNAL_VERSION = 1;
 
 export class Signal {
     indicator: IndicatorData;
@@ -18,6 +22,8 @@ export class Signal {
     fastWindow: number | null;
     slowWindow: number | null;
     signalWindow: number | null;
+    /** 1 is the original indicator definitions, 2 the standard RSI/ADX/MACD. Old strategies keep 1. */
+    version: number;
 
     constructor(
         indicator: IndicatorData,
@@ -26,7 +32,8 @@ export class Signal {
         window: number | null,
         fastWindow: number | null,
         slowWindow: number | null,
-        signalWindow: number | null
+        signalWindow: number | null,
+        version: number = CURRENT_SIGNAL_VERSION
     ) {
         this.indicator = indicator;
         this.targetValue = targetValue;
@@ -34,7 +41,8 @@ export class Signal {
         this.window = window;
         this.fastWindow = fastWindow;
         this.slowWindow = slowWindow;
-        this.signalWindow = signalWindow;   
+        this.signalWindow = signalWindow;
+        this.version = version;
     }
 
     static fromData(data: SignalData): Signal {
@@ -50,11 +58,12 @@ export class Signal {
             data.window,
             data.fast_window,
             data.slow_window,
-            data.signal_window
+            data.signal_window,
+            data.version ?? LEGACY_SIGNAL_VERSION
         )
     }
 
-    toJSON(buySignal: boolean): Record<string, any> {
+    toJSON(buySignal: boolean, version: number = this.version): Record<string, any> {
         return {
             name: this.indicator.name,
             above_target: this.aboveTarget,
@@ -63,7 +72,8 @@ export class Signal {
             window: this.window,
             fast_window: this.fastWindow,
             slow_window: this.slowWindow,
-            signal_window: this.signalWindow
-        };;
+            signal_window: this.signalWindow,
+            version
+        };
     }
 }

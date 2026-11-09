@@ -156,7 +156,7 @@ export default function StrategySelectionScreen() {
             updateAccountCredits(returnedBacktest.userAccountCredits, returnedBacktest.userMonthlyCredits);
             setBacktestData(returnedBacktest.backtest);
         } catch (error: any) {
-            if (error.status && error.status === 402) {
+            if (error.status && (error.status === 402 || error.status === 422)) {
                 addToast(error.message);
             } else {
                 console.error(error);

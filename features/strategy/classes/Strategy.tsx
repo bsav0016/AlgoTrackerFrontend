@@ -1,4 +1,4 @@
-import { Signal, SignalData } from "./Signal";
+import { CURRENT_SIGNAL_VERSION, LEGACY_SIGNAL_VERSION, Signal, SignalData } from "./Signal";
 import { Trade, TradeData } from "./Trade";
 
 export interface StrategyData {
@@ -76,13 +76,20 @@ export class Strategy {
         this.lastProcessedAt = lastProcessedAt;
     }
 
+    /** The server accepts one version per strategy, so a strategy holding any old rule stays on the old definitions. */
+    signalVersion(): number {
+        const all = [...this.buySignals, ...this.sellSignals];
+        return all.some(signal => signal.version === LEGACY_SIGNAL_VERSION) ? LEGACY_SIGNAL_VERSION : CURRENT_SIGNAL_VERSION;
+    }
+
     toSubscribeJSON() {
+        const version = this.signalVersion();
         let signals = []
         for (let buySignal of this.buySignals) {
-            signals.push(buySignal.toJSON(true));
+            signals.push(buySignal.toJSON(true, version));
         }
         for (let sellSignal of this.sellSignals) {
-            signals.push(sellSignal.toJSON(false));
+            signals.push(sellSignal.toJSON(false, version));
         }
 
         return JSON.stringify({

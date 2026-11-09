@@ -11,6 +11,12 @@ interface BacktestResultsTableProps {
     sharpeRatioAdj: number | null;
     sortinoRatio: number | null;
     sortinoRatioAdj: number | null;
+    periodReturn?: number | null;
+    periodReturnAdj?: number | null;
+    periodReturnBeforeCosts?: number | null;
+    annualizedIsExtrapolated?: boolean;
+    tradeCostPercent?: number | null;
+    tradeCount?: number | null;
 }
 
 export default function BacktestResultsTable({
@@ -19,7 +25,13 @@ export default function BacktestResultsTable({
     sharpeRatio,
     sharpeRatioAdj,
     sortinoRatio,
-    sortinoRatioAdj
+    sortinoRatioAdj,
+    periodReturn = null,
+    periodReturnAdj = null,
+    periodReturnBeforeCosts = null,
+    annualizedIsExtrapolated = false,
+    tradeCostPercent = null,
+    tradeCount = null
 }: BacktestResultsTableProps) {
     const theme = useTheme();
 
@@ -28,7 +40,10 @@ export default function BacktestResultsTable({
         value === null ? theme.text : value >= 0 ? theme.gain : theme.loss;
 
     const rows: { label: string; baseline: number | null; adjusted: number | null; colored?: boolean }[] = [
-        { label: "Percent gain", baseline: percentReturn, adjusted: percentReturnAdj, colored: true },
+        ...(periodReturn !== null
+            ? [{ label: "Gain over period", baseline: periodReturn, adjusted: periodReturnAdj, colored: true }]
+            : []),
+        { label: "Percent gain per year", baseline: percentReturn, adjusted: percentReturnAdj, colored: true },
         { label: "Sharpe ratio", baseline: sharpeRatio, adjusted: sharpeRatioAdj },
         { label: "Sortino ratio", baseline: sortinoRatio, adjusted: sortinoRatioAdj },
     ];
@@ -59,7 +74,23 @@ export default function BacktestResultsTable({
                 </View>
             ))}
 
-            <ThemedText type="muted" style={styles.noteText}>All values are annualized</ThemedText>
+            <ThemedText type="muted" style={styles.noteText}>
+                {periodReturn !== null
+                    ? "Gain over period is what the strategy actually returned. The other values are annualized."
+                    : "All values are annualized"}
+            </ThemedText>
+            {annualizedIsExtrapolated && (
+                <ThemedText type="muted" style={styles.noteText}>
+                    This period is under 30 days, so the yearly figures stretch a short result and are not a forecast.
+                </ThemedText>
+            )}
+            {tradeCostPercent !== null && (
+                <ThemedText type="muted" style={styles.noteText}>
+                    {`Results include a ${tradeCostPercent}% cost on each buy and sell`
+                        + (tradeCount !== null ? ` (${tradeCount} ${tradeCount === 1 ? "trade" : "trades"})` : "")
+                        + (periodReturnBeforeCosts !== null ? `. Before costs the gain was ${periodReturnBeforeCosts.toFixed(2)}%.` : ".")}
+                </ThemedText>
+            )}
         </Card>
     );
 }
