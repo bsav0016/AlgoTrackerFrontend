@@ -193,7 +193,9 @@ const inputsDetails: HowItWorksDetails[] = [
         title: "MACD",
         description: "The moving average convergence/divergence (MACD) is a trend-following, lagging indicator."
             + " It compares a slow- and fast-exponential moving average (EMA) to provide insights on an assets trends."
-            + " MACD ranges from -1.0 and 1.0."
+            + " The MACD value used here is the gap between the MACD line and its signal line, as a percent of the price."
+            + " It is positive when the MACD line is above its signal line and negative when it is below, and is usually within a few percent either side of 0."
+            + " Strategies saved before this change keep the earlier MACD scale, which sat near 1.0."
             + " The typical slow EMA, fast EMA, and signal windows are 26, 12, and 9, respectively.",
         link: "https://www.investopedia.com/terms/m/macd.asp"
     },
@@ -234,9 +236,12 @@ const outputsDetails: HowItWorksDetails[] = [
     {
         title: "Percent Return",
         description: "Percent return shows how much value an asset or strategy gains over a period of time."
-            + " The values you will see in the backtest results have been annualized."
-            + " For example, if the strategy gained 1% over the course of 1 month, then it's annualized to 12% (1% x 12 months = 12%)."
-            + " The baseline vs. 0% shows the raw strategy gains."
+            + " The backtest shows the gain over the period you chose, and also a yearly figure that compounds it."
+            + " For example, a 1% gain over 1 month compounds to about 12.7% a year (1.01 to the 12th power)."
+            + " A period under 30 days is flagged: stretching a few days to a year gives numbers that are not a forecast."
+            + " Every buy and sell costs a small percentage of the amount traded, and the results are after those costs."
+            + " The covered period shows the dates that were actually tested. If the data provider could not supply the whole period, the test covers a shorter one and says so."
+            + " The baseline vs. 0% shows the strategy gains."
             + " The baseline vs. asset returns shows the strategy return minus the buy-and-hold return."
             + " If the percent return vs. asset return displays a negative number, this shows the buy-and-hold strategy performed better than your backtested strategy for this period.",
         link: "https://www.investopedia.com/terms/r/returnoninvestment.asp"
@@ -258,7 +263,7 @@ const outputsDetails: HowItWorksDetails[] = [
         title: "Sortino Ratio",
         description: "The Sortino Ratio is another method to compare returns to associated risk, but only the risk associated with negative returns."
             + " The numerator is the difference between returns and some baseline returns."
-            + " The denominator is the standard deviation of the negative returns."
+            + " The denominator is the downside deviation: how far returns fall below the baseline, with every period counted and gains counting as zero."
             + " An annualized Sortino ratio above 1 is acceptable, above 2 is very good, and above 3 is outstanding."
             + " The backtest results will display two baselines - 0% returns and the asset returns."
             + " A good Sortino ratio for the 0% returns indicates your strategy performed well in backtesting as compared to not investing at all."

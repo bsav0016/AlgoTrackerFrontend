@@ -8,7 +8,7 @@ import { defaultParams, IndicatorName, indicators } from "../enums/Indicator";
 // api/indicators/signal.py) and recognises exactly these indicator names (api/services/signal_service.py).
 // A typo on either side would make the backend reject or silently misread a strategy, so they are pinned here.
 const BACKEND_SIGNAL_KEYS = [
-  "above_target", "buy_signal", "fast_window", "name", "signal_window", "slow_window", "target_value", "window",
+  "above_target", "buy_signal", "fast_window", "name", "signal_window", "slow_window", "target_value", "version", "window",
 ];
 const BACKEND_INDICATOR_NAMES = ["ADX", "BBP", "EMA", "MACD", "RSI", "SMA", "SO"];
 
@@ -51,7 +51,7 @@ describe("Signal", () => {
     expect(Object.keys(buy).sort()).toEqual(BACKEND_SIGNAL_KEYS);
     expect(buy).toEqual({
       name: "RSI", above_target: false, buy_signal: true, target_value: 30,
-      window: 14, fast_window: null, slow_window: null, signal_window: null,
+      window: 14, fast_window: null, slow_window: null, signal_window: null, version: 2,
     });
     expect(sell.buy_signal).toBe(false);
     expect(sell.above_target).toBe(true);
@@ -86,6 +86,17 @@ describe("request bodies", () => {
     const body = JSON.parse(makeStrategy([rsiSignal(30, false), macdSignal()], [rsiSignal(70, true)]).toSubscribeJSON());
     expect(body).toMatchObject({ symbol: "AAPL", title: "Mean reversion", interval: "1day" });
     expect(body.signals.map((s: any) => [s.name, s.buy_signal])).toEqual([["RSI", true], ["MACD", true], ["RSI", false]]);
+  });
+
+  it("sends new rules as version 2 and keeps a strategy with any old rule on version 1", () => {
+    const fresh = JSON.parse(makeStrategy([rsiSignal(30, false)], [rsiSignal(70, true)]).toSubscribeJSON());
+    expect(fresh.signals.map((x: any) => x.version)).toEqual([2, 2]);
+    const old = rsiSignal(70, true);
+    old.version = 1;
+    const mixed = makeStrategy([rsiSignal(30, false)], [old]);
+    expect(JSON.parse(mixed.toSubscribeJSON()).signals.map((x: any) => x.version)).toEqual([1, 1]);
+    const body = JSON.parse(new Backtest(mixed, new Date("2025-01-01"), new Date("2025-02-01")).toRequestJSON());
+    expect(body.signals.map((x: any) => x.version)).toEqual([1, 1]);
   });
 
   it("backtest: sends the symbol, interval, ISO date range and signals, but no title", () => {
@@ -138,6 +149,19 @@ describe("Backtest.updateFromData", () => {
     expect([backtest.percentReturn, backtest.sharpeRatio, backtest.sortinoRatio]).toEqual([12.5, 1.2, 1.8]);
     expect([backtest.percentReturnAdj, backtest.sharpeRatioAdj, backtest.sortinoRatioAdj]).toEqual([10, 1.1, 1.6]);
     expect([backtest.resultImage, backtest.resultImageNoSignals]).toEqual(["img", "img2"]);
+  });
+
+  it("copies the period return, costs and covered period when the server sends them", () => {
+    const backtest = newBacktest().updateFromData({
+      ...response([bar(1, 100, 0)]), period_return: 4.5, period_return_adj: -1, period_return_before_costs: 4.9,
+      annualized_is_extrapolated: true, trade_cost_percent: 0.1, trades: 2,
+      data_window: { requested_start: "a", requested_end: "b", covered_start: "c", covered_end: "d",
+        candles: 9, requests: 1, truncated: true, reason: "history_ends" },
+    });
+    expect([backtest.periodReturn, backtest.periodReturnBeforeCosts, backtest.tradeCount]).toEqual([4.5, 4.9, 2]);
+    expect(backtest.annualizedIsExtrapolated).toBe(true);
+    expect(backtest.dataWindow?.truncated).toBe(true);
+    expect(newBacktest().updateFromData(response([])).dataWindow).toBeNull();  // an older server sends none
   });
 
   it("collects each indicator's values as its own series", () => {

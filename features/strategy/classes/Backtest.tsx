@@ -4,6 +4,17 @@ import { StockValue } from "./StockValue";
 import { Strategy } from "./Strategy";
 import { Trade } from "./Trade";
 
+export interface DataWindowFormat {
+    requested_start: string;
+    requested_end: string;
+    covered_start: string;
+    covered_end: string;
+    candles: number;
+    requests: number;
+    truncated: boolean;
+    reason: "request_limit" | "history_ends" | null;
+}
+
 export interface BacktestResponseDataFormat {
     result: BacktestResultDataFormat[];
     image: string;
@@ -14,6 +25,13 @@ export interface BacktestResponseDataFormat {
     sharpe_ratio_adj: number;
     sortino_ratio: number;
     sortino_ratio_adj: number;
+    period_return?: number;
+    period_return_adj?: number;
+    period_return_before_costs?: number;
+    annualized_is_extrapolated?: boolean;
+    trade_cost_percent?: number;
+    trades?: number;
+    data_window?: DataWindowFormat;
     user_account_credits: number;
     user_monthly_credits: number;
 }
@@ -43,6 +61,13 @@ export class Backtest {
     sharpeRatioAdj: number | null;
     sortinoRatio: number | null;
     sortinoRatioAdj: number | null;
+    periodReturn: number | null = null;
+    periodReturnAdj: number | null = null;
+    periodReturnBeforeCosts: number | null = null;
+    annualizedIsExtrapolated = false;
+    tradeCostPercent: number | null = null;
+    tradeCount: number | null = null;
+    dataWindow: DataWindowFormat | null = null;
 
     constructor(
         strategy: Strategy,
@@ -77,12 +102,13 @@ export class Backtest {
     }
 
     toRequestJSON() {
+        const version = this.strategy.signalVersion();
         let signals = []
         for (let buySignal of this.strategy.buySignals) {
-            signals.push(buySignal.toJSON(true));
+            signals.push(buySignal.toJSON(true, version));
         }
         for (let sellSignal of this.strategy.sellSignals) {
-            signals.push(sellSignal.toJSON(false));
+            signals.push(sellSignal.toJSON(false, version));
         }
 
         return JSON.stringify({
@@ -146,6 +172,13 @@ export class Backtest {
         this.sharpeRatioAdj = data.sharpe_ratio_adj;
         this.sortinoRatio = data.sortino_ratio;
         this.sortinoRatioAdj = data.sortino_ratio_adj;
+        this.periodReturn = data.period_return ?? null;
+        this.periodReturnAdj = data.period_return_adj ?? null;
+        this.periodReturnBeforeCosts = data.period_return_before_costs ?? null;
+        this.annualizedIsExtrapolated = data.annualized_is_extrapolated ?? false;
+        this.tradeCostPercent = data.trade_cost_percent ?? null;
+        this.tradeCount = data.trades ?? null;
+        this.dataWindow = data.data_window ?? null;
 
         return this;
     }

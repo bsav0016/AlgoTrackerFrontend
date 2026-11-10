@@ -11,6 +11,7 @@ import { Routes } from "@/app/Routes";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
 import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
 import BacktestResultsTable from "@/features/strategy/components/backtestResultsTable";
+import BacktestCoverage from "@/features/strategy/components/backtestCoverage";
 
 
 // Card padding (Spacing.lg + Spacing.md on each side) plus the card border; the chart images are about 2:1.
@@ -84,6 +85,8 @@ export default function BacktestResults() {
                     )}
                 </Card>
 
+                {backtestData?.dataWindow && <BacktestCoverage window={backtestData.dataWindow} />}
+
                 <BacktestResultsTable
                     percentReturn={backtestData?.percentReturn ?? null}
                     percentReturnAdj={backtestData?.percentReturnAdj ?? null}
@@ -91,6 +94,12 @@ export default function BacktestResults() {
                     sharpeRatioAdj={backtestData?.sharpeRatioAdj ?? null}
                     sortinoRatio={backtestData?.sortinoRatio ?? null}
                     sortinoRatioAdj={backtestData?.sortinoRatioAdj ?? null}
+                    periodReturn={backtestData?.periodReturn ?? null}
+                    periodReturnAdj={backtestData?.periodReturnAdj ?? null}
+                    periodReturnBeforeCosts={backtestData?.periodReturnBeforeCosts ?? null}
+                    annualizedIsExtrapolated={backtestData?.annualizedIsExtrapolated ?? false}
+                    tradeCostPercent={backtestData?.tradeCostPercent ?? null}
+                    tradeCount={backtestData?.tradeCount ?? null}
                 />
             </ScrollView>
         </CustomHeaderView>
