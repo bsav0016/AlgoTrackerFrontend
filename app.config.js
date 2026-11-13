@@ -77,7 +77,9 @@ export default {
       policy: "appVersion"
     },
     updates: {
-      url: "https://u.expo.dev/d3469b31-6534-4636-a88f-5770b20be119"
+      url: "https://u.expo.dev/d3469b31-6534-4636-a88f-5770b20be119",
+      checkAutomatically: "ON_LOAD",
+      fallbackToCacheTimeout: 3000
     }
   }
 };
