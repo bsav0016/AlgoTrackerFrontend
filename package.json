@@ -12,6 +12,9 @@
     "test:watch": "jest --watchAll",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "build:check": "expo export --platform ios --platform android --output-dir dist",
+    "update:preview": "node scripts/publish-update.js preview",
+    "update:production": "node scripts/publish-update.js production",
     "build-prod": "eas build --profile production"
   },
   "jest": {
@@ -46,6 +49,7 @@
     "expo-status-bar": "~58.0.4",
     "expo-symbols": "~58.0.4",
     "expo-system-ui": "~58.0.7",
+    "expo-updates": "~58.0.22",
     "expo-web-browser": "~58.0.6",
     "jwt-decode": "^4.0.0",
     "react": "19.3.0",

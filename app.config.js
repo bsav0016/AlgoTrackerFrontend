@@ -8,6 +8,8 @@ export default {
     name: "AlgoTracker",
     slug: "AlgoTracker",
     version: "1.0.0",
+    // eas update exports every platform listed, and the web export fails (Stripe is native-only).
+    platforms: ["ios", "android"],
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     // The lowercase one is what share links use (algotracker://shared/<id>); Android matches schemes case-sensitively.
@@ -70,6 +72,12 @@ export default {
         projectId: "d3469b31-6534-4636-a88f-5770b20be119"
       }
     },
-    owner: "bsav0016"
+    owner: "bsav0016",
+    runtimeVersion: {
+      policy: "appVersion"
+    },
+    updates: {
+      url: "https://u.expo.dev/d3469b31-6534-4636-a88f-5770b20be119"
+    }
   }
 };
