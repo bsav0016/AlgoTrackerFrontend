@@ -3,6 +3,7 @@ import { ReturnValue } from "./ReturnValue";
 import { StockValue } from "./StockValue";
 import { Strategy } from "./Strategy";
 import { Trade } from "./Trade";
+import { hasExitRules, exitRulesToJSON, summarizeExits } from "./ExitRules";
 
 export interface DataWindowFormat {
     requested_start: string;
@@ -44,6 +45,8 @@ interface BacktestResultDataFormat {
     sell: boolean;
     owned: number;
     return: number;
+    // The exit rule that sold on this candle, empty otherwise. Older servers do not send it.
+    exit_reason?: string;
 }
 
 export class Backtest {
@@ -68,6 +71,7 @@ export class Backtest {
     tradeCostPercent: number | null = null;
     tradeCount: number | null = null;
     dataWindow: DataWindowFormat | null = null;
+    exitSummary: string | null = null;
 
     constructor(
         strategy: Strategy,
@@ -116,7 +120,8 @@ export class Backtest {
             interval: this.strategy.interval,
             start_date: this.startDate.toISOString(),
             end_date: this.endDate.toISOString(),
-            signals: signals
+            signals: signals,
+            ...(hasExitRules(this.strategy.exitRules) ? { exit_rules: exitRulesToJSON(this.strategy.exitRules) } : {})
         })
     }
 
@@ -148,7 +153,7 @@ export class Backtest {
                 dataTrades.push(new Trade(datumDate, datum.close, true));
             }
             else if (owned && !datum.owned) {
-                dataTrades.push(new Trade(datumDate, datum.close, false));
+                dataTrades.push(new Trade(datumDate, datum.close, false, datum.exit_reason || null));
             }
             owned = datum.owned;
 
@@ -179,6 +184,7 @@ export class Backtest {
         this.tradeCostPercent = data.trade_cost_percent ?? null;
         this.tradeCount = data.trades ?? null;
         this.dataWindow = data.data_window ?? null;
+        this.exitSummary = summarizeExits(dataTrades.map((trade) => trade.exitReason));
 
         return this;
     }

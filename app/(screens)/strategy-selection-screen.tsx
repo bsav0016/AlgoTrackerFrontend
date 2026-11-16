@@ -28,6 +28,8 @@ import { Spacing, Type } from "@/constants/Theme";
 import { EditIndicator } from "@/features/strategy/components/editIndicator";
 import { Interval } from "@/features/strategy/dtos/SymbolsAndIntervalsResponseDTO";
 import { useUser } from "@/contexts/UserContext";
+import { ExitRulesSection } from "@/features/strategy/components/exitRulesSection";
+import { EMPTY_EXIT_RULE_INPUTS, ExitRuleInputs, parseExitRules } from "@/features/strategy/classes/ExitRules";
 
 
 // A new signal with the default settings: the first indicator, target 50, a 14-period window.
@@ -62,6 +64,7 @@ export default function StrategySelectionScreen() {
     // The lists always hold at least one signal: removing the last one puts a fresh default in its place.
     const changeBuySignals = (next: Signal[]) => setBuySignals(next.length > 0 ? next : [newSignal(true)]);
     const changeSellSignals = (next: Signal[]) => setSellSignals(next.length > 0 ? next : [newSignal(false)]);
+    const [exitRuleInputs, setExitRuleInputs] = useState<ExitRuleInputs>(EMPTY_EXIT_RULE_INPUTS);
     const [loading, setLoading] = useState<boolean>(false);
     const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
     const [startDateMonth, setStartDateMonth] = useState<string>('');
@@ -108,6 +111,11 @@ export default function StrategySelectionScreen() {
     }
 
     const clickedNext = () => {
+        const parsed = parseExitRules(exitRuleInputs);
+        if (parsed.error) {
+            addToast(parsed.error);
+            return;
+        }
         let message: string;
         let callbackFunction;
 
@@ -142,7 +150,9 @@ export default function StrategySelectionScreen() {
                 symbol,
                 interval?.interval || "",
                 buySignals,
-                sellSignals
+                sellSignals,
+                [], 1, 1, 1, undefined, true, null,
+                parseExitRules(exitRuleInputs).rules ?? {}
             );
             const backtest = new Backtest(
                 strategy,
@@ -205,7 +215,9 @@ export default function StrategySelectionScreen() {
                 symbol,
                 interval?.interval || "",
                 buySignals,
-                sellSignals
+                sellSignals,
+                [], 1, 1, 1, undefined, true, null,
+                parseExitRules(exitRuleInputs).rules ?? {}
             );
             if (!accessToken) {
                 throw new Error("Token not stored");
@@ -330,6 +342,8 @@ export default function StrategySelectionScreen() {
                             buttonAction={addSellIndicator}
                             setIndicatorIndex={setSellIndicatorIndex}
                         />
+
+                        <ExitRulesSection inputs={exitRuleInputs} setInputs={setExitRuleInputs} />
 
                         {functionType === StrategyType.Backtest &&
                             <View style={styles.dateSection}>

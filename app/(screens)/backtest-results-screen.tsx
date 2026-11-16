@@ -100,6 +100,7 @@ export default function BacktestResults() {
                     annualizedIsExtrapolated={backtestData?.annualizedIsExtrapolated ?? false}
                     tradeCostPercent={backtestData?.tradeCostPercent ?? null}
                     tradeCount={backtestData?.tradeCount ?? null}
+                    exitSummary={backtestData?.exitSummary ?? null}
                 />
             </ScrollView>
         </CustomHeaderView>

@@ -8,6 +8,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { GeneralButton } from "@/components/GeneralButton";
 import { Card } from "@/components/Card";
+import { describeExitRules, exitReasonLabel } from "@/features/strategy/classes/ExitRules";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { StrategyService } from "@/features/strategy/StrategyService";
@@ -188,6 +189,17 @@ export default function ViewStrategy() {
                     }
                 </Card>
 
+                {describeExitRules(strategy.exitRules).length > 0 &&
+                    <>
+                        <ThemedText style={styles.sectionTitle}>Exit rules</ThemedText>
+                        <Card>
+                            {describeExitRules(strategy.exitRules).map((line) => (
+                                <ThemedText key={line}>{line}</ThemedText>
+                            ))}
+                        </Card>
+                    </>
+                }
+
                 <ThemedText style={styles.sectionTitle}>
                     {`Trades${strategy.trades.length > 0 ? ` (${strategy.trades.length})` : ""}`}
                 </ThemedText>
@@ -211,7 +223,7 @@ export default function ViewStrategy() {
                                 <ThemedText style={styles.dateCell}>{formattedDate(trade.date)}</ThemedText>
                                 <ThemedText style={styles.priceCell}>{formattedPrice(trade.price)}</ThemedText>
                                 <View style={styles.actionCell}>
-                                    <Badge label={trade.isBuy ? "Buy" : "Sell"} tone={trade.isBuy ? "gain" : "loss"} />
+                                    <Badge label={trade.isBuy ? "Buy" : exitReasonLabel(trade.exitReason) ?? "Sell"} tone={trade.isBuy ? "gain" : "loss"} />
                                 </View>
                             </View>
                         ))}

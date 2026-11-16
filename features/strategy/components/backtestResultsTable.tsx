@@ -17,6 +17,7 @@ interface BacktestResultsTableProps {
     annualizedIsExtrapolated?: boolean;
     tradeCostPercent?: number | null;
     tradeCount?: number | null;
+    exitSummary?: string | null;
 }
 
 export default function BacktestResultsTable({
@@ -31,7 +32,8 @@ export default function BacktestResultsTable({
     periodReturnBeforeCosts = null,
     annualizedIsExtrapolated = false,
     tradeCostPercent = null,
-    tradeCount = null
+    tradeCount = null,
+    exitSummary = null
 }: BacktestResultsTableProps) {
     const theme = useTheme();
 
@@ -89,6 +91,11 @@ export default function BacktestResultsTable({
                     {`Results include a ${tradeCostPercent}% cost on each buy and sell`
                         + (tradeCount !== null ? ` (${tradeCount} ${tradeCount === 1 ? "trade" : "trades"})` : "")
                         + (periodReturnBeforeCosts !== null ? `. Before costs the gain was ${periodReturnBeforeCosts.toFixed(2)}%.` : ".")}
+                </ThemedText>
+            )}
+            {exitSummary !== null && (
+                <ThemedText type="muted" style={styles.noteText}>
+                    {`Your exit rules sold early: ${exitSummary}.`}
                 </ThemedText>
             )}
         </Card>

@@ -1,4 +1,5 @@
 import { Signal, SignalData } from "@/features/strategy/classes/Signal";
+import { ExitRules, exitRulesFromData } from "@/features/strategy/classes/ExitRules";
 
 /** What anyone with a share link may see. It is exactly the backend's public view: no id, no owner, no trades. */
 export interface SharedStrategyData {
@@ -7,6 +8,7 @@ export interface SharedStrategyData {
     interval: string;
     buy_signals: SignalData[];
     sell_signals: SignalData[];
+    exit_rules?: ExitRules;
     strategy_return: number | string;
     asset_return: number | string;
 }
@@ -17,6 +19,7 @@ export interface SharedStrategy {
     interval: string;
     buySignals: Signal[];
     sellSignals: Signal[];
+    exitRules: ExitRules;
     strategyReturn: number;
     assetReturn: number;
 }
@@ -29,6 +32,7 @@ export function sharedStrategyFromData(data: SharedStrategyData): SharedStrategy
         interval: data.interval,
         buySignals: data.buy_signals.map((signal) => Signal.fromData(signal)),
         sellSignals: data.sell_signals.map((signal) => Signal.fromData(signal)),
+        exitRules: exitRulesFromData(data.exit_rules),
         // The backend sends decimals as strings.
         strategyReturn: Number(data.strategy_return),
         assetReturn: Number(data.asset_return),

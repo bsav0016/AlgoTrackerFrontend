@@ -16,6 +16,7 @@ import { useUser } from "@/contexts/UserContext";
 import { SHARE_DISCLAIMER, isShareId } from "@/features/sharing/ShareLink";
 import { ShareService } from "@/features/sharing/ShareService";
 import { SharedStrategy, describeSignal } from "@/features/sharing/SharedStrategy";
+import { describeExitRules } from "@/features/strategy/classes/ExitRules";
 import { NetworkError } from "@/lib/networkRequests/NetworkError";
 
 export default function SharedStrategyScreen() {
@@ -131,6 +132,17 @@ export default function SharedStrategyScreen() {
                                 <Card>
                                     {shared.sellSignals.map((signal, index) => (
                                         <ThemedText key={index}>{describeSignal(signal)}</ThemedText>
+                                    ))}
+                                </Card>
+                            </>
+                        )}
+
+                        {describeExitRules(shared.exitRules).length > 0 && (
+                            <>
+                                <ThemedText style={styles.sectionTitle}>Exit rules</ThemedText>
+                                <Card>
+                                    {describeExitRules(shared.exitRules).map((line) => (
+                                        <ThemedText key={line}>{line}</ThemedText>
                                     ))}
                                 </Card>
                             </>
