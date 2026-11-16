@@ -1,5 +1,6 @@
 import { CURRENT_SIGNAL_VERSION, LEGACY_SIGNAL_VERSION, Signal, SignalData } from "./Signal";
 import { Trade, TradeData } from "./Trade";
+import { ExitRules, exitRulesFromData, exitRulesToJSON, hasExitRules } from "./ExitRules";
 
 export interface StrategyData {
     id: number;
@@ -8,6 +9,8 @@ export interface StrategyData {
     interval: string;
     buy_signals: SignalData[];
     sell_signals: SignalData[];
+    // Percent exits from the buy price. Older servers do not send them.
+    exit_rules?: ExitRules;
     trades: TradeData[];
     strategy_return: number;
     asset_return: number;
@@ -45,7 +48,8 @@ export class Strategy {
     chargeUserDate: Date;
     active: boolean;
     lastProcessedAt: Date | null;
-    
+    exitRules: ExitRules;
+
     constructor(
         id: number,
         title: string,
@@ -59,7 +63,8 @@ export class Strategy {
         position: number = 1,
         chargeUserDate: Date = thirtyDaysFromNow(),
         active: boolean = true,
-        lastProcessedAt: Date | null = null
+        lastProcessedAt: Date | null = null,
+        exitRules: ExitRules = {}
     ) {
         this.id = id;
         this.title = title;
@@ -74,6 +79,7 @@ export class Strategy {
         this.chargeUserDate = chargeUserDate;
         this.active = active;
         this.lastProcessedAt = lastProcessedAt;
+        this.exitRules = exitRules;
     }
 
     /** The server accepts one version per strategy, so a strategy holding any old rule stays on the old definitions. */
@@ -96,7 +102,8 @@ export class Strategy {
             symbol: this.symbol,
             title: this.title,
             interval: this.interval,
-            signals: signals
+            signals: signals,
+            ...(hasExitRules(this.exitRules) ? { exit_rules: exitRulesToJSON(this.exitRules) } : {})
         })
     }
 
@@ -109,7 +116,8 @@ export class Strategy {
         const buySignals: Signal[] = (stored.buySignals ?? []).map((signal: SignalData) => Signal.fromData(signal));
         const sellSignals: Signal[] = (stored.sellSignals ?? []).map((signal: SignalData) => Signal.fromData(signal));
         const trades: Trade[] = (stored.trades ?? []).map(
-            (trade: { date: string; price: number; isBuy: boolean }) => new Trade(new Date(trade.date), trade.price, trade.isBuy)
+            (trade: { date: string; price: number; isBuy: boolean; exitReason?: string | null }) =>
+                new Trade(new Date(trade.date), trade.price, trade.isBuy, trade.exitReason ?? null)
         );
 
         return new Strategy(
@@ -125,7 +133,8 @@ export class Strategy {
             stored.position,
             new Date(stored.chargeUserDate),
             stored.active,
-            stored.lastProcessedAt ? new Date(stored.lastProcessedAt) : null
+            stored.lastProcessedAt ? new Date(stored.lastProcessedAt) : null,
+            exitRulesFromData(stored.exitRules)
         );
     }
 
@@ -162,7 +171,8 @@ export class Strategy {
             data.position,
             new Date(data.charge_user_date),
             data.active,
-            data.last_processed_ts != null ? new Date(data.last_processed_ts * 1000) : null
+            data.last_processed_ts != null ? new Date(data.last_processed_ts * 1000) : null,
+            exitRulesFromData(data.exit_rules)
         )
     }
 }

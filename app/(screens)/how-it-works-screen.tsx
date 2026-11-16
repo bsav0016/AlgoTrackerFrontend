@@ -163,6 +163,18 @@ const strategySubscriptionDetails: HowItWorksDetails = {
 
 const inputsDetails: HowItWorksDetails[] = [
     {
+        title: "Exit rules",
+        description: "Exit rules are optional extra ways to sell, measured from the price you bought at."
+            + " A stop-loss sells if the price falls a set percent below the buy price, to cap a loss."
+            + " A take-profit sells if it rises a set percent above, to lock in a gain."
+            + " A trailing stop sells if the price falls a set percent below its highest point since the buy, so it follows a rising price up."
+            + " They are checked on each candle's close, and the sale happens at that close, which can be worse than the level you set if the price moved a lot within one candle."
+            + " After an exit the strategy waits for your buy signals to stop holding before it buys again."
+            + " Leave a box blank to keep that rule off.",
+        link: "https://www.investopedia.com/terms/s/stop-lossorder.asp"
+    },
+
+    {
         title: "SMA",
         description: "The simple moving average (SMA) is a lagging indicator."
             + " It simply averages the most recent x number of data points."
