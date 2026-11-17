@@ -63,6 +63,14 @@ export class Signal {
         )
     }
 
+    /** An independent copy, so the builder can edit one without changing the run it came from. */
+    clone(): Signal {
+        return new Signal(
+            this.indicator, this.targetValue, this.aboveTarget, this.window, this.fastWindow, this.slowWindow,
+            this.signalWindow, this.version
+        );
+    }
+
     toJSON(buySignal: boolean, version: number = this.version): Record<string, any> {
         return {
             name: this.indicator.name,

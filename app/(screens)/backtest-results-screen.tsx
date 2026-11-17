@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, Switch, StyleSheet, ScrollView, View } from "react-native";
 import { CustomHeaderView } from "@/components/CustomHeaderView";
+import { GeneralButton } from "@/components/GeneralButton";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { Spacing, useTheme } from "@/constants/Theme";
@@ -20,15 +21,18 @@ const CHART_WIDTH = Dimensions.get("window").width - 2 * (Spacing.lg + Spacing.m
 const CHART_HEIGHT = Math.round(CHART_WIDTH * 0.62);
 
 export default function BacktestResults() {
-    const { backtestData } = useBacktest(); 
+    const { backtestData, setBacktestData, setRerunFrom } = useBacktest(); 
     const { addToast } = useToast();
-    const { routeTo } = useRouteTo();
+    const { routeTo, routeReplace } = useRouteTo();
     const theme = useTheme();
     const [displaySignals, setDisplaySignals] = useState(true);
+    // Set when handing over to the builder: the results are cleared on the way, which must not look like a failure here.
+    const handingToBuilder = useRef(false);
 
     const points = useMemo(() => backtestData?.chartPoints() ?? [], [backtestData]);
 
     useEffect(() => {
+        if (handingToBuilder.current) return;
         if (!backtestData) {
             addToast("Could not properly retrieve backtest data");
             routeTo(Routes.StrategySelection, { strategyType: StrategyType.Backtest });
@@ -71,6 +75,28 @@ export default function BacktestResults() {
                         <ThemedText type="muted">No chart available</ThemedText>
                     )}
                 </Card>
+
+                {backtestData && (
+                    <View style={styles.rerun}>
+                        <GeneralButton
+                            title="Tweak and rerun"
+                            variant="outline"
+                            autoWidth={false}
+                            onPress={() => {
+                                handingToBuilder.current = true;
+                                setRerunFrom(backtestData);
+                                // Clear the shared results first: a builder that opens while they are still set would
+                                // jump straight to a new results screen (see its effect on `backtestData`).
+                                setBacktestData(null);
+                                // Replaces this screen, so going back never lands on results the builder has cleared.
+                                routeReplace(Routes.StrategySelection, { strategyType: StrategyType.Backtest });
+                            }}
+                        />
+                        <ThemedText type="muted" style={styles.rerunNote}>
+                            Opens the builder with these settings. Running it again is a new backtest and costs credits.
+                        </ThemedText>
+                    </View>
+                )}
 
                 {backtestData?.id != null && (
                     <ThemedText type="muted" style={styles.savedNote}>
@@ -128,6 +154,15 @@ const styles = StyleSheet.create({
     },
 
     savedNote: {
+        fontSize: 13,
+        textAlign: 'center',
+    },
+
+    rerun: {
+        gap: Spacing.sm,
+    },
+
+    rerunNote: {
         fontSize: 13,
         textAlign: 'center',
     },

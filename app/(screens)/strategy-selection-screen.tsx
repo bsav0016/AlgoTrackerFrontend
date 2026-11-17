@@ -28,6 +28,7 @@ import { Spacing, Type } from "@/constants/Theme";
 import { EditIndicator } from "@/features/strategy/components/editIndicator";
 import { Interval } from "@/features/strategy/dtos/SymbolsAndIntervalsResponseDTO";
 import { useUser } from "@/contexts/UserContext";
+import { builderSeedFrom } from "@/features/strategy/rerun";
 import { ExitRulesSection } from "@/features/strategy/components/exitRulesSection";
 import { EMPTY_EXIT_RULE_INPUTS, ExitRuleInputs, parseExitRules } from "@/features/strategy/classes/ExitRules";
 
@@ -41,8 +42,10 @@ export default function StrategySelectionScreen() {
     const { updateAccountCredits } = useUser();
     const { routeTo } = useRouteTo();
     const { addToast } = useToast();
-    const { backtestData, setBacktestData } = useBacktest();
+    const { backtestData, setBacktestData, rerunFrom, setRerunFrom } = useBacktest();
     const router = useRouter();
+    // Tweak and rerun: start from an earlier backtest's settings. Read once, when the screen opens.
+    const [seed] = useState(() => (rerunFrom ? builderSeedFrom(rerunFrom) : null));
     
     const strategyTypeString = Array.isArray(strategyType) ? strategyType[0] : strategyType;
     const parsedStrategyType = Object.values(StrategyType).includes(strategyTypeString as StrategyType)
@@ -55,24 +58,24 @@ export default function StrategySelectionScreen() {
     const [backtestBaseCost, setBacktestBaseCost] = useState<number>(0.03);
     const [backtestIterations, setBacktestIterations] = useState<number>(5);
     const [title, setTitle] = useState<string>('');
-    const [symbol, setSymbol] = useState<string>('');
+    const [symbol, setSymbol] = useState<string>(seed?.symbol ?? '');
     const [interval, setInterval] = useState<Interval>();
     const [symbolModal, setSymbolModal] = useState<boolean>(false);
     const [intervalModal, setIntervalModal] = useState<boolean>(false);
-    const [buySignals, setBuySignals] = useState<Signal[]>(() => [newSignal(true)]);
-    const [sellSignals, setSellSignals] = useState<Signal[]>(() => [newSignal(false)]);
+    const [buySignals, setBuySignals] = useState<Signal[]>(() => seed && seed.buySignals.length > 0 ? seed.buySignals : [newSignal(true)]);
+    const [sellSignals, setSellSignals] = useState<Signal[]>(() => seed && seed.sellSignals.length > 0 ? seed.sellSignals : [newSignal(false)]);
     // The lists always hold at least one signal: removing the last one puts a fresh default in its place.
     const changeBuySignals = (next: Signal[]) => setBuySignals(next.length > 0 ? next : [newSignal(true)]);
     const changeSellSignals = (next: Signal[]) => setSellSignals(next.length > 0 ? next : [newSignal(false)]);
-    const [exitRuleInputs, setExitRuleInputs] = useState<ExitRuleInputs>(EMPTY_EXIT_RULE_INPUTS);
+    const [exitRuleInputs, setExitRuleInputs] = useState<ExitRuleInputs>(seed?.exitRuleInputs ?? EMPTY_EXIT_RULE_INPUTS);
     const [loading, setLoading] = useState<boolean>(false);
     const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
-    const [startDateMonth, setStartDateMonth] = useState<string>('');
-    const [startDateDay, setStartDateDay] = useState<string>('');
-    const [startDateYear, setStartDateYear] = useState<string>('');
-    const [endDateMonth, setEndDateMonth] = useState<string>('');
-    const [endDateDay, setEndDateDay] = useState<string>('');
-    const [endDateYear, setEndDateYear] = useState<string>('');
+    const [startDateMonth, setStartDateMonth] = useState<string>(seed?.startDate.month ?? '');
+    const [startDateDay, setStartDateDay] = useState<string>(seed?.startDate.day ?? '');
+    const [startDateYear, setStartDateYear] = useState<string>(seed?.startDate.year ?? '');
+    const [endDateMonth, setEndDateMonth] = useState<string>(seed?.endDate.month ?? '');
+    const [endDateDay, setEndDateDay] = useState<string>(seed?.endDate.day ?? '');
+    const [endDateYear, setEndDateYear] = useState<string>(seed?.endDate.year ?? '');
     const [buyIndicatorIndex, setBuyIndicatorIndex] = useState<number | null>(null);
     const [sellIndicatorIndex, setSellIndicatorIndex] = useState<number | null>(null);
 
@@ -83,6 +86,8 @@ export default function StrategySelectionScreen() {
                     const symbolsAndIntervals = await StrategyService.getSymbolsAndIntervals(accessToken);
                     setAvailableSymbols(symbolsAndIntervals.symbols);
                     setAvailableIntervals(symbolsAndIntervals.intervals);
+                    const seeded = seed && symbolsAndIntervals.intervals.find((candidate) => candidate.interval === seed.interval);
+                    if (seeded) setInterval(seeded);
                     setBacktestBaseCost(symbolsAndIntervals.backtestBaseCost);
                     setBacktestIterations(symbolsAndIntervals.backtestIterations);
                 } catch {
@@ -93,6 +98,7 @@ export default function StrategySelectionScreen() {
         }
 
         setBacktestData(null);
+        setRerunFrom(null);
         getSymbolsAndIntervals();
     }, []);
 
