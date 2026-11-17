@@ -55,6 +55,15 @@ export function exitRulesFromData(data: unknown): ExitRules {
     return rules;
 }
 
+/** The rules as the builder's boxes hold them: a rule that is on is its number, one that is off is blank. */
+export function exitRulesToInputs(rules: ExitRules): ExitRuleInputs {
+    const inputs: ExitRuleInputs = { ...EMPTY_EXIT_RULE_INPUTS };
+    for (const name of EXIT_RULE_NAMES) {
+        if (rules[name] !== undefined) inputs[name] = String(rules[name]);
+    }
+    return inputs;
+}
+
 export const hasExitRules = (rules: ExitRules): boolean => EXIT_RULE_NAMES.some((name) => rules[name] !== undefined);
 
 /** The request body part: only the rules that are on, in the server's field names. */
