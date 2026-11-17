@@ -9,15 +9,14 @@ import { useRouteTo } from "@/contexts/RouteContext";
 import { useToast } from "@/contexts/ToastContext";
 import { Routes } from "@/app/Routes";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
-import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
 import BacktestResultsTable from "@/features/strategy/components/backtestResultsTable";
 import BacktestCoverage from "@/features/strategy/components/backtestCoverage";
-import { BacktestChart, ChartLegend } from "@/features/strategy/chart/BacktestChart";
+import { BacktestChart } from "@/features/strategy/chart/BacktestChart";
 
 
 // Card padding (Spacing.lg + Spacing.md on each side) plus the card border; the chart is about 2:1.
 const CHART_WIDTH = Dimensions.get("window").width - 2 * (Spacing.lg + Spacing.md) - 2;
-const CHART_HEIGHT = Math.round(CHART_WIDTH / 2);
+const CHART_HEIGHT = Math.round(CHART_WIDTH * 0.62);
 
 export default function BacktestResults() {
     const { backtestData } = useBacktest(); 
@@ -60,20 +59,16 @@ export default function BacktestResults() {
                     </View>
 
                     {points.length > 0 ? (
-                        <ReactNativeZoomableView bindToBorders={true} maxZoom={3} minZoom={1} style={styles.chartZoom}>
-                            <BacktestChart
-                                points={points}
-                                trades={backtestData?.strategy.trades ?? []}
-                                showSignals={displaySignals}
-                                width={CHART_WIDTH}
-                                height={CHART_HEIGHT}
-                            />
-                        </ReactNativeZoomableView>
+                        <BacktestChart
+                            points={points}
+                            trades={backtestData?.strategy.trades ?? []}
+                            showSignals={displaySignals}
+                            width={CHART_WIDTH}
+                            height={CHART_HEIGHT}
+                        />
                     ) : (
                         <ThemedText type="muted">No chart available</ThemedText>
                     )}
-
-                    {points.length > 0 && <ChartLegend trades={backtestData?.strategy.trades ?? []} showSignals={displaySignals} />}
                 </Card>
 
                 {backtestData?.dataWindow && <BacktestCoverage window={backtestData.dataWindow} />}
@@ -125,9 +120,4 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
 
-    chartZoom: {
-        height: CHART_HEIGHT,
-        borderRadius: 8,
-        overflow: 'hidden',
-    },
 })

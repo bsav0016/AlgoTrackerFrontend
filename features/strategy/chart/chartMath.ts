@@ -129,3 +129,78 @@ export function tradeMarkers(trades: Trade[], timeStart: number, timeEnd: number
         }))
         .filter((marker) => marker.time >= timeStart && marker.time <= timeEnd);
 }
+
+/**
+ * Both lines as the percent change since the first candle. They start together at 0 and share one axis, which
+ * reads better than two price scales: the gap between them is how much the strategy beat, or trailed, holding.
+ */
+export function percentSeries(points: SeriesPoint[]): SeriesPoint[] {
+    if (points.length === 0) return points;
+    const price0 = points[0].price, value0 = points[0].value;
+    return points.map((point) => ({
+        time: point.time,
+        price: price0 ? (point.price / price0 - 1) * 100 : 0,
+        value: value0 ? (point.value / value0 - 1) * 100 : 0,
+    }));
+}
+
+/** "+23.9%", "-4.9%", "0.0%". */
+export function formatPercent(value: number): string {
+    const rounded = Math.abs(value) < 0.05 ? 0 : value;
+    return `${rounded > 0 ? "+" : ""}${rounded.toFixed(1)}%`;
+}
+
+/** The label on the vertical axis: whole numbers where possible ("+20%"), one decimal otherwise. */
+export function formatPercentTick(value: number): string {
+    const whole = Math.abs(value - Math.round(value)) < 1e-9;
+    const text = whole ? String(Math.round(value)) : value.toFixed(1);
+    return `${value > 0 ? "+" : ""}${text}%`;
+}
+
+/** "Nov 17, 2025" in UTC. */
+export function formatDay(time: number): string {
+    const date = new Date(time);
+    return `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
+}
+
+/** The index of the point nearest in time to `time` (the points are in time order). */
+export function nearestIndex(points: SeriesPoint[], time: number): number {
+    if (points.length === 0) return -1;
+    let low = 0, high = points.length - 1;
+    while (low < high) {
+        const middle = (low + high) >> 1;
+        if (points[middle].time < time) low = middle + 1; else high = middle;
+    }
+    if (low > 0 && Math.abs(points[low - 1].time - time) <= Math.abs(points[low].time - time)) low -= 1;
+    return low;
+}
+
+/** The strategy's value at `time`, read along the line between the two points either side of it. */
+export function valueAt(points: SeriesPoint[], time: number): number {
+    if (points.length === 0) return 0;
+    const index = nearestIndex(points, time);
+    const nearest = points[index];
+    const other = time >= nearest.time ? points[index + 1] : points[index - 1];
+    if (!other || other.time === nearest.time) return nearest.value;
+    const share = (time - nearest.time) / (other.time - nearest.time);
+    return nearest.value + (other.value - nearest.value) * share;
+}
+
+export interface Glyph { x: number; y: number; kind: MarkerKind }
+
+/** Where to draw a small mark for each trade: on the strategy's line, at the trade's time. */
+export function tradeGlyphs(trades: Trade[], points: SeriesPoint[], scales: Scales): Glyph[] {
+    return tradeMarkers(trades, scales.timeStart, scales.timeEnd).map((marker) => ({
+        x: scales.x(marker.time),
+        y: scales.y(valueAt(points, marker.time)),
+        kind: marker.kind,
+    }));
+}
+
+/** The outline of a mark centred on (x, y): a triangle up for a buy, down for a sell, a diamond for an exit rule. */
+export function glyphPath(kind: MarkerKind, x: number, y: number, size = 5): string {
+    const f = (n: number) => n.toFixed(1);
+    if (kind === "buy") return `M${f(x)} ${f(y - size)} L${f(x + size)} ${f(y + size * 0.8)} L${f(x - size)} ${f(y + size * 0.8)} Z`;
+    if (kind === "sell") return `M${f(x)} ${f(y + size)} L${f(x + size)} ${f(y - size * 0.8)} L${f(x - size)} ${f(y - size * 0.8)} Z`;
+    return `M${f(x)} ${f(y - size)} L${f(x + size)} ${f(y)} L${f(x)} ${f(y + size)} L${f(x - size)} ${f(y)} Z`;
+}

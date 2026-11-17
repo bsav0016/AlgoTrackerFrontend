@@ -4,7 +4,8 @@ import { Strategy } from "../classes/Strategy";
 import { Trade } from "../classes/Trade";
 import { IndicatorName, indicators } from "../enums/Indicator";
 import {
-    MAX_DRAWN_POINTS, SeriesPoint, formatMonth, formatTick, linePath, makeScales, niceTicks, reduceSeries, tradeMarkers,
+    MAX_DRAWN_POINTS, SeriesPoint, formatDay, formatMonth, formatPercent, formatPercentTick, formatTick, glyphPath,
+    linePath, makeScales, nearestIndex, niceTicks, percentSeries, reduceSeries, tradeGlyphs, tradeMarkers, valueAt,
 } from "./chartMath";
 
 const DAY = 86_400_000;
@@ -108,6 +109,76 @@ describe("tradeMarkers", () => {
       new Trade(new Date(99 * DAY), 9, true),
     ];
     expect(tradeMarkers(trades, 0, 5 * DAY).map((m) => m.kind)).toEqual(["buy", "sell", "exit"]);
+  });
+});
+
+describe("percentSeries", () => {
+  it("starts both lines at zero and measures change since the first candle", () => {
+    const result = percentSeries(series([200, 220, 180], [200, 210, 240]));
+    [0, 10, -10].forEach((expected, i) => expect(result[i].price).toBeCloseTo(expected));
+    [0, 5, 20].forEach((expected, i) => expect(result[i].value).toBeCloseTo(expected));
+    expect(result.map((p) => p.time)).toEqual([0, DAY, 2 * DAY]);
+  });
+
+  it("copes with an empty series and a zero first price", () => {
+    expect(percentSeries([])).toEqual([]);
+    expect(percentSeries(series([0, 5], [0, 5])).map((p) => [p.price, p.value])).toEqual([[0, 0], [0, 0]]);
+  });
+});
+
+describe("percent labels", () => {
+  it("writes a sign, one decimal, and no negative zero", () => {
+    expect(formatPercent(23.92)).toBe("+23.9%");
+    expect(formatPercent(-4.94)).toBe("-4.9%");
+    expect(formatPercent(0)).toBe("0.0%");
+    expect(formatPercent(-0.01)).toBe("0.0%");
+  });
+
+  it("writes axis ticks as whole numbers when it can", () => {
+    expect(formatPercentTick(20)).toBe("+20%");
+    expect(formatPercentTick(-10)).toBe("-10%");
+    expect(formatPercentTick(0)).toBe("0%");
+    expect(formatPercentTick(2.5)).toBe("+2.5%");
+  });
+
+  it("writes a full date in UTC", () => {
+    expect(formatDay(Date.UTC(2025, 10, 7))).toBe("Nov 7, 2025");
+  });
+});
+
+describe("reading the chart by touch", () => {
+  const points = series([0, 1, 2, 3], [0, 10, 20, 30]);
+
+  it("finds the point nearest a time, and clamps outside the series", () => {
+    expect(nearestIndex(points, 0)).toBe(0);
+    expect(nearestIndex(points, 1.4 * DAY)).toBe(1);
+    expect(nearestIndex(points, 1.6 * DAY)).toBe(2);
+    expect(nearestIndex(points, -5 * DAY)).toBe(0);
+    expect(nearestIndex(points, 99 * DAY)).toBe(3);
+    expect(nearestIndex([], 0)).toBe(-1);
+  });
+
+  it("reads the value along the line between two points", () => {
+    expect(valueAt(points, 1.5 * DAY)).toBeCloseTo(15);
+    expect(valueAt(points, 1 * DAY)).toBeCloseTo(10);
+    expect(valueAt(points, 3 * DAY)).toBeCloseTo(30);
+    expect(valueAt([], 0)).toBe(0);
+  });
+
+  it("places a glyph for each trade on the strategy line", () => {
+    const scales = makeScales(points, 120, 110, { left: 10, right: 10, top: 10, bottom: 10 });
+    const trades = [new Trade(new Date(1.5 * DAY), 10, true), new Trade(new Date(2 * DAY), 11, false, "stop_loss")];
+    const glyphs = tradeGlyphs(trades, points, scales);
+    expect(glyphs.map((g) => g.kind)).toEqual(["buy", "exit"]);
+    expect(glyphs[0].x).toBeCloseTo(scales.x(1.5 * DAY));
+    expect(glyphs[0].y).toBeCloseTo(scales.y(15));
+    expect(glyphs[1].y).toBeCloseTo(scales.y(20));
+  });
+
+  it("draws a different closed shape for each kind", () => {
+    const shapes = (["buy", "sell", "exit"] as const).map((kind) => glyphPath(kind, 50, 50));
+    expect(new Set(shapes).size).toBe(3);
+    shapes.forEach((shape) => expect(shape).toMatch(/^M[\d.]+ [\d.]+( L[\d.]+ [\d.]+)+ Z$/));
   });
 });
 

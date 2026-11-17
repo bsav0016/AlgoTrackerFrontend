@@ -4,8 +4,11 @@ import { Spacing, Type, useTheme } from '@/constants/Theme';
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { DataWindowFormat } from '../classes/Backtest';
+import { formatDay } from '../chart/chartMath';
 
-const day = (iso: string) => new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+// Candles are stamped in UTC (a daily candle is midnight UTC), so the dates are read in UTC too. In the phone's own
+// time zone a daily candle shows as the day before for anyone west of Greenwich, and disagrees with the chart.
+const day = (iso: string) => formatDay(new Date(iso).getTime());
 
 export function truncationMessage(window: DataWindowFormat): string | null {
     if (!window.truncated) return null;
