@@ -20,6 +20,7 @@ export const URL_EXT = {
     USER_DETAILS: 'user-details/',
     TOKEN_REFRESH: 'token/refresh/',
     BACKTEST: 'backtest/',
+    BACKTESTS: 'backtests/',
     STRATEGY: 'strategy/',
     DEVICE_ID: 'device-id/',
     SYMBOLS_AND_INTERVALS: 'symbols-and-intervals/',
