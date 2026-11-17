@@ -7,6 +7,9 @@ interface BacktestContextType {
     /** An earlier backtest the builder should start from (Tweak and rerun). The builder takes it and clears it. */
     rerunFrom: Backtest | null;
     setRerunFrom: (backtest: Backtest | null) => void;
+    /** The two saved runs the compare screen shows (set by My backtests). */
+    compareRuns: { a: Backtest; b: Backtest } | null;
+    setCompareRuns: (runs: { a: Backtest; b: Backtest } | null) => void;
 }
 
 const BacktestContext = createContext<BacktestContextType | undefined>(undefined);
@@ -14,8 +17,9 @@ const BacktestContext = createContext<BacktestContextType | undefined>(undefined
 export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [backtestData, setBacktestData] = useState<Backtest | null>(null);
     const [rerunFrom, setRerunFrom] = useState<Backtest | null>(null);
+    const [compareRuns, setCompareRuns] = useState<{ a: Backtest; b: Backtest } | null>(null);
     return (
-        <BacktestContext.Provider value={{ backtestData, setBacktestData, rerunFrom, setRerunFrom }}>
+        <BacktestContext.Provider value={{ backtestData, setBacktestData, rerunFrom, setRerunFrom, compareRuns, setCompareRuns }}>
             {children}
         </BacktestContext.Provider>
     );

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { PanResponder, StyleSheet, View } from "react-native";
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop, Text as SvgText } from "react-native-svg";
 import { ThemedText } from "@/components/ThemedText";
@@ -34,24 +34,24 @@ export function BacktestChart({ points, trades, showSignals, width, height }: Ba
     const kinds = useMemo(() => new Set(tradeMarkers(trades, scales.timeStart, scales.timeEnd).map((m) => m.kind)), [trades, scales]);
     const [active, setActive] = useState<number | null>(null);
 
-    const latest = useRef({ drawn, scales });
-    latest.current = { drawn, scales };
-    const scrubTo = useCallback((x: number) => {
-        const { drawn: series, scales: scale } = latest.current;
-        const { left, right } = scale.plot;
-        const share = Math.min(1, Math.max(0, (x - left) / (right - left)));
-        const index = nearestIndex(series, scale.timeStart + share * (scale.timeEnd - scale.timeStart));
-        setActive(index >= 0 ? index : null);
-    }, []);
-    const responder = useMemo(() => PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderTerminationRequest: () => false, // keep the finger on the chart, not the page behind it
-        onPanResponderGrant: (event) => scrubTo(event.nativeEvent.locationX),
-        onPanResponderMove: (event) => scrubTo(event.nativeEvent.locationX),
-        onPanResponderRelease: () => setActive(null),
-        onPanResponderTerminate: () => setActive(null),
-    }), [scrubTo]);
+    // Rebuilt only when the data or the width changes, never during a gesture.
+    const responder = useMemo(() => {
+        const scrubTo = (x: number) => {
+            const { left, right } = scales.plot;
+            const share = Math.min(1, Math.max(0, (x - left) / (right - left)));
+            const index = nearestIndex(drawn, scales.timeStart + share * (scales.timeEnd - scales.timeStart));
+            setActive(index >= 0 ? index : null);
+        };
+        return PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderTerminationRequest: () => false, // keep the finger on the chart, not the page behind it
+            onPanResponderGrant: (event) => scrubTo(event.nativeEvent.locationX),
+            onPanResponderMove: (event) => scrubTo(event.nativeEvent.locationX),
+            onPanResponderRelease: () => setActive(null),
+            onPanResponderTerminate: () => setActive(null),
+        });
+    }, [drawn, scales]);
 
     if (drawn.length === 0) return <ThemedText type="muted">No data to chart</ThemedText>;
 
@@ -59,7 +59,6 @@ export function BacktestChart({ points, trades, showSignals, width, height }: Ba
     const strategyColor = theme.primary;
     const assetColor = theme.mutedText;
     const colorOf = (kind: MarkerKind) => (kind === "buy" ? theme.gain : kind === "exit" ? EXIT_COLOR : theme.loss);
-    const zeroY = scales.y(0);
     const strategyLine = linePath(drawn, scales, (p) => p.value);
     const first = drawn[0], last = drawn[drawn.length - 1];
     const area = `${strategyLine} L${scales.x(last.time).toFixed(1)} ${scales.plot.bottom} L${scales.x(first.time).toFixed(1)} ${scales.plot.bottom} Z`;
