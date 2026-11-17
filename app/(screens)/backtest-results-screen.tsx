@@ -12,6 +12,7 @@ import { StrategyType } from "@/features/strategy/enums/StrategyType";
 import BacktestResultsTable from "@/features/strategy/components/backtestResultsTable";
 import BacktestCoverage from "@/features/strategy/components/backtestCoverage";
 import { BacktestChart } from "@/features/strategy/chart/BacktestChart";
+import { formatDay } from "@/features/strategy/chart/chartMath";
 
 
 // Card padding (Spacing.lg + Spacing.md on each side) plus the card border; the chart is about 2:1.
@@ -71,6 +72,12 @@ export default function BacktestResults() {
                     )}
                 </Card>
 
+                {backtestData?.id != null && (
+                    <ThemedText type="muted" style={styles.savedNote}>
+                        {backtestData.savedAt ? `Saved ${formatDay(backtestData.savedAt.getTime())}` : "Saved to My backtests"}
+                    </ThemedText>
+                )}
+
                 {backtestData?.dataWindow && <BacktestCoverage window={backtestData.dataWindow} />}
 
                 <BacktestResultsTable
@@ -118,6 +125,11 @@ const styles = StyleSheet.create({
 
     toggleLabel: {
         fontSize: 14,
+    },
+
+    savedNote: {
+        fontSize: 13,
+        textAlign: 'center',
     },
 
 })

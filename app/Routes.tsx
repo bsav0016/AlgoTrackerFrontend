@@ -13,6 +13,7 @@ export enum Routes {
     NotificationHistory = 'notification-history-screen',
     SharedStrategy = 'shared-strategy-screen',
     Leaderboard = 'leaderboard-screen',
+    MyBacktests = 'my-backtests-screen',
 }
 
 //Only used to get rid of the warning

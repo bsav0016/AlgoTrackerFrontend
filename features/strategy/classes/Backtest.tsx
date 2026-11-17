@@ -3,7 +3,8 @@ import { ReturnValue } from "./ReturnValue";
 import { StockValue } from "./StockValue";
 import { Strategy } from "./Strategy";
 import { Trade } from "./Trade";
-import { hasExitRules, exitRulesToJSON, summarizeExits } from "./ExitRules";
+import { hasExitRules, exitRulesToJSON, exitRulesFromData, summarizeExits } from "./ExitRules";
+import { Signal, SignalData } from "./Signal";
 import { SeriesPoint } from "../chart/chartMath";
 
 export interface DataWindowFormat {
@@ -18,6 +19,8 @@ export interface DataWindowFormat {
 }
 
 export interface BacktestResponseDataFormat {
+    // The saved copy of this run (null if the server could not save it). Older servers do not send it.
+    id?: number | null;
     result: BacktestResultDataFormat[];
     // Prerendered charts, sent only to builds that ask for them; this app draws the chart from `result`.
     image?: string;
@@ -43,12 +46,31 @@ interface BacktestResultDataFormat {
     datetime: string;
     close: number;
     indicators?: { [key: string]: number };
-    buy: boolean;
-    sell: boolean;
+    // Not sent for a saved run, which keeps only what the chart and the trades need.
+    buy?: boolean;
+    sell?: boolean;
     owned: number;
     return: number;
     // The exit rule that sold on this candle, empty otherwise. Older servers do not send it.
     exit_reason?: string;
+}
+
+/** A backtest's numbers and rows, without the credit balances that only come back with a fresh run. */
+export type BacktestResultsData = Omit<BacktestResponseDataFormat, "user_account_credits" | "user_monthly_credits">;
+
+/** GET /api/backtests/<id>/: a saved run in the shape of a backtest response, plus the request that made it. */
+export interface SavedBacktestDetailData extends BacktestResultsData {
+    id: number;
+    label: string;
+    created_at: string;
+    symbol: string;
+    interval: string;
+    requested_start: string;
+    requested_end: string;
+    buy_signals: SignalData[];
+    sell_signals: SignalData[];
+    exit_rules?: Record<string, number>;
+    next_candle_execution: boolean;
 }
 
 export class Backtest {
@@ -74,6 +96,11 @@ export class Backtest {
     tradeCount: number | null = null;
     dataWindow: DataWindowFormat | null = null;
     exitSummary: string | null = null;
+    /** The id of the saved copy, once there is one. */
+    id: number | null = null;
+    label = "";
+    /** When the saved copy was made; only known for a run that was reopened from My backtests. */
+    savedAt: Date | null = null;
 
     constructor(
         strategy: Strategy,
@@ -128,6 +155,24 @@ export class Backtest {
         })
     }
 
+    /**
+     * A run reopened from My backtests: the same object a fresh backtest would have produced, built from what the
+     * server kept (the request and the thinned rows), so the results screen needs no special case.
+     */
+    static fromSaved(data: SavedBacktestDetailData): Backtest {
+        const strategy = new Strategy(
+            -1, '', data.symbol, data.interval,
+            data.buy_signals.map((signal) => Signal.fromData(signal)),
+            data.sell_signals.map((signal) => Signal.fromData(signal)),
+            [], 1, 1, 1, undefined, true, null, exitRulesFromData(data.exit_rules)
+        );
+        const backtest = new Backtest(strategy, new Date(data.requested_start), new Date(data.requested_end));
+        backtest.updateFromData(data);
+        backtest.label = data.label;
+        backtest.savedAt = new Date(data.created_at);
+        return backtest;
+    }
+
     /** The asset price and the strategy's value at each candle, for the chart. */
     chartPoints(): SeriesPoint[] {
         const length = Math.min(this.stockValues.length, this.returnValues.length);
@@ -142,7 +187,7 @@ export class Backtest {
         return points;
     }
 
-    updateFromData(data: BacktestResponseDataFormat): Backtest {
+    updateFromData(data: BacktestResultsData): Backtest {
         const dataResult: BacktestResultDataFormat[] = data.result;
 
         let dataStockValues: StockValue[] = [];
@@ -201,6 +246,7 @@ export class Backtest {
         this.tradeCostPercent = data.trade_cost_percent ?? null;
         this.tradeCount = data.trades ?? null;
         this.dataWindow = data.data_window ?? null;
+        this.id = data.id ?? null;
         this.exitSummary = summarizeExits(dataTrades.map((trade) => trade.exitReason));
 
         return this;
