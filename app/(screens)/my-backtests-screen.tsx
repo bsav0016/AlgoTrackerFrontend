@@ -24,13 +24,17 @@ export default function MyBacktestsScreen() {
     const { accessToken } = useAuth();
     const { addToast } = useToast();
     const { routeTo } = useRouteTo();
-    const { setBacktestData } = useBacktest();
+    const { setBacktestData, setCompareRuns } = useBacktest();
     const theme = useTheme();
     const [items, setItems] = useState<SavedBacktestItem[]>([]);
     const [nextBefore, setNextBefore] = useState<number | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [loadingMore, setLoadingMore] = useState<boolean>(false);
     const [opening, setOpening] = useState<boolean>(false);
+    // Compare: pick two runs, oldest first so that "B minus A" reads as what the later run changed.
+    const [selecting, setSelecting] = useState<boolean>(false);
+    const [selected, setSelected] = useState<number[]>([]);
+    const [comparing, setComparing] = useState<boolean>(false);
     const [menuFor, setMenuFor] = useState<SavedBacktestItem | null>(null);
     const [renaming, setRenaming] = useState<SavedBacktestItem | null>(null);
     const [savingName, setSavingName] = useState<boolean>(false);
@@ -62,6 +66,33 @@ export default function MyBacktestsScreen() {
             addToast("Could not load more");
         } finally {
             setLoadingMore(false);
+        }
+    };
+
+    const toggleSelected = (id: number) =>
+        setSelected((now) => (now.includes(id) ? now.filter((other) => other !== id) : [...now, id].slice(-2)));
+
+    const stopSelecting = () => {
+        setSelecting(false);
+        setSelected([]);
+    };
+
+    const compare = async () => {
+        if (!accessToken || selected.length !== 2 || comparing) return;
+        setComparing(true);
+        try {
+            const [older, newer] = [...selected].sort((x, y) => x - y);
+            const [a, b] = await Promise.all([
+                BacktestHistoryService.open(accessToken, older),
+                BacktestHistoryService.open(accessToken, newer),
+            ]);
+            setCompareRuns({ a, b });
+            stopSelecting();
+            routeTo(Routes.CompareBacktests);
+        } catch (error: any) {
+            addToast(error?.status === 404 ? "One of those backtests is no longer there" : "Could not open those backtests");
+        } finally {
+            setComparing(false);
         }
     };
 
@@ -118,7 +149,7 @@ export default function MyBacktestsScreen() {
         <CustomHeaderView header="My backtests" displayFunds={false}>
             {loading && accessToken ? (
                 <LoadingScreen loadingMessage="Loading..." />
-            ) : opening ? (
+            ) : opening || comparing ? (
                 <LoadingScreen loadingMessage="Opening..." />
             ) : items.length === 0 ? (
                 <EmptyState
@@ -127,13 +158,36 @@ export default function MyBacktestsScreen() {
                 />
             ) : (
                 <ScrollView contentContainerStyle={styles.content}>
+                    {items.length >= 2 && (
+                        selecting ? (
+                            <View style={styles.compareBar}>
+                                <View style={styles.compareButton}>
+                                    <GeneralButton title="Cancel" variant="secondary" onPress={stopSelecting} autoWidth={false} />
+                                </View>
+                                <View style={styles.compareButton}>
+                                    <GeneralButton
+                                        title={`Compare (${selected.length}/2)`}
+                                        onPress={compare}
+                                        disabled={selected.length !== 2}
+                                        autoWidth={false}
+                                    />
+                                </View>
+                            </View>
+                        ) : (
+                            <GeneralButton title="Compare two" variant="outline" onPress={() => setSelecting(true)} autoWidth={false} />
+                        )
+                    )}
                     <ThemedText type="muted" style={styles.hint}>
-                        Opening a saved backtest is free. Your newest 50 are kept.
+                        {selecting
+                            ? "Tap two runs to compare them. Opening them is free."
+                            : "Opening a saved backtest is free. Your newest 50 are kept."}
                     </ThemedText>
                     {items.map((item) => (
-                        <TouchableOpacity key={item.id} onPress={() => open(item)} activeOpacity={0.7}
-                            accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
-                            <Card style={styles.row}>
+                        <TouchableOpacity key={item.id} onPress={() => (selecting ? toggleSelected(item.id) : open(item))} activeOpacity={0.7}
+                            accessibilityRole="button"
+                            accessibilityLabel={selecting ? `${selected.includes(item.id) ? "Unselect" : "Select"} ${item.title}` : `Open ${item.title}`}
+                            accessibilityState={selecting ? { selected: selected.includes(item.id) } : undefined}>
+                            <Card style={[styles.row, selecting && selected.includes(item.id) && { borderColor: theme.primary, borderWidth: 2 }]}>
                                 <View style={styles.rowText}>
                                     <ThemedText style={styles.title} numberOfLines={1}>{item.title}</ThemedText>
                                     <ThemedText type="muted" style={styles.small}>
@@ -155,14 +209,24 @@ export default function MyBacktestsScreen() {
                                         </ThemedText>
                                     </View>
                                 </View>
-                                <TouchableOpacity
-                                    style={styles.menuButton}
-                                    onPress={() => setMenuFor(item)}
-                                    accessibilityRole="button"
-                                    accessibilityLabel={`Options for ${item.title}`}
-                                >
-                                    <Ionicons name="ellipsis-horizontal" size={22} color={theme.icon} />
-                                </TouchableOpacity>
+                                {selecting ? (
+                                    <View style={styles.menuButton}>
+                                        <Ionicons
+                                            name={selected.includes(item.id) ? "checkmark-circle" : "ellipse-outline"}
+                                            size={26}
+                                            color={selected.includes(item.id) ? theme.primary : theme.icon}
+                                        />
+                                    </View>
+                                ) : (
+                                    <TouchableOpacity
+                                        style={styles.menuButton}
+                                        onPress={() => setMenuFor(item)}
+                                        accessibilityRole="button"
+                                        accessibilityLabel={`Options for ${item.title}`}
+                                    >
+                                        <Ionicons name="ellipsis-horizontal" size={22} color={theme.icon} />
+                                    </TouchableOpacity>
+                                )}
                             </Card>
                         </TouchableOpacity>
                     ))}
@@ -203,6 +267,15 @@ const styles = StyleSheet.create({
 
     hint: {
         fontSize: 13,
+    },
+
+    compareBar: {
+        flexDirection: "row",
+        gap: Spacing.md,
+    },
+
+    compareButton: {
+        flex: 1,
     },
 
     row: {

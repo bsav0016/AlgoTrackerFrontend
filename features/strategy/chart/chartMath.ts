@@ -82,17 +82,28 @@ export interface Scales {
     plot: { left: number; right: number; top: number; bottom: number };
 }
 
+export interface Domain { timeStart: number; timeEnd: number; low: number; high: number }
+
 /** Pixel scales for a width x height drawing; the vertical range covers both lines with a little room. */
 export function makeScales(points: SeriesPoint[], width: number, height: number, padding: Padding): Scales {
-    const left = padding.left, right = width - padding.right, top = padding.top, bottom = height - padding.bottom;
-    const timeStart = points.length ? points[0].time : 0;
-    const timeEnd = points.length ? points[points.length - 1].time : 1;
     let low = Infinity, high = -Infinity;
     for (const point of points) {
         low = Math.min(low, point.price, point.value);
         high = Math.max(high, point.price, point.value);
     }
-    if (!Number.isFinite(low)) { low = 0; high = 1; }
+    return makeScalesFor({
+        timeStart: points.length ? points[0].time : 0,
+        timeEnd: points.length ? points[points.length - 1].time : 1,
+        low, high,
+    }, width, height, padding);
+}
+
+/** The same scales for an explicit time and value range, so several series (two runs) can share one set of axes. */
+export function makeScalesFor(domain: Domain, width: number, height: number, padding: Padding): Scales {
+    const left = padding.left, right = width - padding.right, top = padding.top, bottom = height - padding.bottom;
+    const { timeStart, timeEnd } = domain;
+    let { low, high } = domain;
+    if (!Number.isFinite(low) || !Number.isFinite(high)) { low = 0; high = 1; }
     if (high === low) { high = low + 1; }
     const room = (high - low) * 0.04;
     low -= room;
@@ -184,6 +195,22 @@ export function valueAt(points: SeriesPoint[], time: number): number {
     if (!other || other.time === nearest.time) return nearest.value;
     const share = (time - nearest.time) / (other.time - nearest.time);
     return nearest.value + (other.value - nearest.value) * share;
+}
+
+/** A line's value at `time`, read between its two neighbouring points; null before the first or after the last. */
+export function readAt(points: SeriesPoint[], time: number, pick: (point: SeriesPoint) => number): number | null {
+    if (points.length === 0 || time < points[0].time || time > points[points.length - 1].time) return null;
+    const index = nearestIndex(points, time);
+    const nearest = points[index];
+    const other = time >= nearest.time ? points[index + 1] : points[index - 1];
+    if (!other || other.time === nearest.time) return pick(nearest);
+    const share = (time - nearest.time) / (other.time - nearest.time);
+    return pick(nearest) + (pick(other) - pick(nearest)) * share;
+}
+
+/** "Day 0", "Day 182": the time since a run's first candle, for comparing runs that did not cover the same dates. */
+export function formatElapsed(milliseconds: number): string {
+    return `Day ${Math.round(milliseconds / 86_400_000)}`;
 }
 
 export interface Glyph { x: number; y: number; kind: MarkerKind }

@@ -14,6 +14,7 @@ export enum Routes {
     SharedStrategy = 'shared-strategy-screen',
     Leaderboard = 'leaderboard-screen',
     MyBacktests = 'my-backtests-screen',
+    CompareBacktests = 'compare-backtests-screen',
 }
 
 //Only used to get rid of the warning
