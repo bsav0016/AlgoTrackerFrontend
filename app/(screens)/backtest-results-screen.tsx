@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Image, Dimensions, Switch, StyleSheet, ScrollView, View } from "react-native";
+import { Dimensions, Switch, StyleSheet, ScrollView, View } from "react-native";
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
@@ -12,19 +12,12 @@ import { StrategyType } from "@/features/strategy/enums/StrategyType";
 import { ReactNativeZoomableView } from '@openspacelabs/react-native-zoomable-view';
 import BacktestResultsTable from "@/features/strategy/components/backtestResultsTable";
 import BacktestCoverage from "@/features/strategy/components/backtestCoverage";
+import { BacktestChart, ChartLegend } from "@/features/strategy/chart/BacktestChart";
 
 
-// Card padding (Spacing.lg + Spacing.md on each side) plus the card border; the chart images are about 2:1.
+// Card padding (Spacing.lg + Spacing.md on each side) plus the card border; the chart is about 2:1.
 const CHART_WIDTH = Dimensions.get("window").width - 2 * (Spacing.lg + Spacing.md) - 2;
 const CHART_HEIGHT = Math.round(CHART_WIDTH / 2);
-
-const processImageString = (imageString: string) => {
-    try {
-        return `data:image/png;base64,${imageString}`;
-    } catch (error) {
-        throw error;
-    }
-};
 
 export default function BacktestResults() {
     const { backtestData } = useBacktest(); 
@@ -33,14 +26,7 @@ export default function BacktestResults() {
     const theme = useTheme();
     const [displaySignals, setDisplaySignals] = useState(true);
 
-    const imageUri = useMemo(
-        () => backtestData?.resultImage ? processImageString(backtestData.resultImage) : null,
-        [backtestData]
-    );
-    const imageUriNoSignals = useMemo(
-        () => backtestData?.resultImageNoSignals ? processImageString(backtestData.resultImageNoSignals) : null,
-        [backtestData]
-    );
+    const points = useMemo(() => backtestData?.chartPoints() ?? [], [backtestData]);
 
     useEffect(() => {
         if (!backtestData) {
@@ -49,7 +35,7 @@ export default function BacktestResults() {
             return;
         }
 
-        if (!backtestData.resultImage || !backtestData.resultImageNoSignals) {
+        if (backtestData.chartPoints().length === 0) {
             addToast("Could not properly load backtest result");
             routeTo(Routes.StrategySelection, { strategyType: StrategyType.Backtest });
             return;
@@ -73,16 +59,21 @@ export default function BacktestResults() {
                         </View>
                     </View>
 
-                    {(imageUri && imageUriNoSignals) ? (
+                    {points.length > 0 ? (
                         <ReactNativeZoomableView bindToBorders={true} maxZoom={3} minZoom={1} style={styles.chartZoom}>
-                            <Image
-                                source={{ uri: displaySignals ? imageUri : imageUriNoSignals }}
-                                style={styles.chartImage}
+                            <BacktestChart
+                                points={points}
+                                trades={backtestData?.strategy.trades ?? []}
+                                showSignals={displaySignals}
+                                width={CHART_WIDTH}
+                                height={CHART_HEIGHT}
                             />
                         </ReactNativeZoomableView>
                     ) : (
-                        <ThemedText type="muted">No image available</ThemedText>
+                        <ThemedText type="muted">No chart available</ThemedText>
                     )}
+
+                    {points.length > 0 && <ChartLegend trades={backtestData?.strategy.trades ?? []} showSignals={displaySignals} />}
                 </Card>
 
                 {backtestData?.dataWindow && <BacktestCoverage window={backtestData.dataWindow} />}
@@ -136,14 +127,7 @@ const styles = StyleSheet.create({
 
     chartZoom: {
         height: CHART_HEIGHT,
-        backgroundColor: 'white',
         borderRadius: 8,
         overflow: 'hidden',
-    },
-
-    chartImage: {
-        width: CHART_WIDTH,
-        height: CHART_HEIGHT,
-        resizeMode: "contain",
     },
 })

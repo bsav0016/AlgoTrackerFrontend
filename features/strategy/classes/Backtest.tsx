@@ -4,6 +4,7 @@ import { StockValue } from "./StockValue";
 import { Strategy } from "./Strategy";
 import { Trade } from "./Trade";
 import { hasExitRules, exitRulesToJSON, summarizeExits } from "./ExitRules";
+import { SeriesPoint } from "../chart/chartMath";
 
 export interface DataWindowFormat {
     requested_start: string;
@@ -18,8 +19,9 @@ export interface DataWindowFormat {
 
 export interface BacktestResponseDataFormat {
     result: BacktestResultDataFormat[];
-    image: string;
-    image_no_signals: string;
+    // Prerendered charts, sent only to builds that ask for them; this app draws the chart from `result`.
+    image?: string;
+    image_no_signals?: string;
     percent_return: number;
     percent_return_adj: number;
     sharpe_ratio: number;
@@ -121,8 +123,23 @@ export class Backtest {
             start_date: this.startDate.toISOString(),
             end_date: this.endDate.toISOString(),
             signals: signals,
+            include_images: false,
             ...(hasExitRules(this.strategy.exitRules) ? { exit_rules: exitRulesToJSON(this.strategy.exitRules) } : {})
         })
+    }
+
+    /** The asset price and the strategy's value at each candle, for the chart. */
+    chartPoints(): SeriesPoint[] {
+        const length = Math.min(this.stockValues.length, this.returnValues.length);
+        const points: SeriesPoint[] = [];
+        for (let i = 0; i < length; i++) {
+            points.push({
+                time: this.stockValues[i].date.getTime(),
+                price: this.stockValues[i].price,
+                value: this.returnValues[i].returnValue,
+            });
+        }
+        return points;
     }
 
     updateFromData(data: BacktestResponseDataFormat): Backtest {
@@ -169,8 +186,8 @@ export class Backtest {
         this.strategy.trades = dataTrades;
         this.indicatorValues = dataIndicatorValues;
         this.returnValues = dataReturnValues;
-        this.resultImage = data.image;
-        this.resultImageNoSignals = data.image_no_signals;
+        this.resultImage = data.image || null;
+        this.resultImageNoSignals = data.image_no_signals || null;
         this.percentReturn = data.percent_return;
         this.percentReturnAdj = data.percent_return_adj;
         this.sharpeRatio = data.sharpe_ratio;
