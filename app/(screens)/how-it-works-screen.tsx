@@ -149,6 +149,7 @@ const backtestDetails: HowItWorksDetails = {
         + " One of the benefits is that it provides insight as to how effective a strategy MAY be."
         + " Please understand that just because a strategy performs well during backtesting, that DOES NOT guarantee it will perform well in the future."
         + " Market trends change over time and it is important to understand the risks associated with algorithmic trading."
+        + " New to this? Start from an idea in the builder fills in a ready-made strategy to learn from; it is not a recommendation, and you can change anything."
         + " Every backtest you run is saved under My backtests (your newest 50), where you can open it again for free, give it a name, or pick two to compare side by side."
         + " Tweak and rerun on a result opens the builder with the same settings; running it again is a new backtest and uses credits.",
     link: "https://www.investopedia.com/terms/b/backtesting.asp"
@@ -247,6 +248,19 @@ const inputsDetails: HowItWorksDetails[] = [
 ]
 
 const outputsDetails: HowItWorksDetails[] = [
+    {
+        title: "In plain words",
+        description: "The In plain words card says the same story as the ratios, without the jargon. All of it is after trading costs."
+            + " Biggest drop is the furthest the strategy fell from an earlier high point at any time during the test, shown next to how far just holding the asset fell."
+            + " A drop of 20% means that, at its worst, money put in at the peak would have lost a fifth of its value before recovering."
+            + " Winning trades counts a buy and the sell that closes it as one trade, and says how many of those finished with a gain."
+            + " A trade still open when the test ends is not counted, because it has not finished."
+            + " The buys and sells figure under the table counts every buy and every sell separately, so it is about twice the number of finished trades."
+            + " Time invested is the share of the period the strategy held a position; the rest of the time it was out of the market."
+            + " A strategy can win most of its trades and still lose money if the losses are bigger than the gains, so read the average, best and worst trade too.",
+        link: "https://www.investopedia.com/terms/d/drawdown.asp"
+    },
+
     {
         title: "Percent Return",
         description: "Percent return shows how much value an asset or strategy gains over a period of time."

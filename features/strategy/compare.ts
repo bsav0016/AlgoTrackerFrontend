@@ -2,6 +2,7 @@ import { describeSignal } from "@/features/sharing/SharedStrategy";
 import { Backtest } from "./classes/Backtest";
 import { EXIT_RULE_LABELS, EXIT_RULE_NAMES } from "./classes/ExitRules";
 import { SeriesPoint, formatDay, formatPercent, percentSeries, readAt } from "./chart/chartMath";
+import { formatBuysAndSells } from "./plainWords";
 
 /**
  * Two saved runs, ready to draw on one chart. Both are percent change since their own first candle.
@@ -80,7 +81,7 @@ export function compareRows(a: Backtest, b: Backtest): CompareRow[] {
         row("Gain per year", "percent", (run) => run.percentReturn),
         row("Sharpe ratio", "ratio", (run) => run.sharpeRatio),
         row("Sortino ratio", "ratio", (run) => run.sortinoRatio),
-        row("Trades", "count", (run) => run.tradeCount),
+        row("Buys and sells", "count", (run) => run.tradeCount),
     ];
 }
 
@@ -149,11 +150,11 @@ export function runTitle(run: Backtest): string {
     return run.label.trim() !== "" ? run.label : market(run);
 }
 
-/** The run's headline numbers, so two runs with the same name can still be told apart: "+10.3% · 11 trades". */
+/** The run's headline numbers, so two runs with the same name can still be told apart: "+10.3% · 11 buys and sells". */
 export function runSummary(run: Backtest): string {
     const parts = [
         run.periodReturn !== null ? formatPercent(run.periodReturn) : null,
-        run.tradeCount !== null ? `${run.tradeCount} ${run.tradeCount === 1 ? "trade" : "trades"}` : null,
+        run.tradeCount !== null ? formatBuysAndSells(run.tradeCount) : null,
     ];
     return parts.filter(Boolean).join(" · ");
 }

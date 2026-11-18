@@ -1,5 +1,5 @@
 import { Backtest, SavedBacktestDetailData } from "./classes/Backtest";
-import { PlainNumbers, plainNumbersFromData, plainWordsRows } from "./plainWords";
+import { PlainNumbers, formatBuysAndSells, plainNumbersFromData, plainWordsRows } from "./plainWords";
 
 jest.mock("expo-constants", () => ({
   __esModule: true,
@@ -77,6 +77,14 @@ describe("plainWordsRows", () => {
     const row = plainWordsRows(numbers({ winRate: null, averageTrade: null, bestTrade: null, worstTrade: 3, openTrade: false }))[1];
     expect(row.value).toBe("1 of 2");
     expect(row.detail).toBe("A trade is a buy and the sell that closes it. worst +3.0%.");
+  });
+});
+
+describe("formatBuysAndSells", () => {
+  it("counts every buy and every sell, and says so", () => {
+    expect(formatBuysAndSells(27)).toBe("27 buys and sells");
+    expect(formatBuysAndSells(1)).toBe("1 buy or sell");
+    expect(formatBuysAndSells(0)).toBe("0 buys and sells");
   });
 });
 

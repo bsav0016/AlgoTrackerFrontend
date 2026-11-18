@@ -1,7 +1,7 @@
 import { CustomHeaderView } from "@/components/CustomHeaderView";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
 import { Keyboard, ScrollView, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Signal } from "@/features/strategy/classes/Signal";
 import { ThemedText } from "@/components/ThemedText";
 import { indicators } from "@/features/strategy/enums/Indicator";
@@ -113,8 +113,12 @@ export default function StrategySelectionScreen() {
         getSymbolsAndIntervals();
     }, []);
 
+    // The builder shows a result as soon as one arrives. A result that was already in memory when it opened (left over
+    // from reopening a saved run, say) is not that: it is cleared above, and must not push a results screen over the
+    // builder and bounce back here.
+    const resultOnOpen = useRef(backtestData);
     useEffect(() => {
-        if (backtestData) {
+        if (backtestData && backtestData !== resultOnOpen.current) {
             routeTo(Routes.BacktestResults);
         }
     }, [backtestData]);
