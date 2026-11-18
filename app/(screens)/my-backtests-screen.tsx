@@ -19,6 +19,7 @@ import { BacktestHistoryService } from "@/features/strategy/BacktestHistoryServi
 import { formatDay, formatPercent } from "@/features/strategy/chart/chartMath";
 import { RenameBacktestModal } from "@/features/strategy/components/renameBacktestModal";
 import { SavedBacktestItem, appendPage } from "@/features/strategy/SavedBacktest";
+import { formatBuysAndSells } from "@/features/strategy/plainWords";
 
 export default function MyBacktestsScreen() {
     const { accessToken } = useAuth();
@@ -203,7 +204,7 @@ export default function MyBacktestsScreen() {
                                         <ThemedText type="muted" style={styles.small}>
                                             {[
                                                 item.label.trim() !== "" ? `${item.symbol} · ${item.interval}` : null,
-                                                item.trades !== null ? `${item.trades} ${item.trades === 1 ? "trade" : "trades"}` : null,
+                                                item.trades !== null ? formatBuysAndSells(item.trades) : null,
                                                 item.hasExitRules ? "exit rules" : null,
                                             ].filter(Boolean).join(" · ")}
                                         </ThemedText>

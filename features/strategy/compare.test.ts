@@ -79,7 +79,7 @@ describe("the numbers", () => {
   it("lists each run's figures in the same order", () => {
     const rows = compareRows(run(), run({ period_return: 8, trades: 5, sharpe_ratio: 1.5 }));
     expect(rows.map((r) => r.label)).toEqual([
-      "Gain over period", "Before costs", "Versus holding", "Gain per year", "Sharpe ratio", "Sortino ratio", "Trades",
+      "Gain over period", "Before costs", "Versus holding", "Gain per year", "Sharpe ratio", "Sortino ratio", "Buys and sells",
     ]);
     expect(rows[0]).toMatchObject({ kind: "percent", a: 5, b: 8 });
     expect(rows[4]).toMatchObject({ kind: "ratio", a: 1, b: 1.5 });
@@ -193,9 +193,9 @@ describe("readoutAt", () => {
 });
 
 describe("telling two runs apart", () => {
-  it("summarises a run by its gain and trade count", () => {
-    expect(runSummary(run())).toBe("+5.0% · 2 trades");
-    expect(runSummary(run({ trades: 1 }))).toBe("+5.0% · 1 trade");
+  it("summarises a run by its gain and its count of buys and sells", () => {
+    expect(runSummary(run())).toBe("+5.0% · 2 buys and sells");
+    expect(runSummary(run({ trades: 1 }))).toBe("+5.0% · 1 buy or sell");
   });
 });
 

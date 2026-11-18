@@ -28,6 +28,14 @@ export interface PlainNumbersData {
     open_trade?: boolean | null;
 }
 
+/**
+ * "11 buys and sells". The server's `trades` counts every buy and every sell separately, while the In plain words card
+ * counts a buy and the sell that closes it as one trade, so the two must not both be called "trades".
+ */
+export function formatBuysAndSells(count: number): string {
+    return `${count} ${count === 1 ? "buy or sell" : "buys and sells"}`;
+}
+
 const num = (value: number | null | undefined) => (typeof value === "number" && Number.isFinite(value) ? value : null);
 
 /** Null when the server did not send the numbers at all (an older saved run), so the screen can leave the card out. */
