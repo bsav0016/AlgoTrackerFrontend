@@ -6,6 +6,7 @@ import { Trade } from "./Trade";
 import { hasExitRules, exitRulesToJSON, exitRulesFromData, summarizeExits } from "./ExitRules";
 import { Signal, SignalData } from "./Signal";
 import { SeriesPoint } from "../chart/chartMath";
+import { PlainNumbers, PlainNumbersData, plainNumbersFromData } from "../plainWords";
 
 export interface DataWindowFormat {
     requested_start: string;
@@ -18,7 +19,7 @@ export interface DataWindowFormat {
     reason: "request_limit" | "history_ends" | null;
 }
 
-export interface BacktestResponseDataFormat {
+export interface BacktestResponseDataFormat extends PlainNumbersData {
     // The saved copy of this run (null if the server could not save it). Older servers do not send it.
     id?: number | null;
     result: BacktestResultDataFormat[];
@@ -96,6 +97,8 @@ export class Backtest {
     tradeCount: number | null = null;
     dataWindow: DataWindowFormat | null = null;
     exitSummary: string | null = null;
+    /** Biggest drop, winning trades and time invested; null for a run saved before the server worked them out. */
+    plain: PlainNumbers | null = null;
     /** The id of the saved copy, once there is one. */
     id: number | null = null;
     label = "";
@@ -248,6 +251,7 @@ export class Backtest {
         this.dataWindow = data.data_window ?? null;
         this.id = data.id ?? null;
         this.exitSummary = summarizeExits(dataTrades.map((trade) => trade.exitReason));
+        this.plain = plainNumbersFromData(data);
 
         return this;
     }

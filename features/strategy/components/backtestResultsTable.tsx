@@ -89,7 +89,7 @@ export default function BacktestResultsTable({
             {tradeCostPercent !== null && (
                 <ThemedText type="muted" style={styles.noteText}>
                     {`Results include a ${tradeCostPercent}% cost on each buy and sell`
-                        + (tradeCount !== null ? ` (${tradeCount} ${tradeCount === 1 ? "trade" : "trades"})` : "")
+                        + (tradeCount !== null ? ` (${tradeCount} ${tradeCount === 1 ? "buy or sell" : "buys and sells"})` : "")
                         + (periodReturnBeforeCosts !== null ? `. Before costs the gain was ${periodReturnBeforeCosts.toFixed(2)}%.` : ".")}
                 </ThemedText>
             )}

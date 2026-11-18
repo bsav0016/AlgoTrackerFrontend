@@ -12,6 +12,7 @@ import { Routes } from "@/app/Routes";
 import { StrategyType } from "@/features/strategy/enums/StrategyType";
 import BacktestResultsTable from "@/features/strategy/components/backtestResultsTable";
 import BacktestCoverage from "@/features/strategy/components/backtestCoverage";
+import PlainWordsCard from "@/features/strategy/components/plainWordsCard";
 import { BacktestChart } from "@/features/strategy/chart/BacktestChart";
 import { formatDay } from "@/features/strategy/chart/chartMath";
 
@@ -105,6 +106,8 @@ export default function BacktestResults() {
                 )}
 
                 {backtestData?.dataWindow && <BacktestCoverage window={backtestData.dataWindow} />}
+
+                {backtestData?.plain && <PlainWordsCard numbers={backtestData.plain} />}
 
                 <BacktestResultsTable
                     percentReturn={backtestData?.percentReturn ?? null}
