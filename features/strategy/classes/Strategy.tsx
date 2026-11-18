@@ -1,6 +1,7 @@
 import { CURRENT_SIGNAL_VERSION, LEGACY_SIGNAL_VERSION, Signal, SignalData } from "./Signal";
 import { Trade, TradeData } from "./Trade";
 import { ExitRules, exitRulesFromData, exitRulesToJSON, hasExitRules } from "./ExitRules";
+import { EquityPoint, curveFromData } from "../liveCurve";
 
 export interface StrategyData {
     id: number;
@@ -11,6 +12,8 @@ export interface StrategyData {
     sell_signals: SignalData[];
     // Percent exits from the buy price. Older servers do not send them.
     exit_rules?: ExitRules;
+    // The strategy's value over time (see liveCurve.ts). Older servers do not send it.
+    equity_curve?: { date: string; multiple: number }[];
     trades: TradeData[];
     strategy_return: number;
     asset_return: number;
@@ -49,6 +52,7 @@ export class Strategy {
     active: boolean;
     lastProcessedAt: Date | null;
     exitRules: ExitRules;
+    equityCurve: EquityPoint[];
 
     constructor(
         id: number,
@@ -64,7 +68,8 @@ export class Strategy {
         chargeUserDate: Date = thirtyDaysFromNow(),
         active: boolean = true,
         lastProcessedAt: Date | null = null,
-        exitRules: ExitRules = {}
+        exitRules: ExitRules = {},
+        equityCurve: EquityPoint[] = []
     ) {
         this.id = id;
         this.title = title;
@@ -80,6 +85,7 @@ export class Strategy {
         this.active = active;
         this.lastProcessedAt = lastProcessedAt;
         this.exitRules = exitRules;
+        this.equityCurve = equityCurve;
     }
 
     /** The server accepts one version per strategy, so a strategy holding any old rule stays on the old definitions. */
@@ -134,7 +140,8 @@ export class Strategy {
             new Date(stored.chargeUserDate),
             stored.active,
             stored.lastProcessedAt ? new Date(stored.lastProcessedAt) : null,
-            exitRulesFromData(stored.exitRules)
+            exitRulesFromData(stored.exitRules),
+            curveFromData(stored.equityCurve)
         );
     }
 
@@ -172,7 +179,8 @@ export class Strategy {
             new Date(data.charge_user_date),
             data.active,
             data.last_processed_ts != null ? new Date(data.last_processed_ts * 1000) : null,
-            exitRulesFromData(data.exit_rules)
+            exitRulesFromData(data.exit_rules),
+            curveFromData(data.equity_curve)
         )
     }
 }

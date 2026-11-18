@@ -3,7 +3,7 @@ import { useRouteTo } from "@/contexts/RouteContext";
 import { useStrategy } from "@/contexts/StrategyContext";
 import { useToast } from "@/contexts/ToastContext";
 import React, { useState } from "react";
-import { Platform, ScrollView, Share, StyleSheet, View } from "react-native";
+import { Dimensions, Platform, ScrollView, Share, StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { GeneralButton } from "@/components/GeneralButton";
@@ -18,6 +18,11 @@ import { useUser } from "@/contexts/UserContext";
 import { ShareService } from "@/features/sharing/ShareService";
 import { SHARE_DISCLAIMER, shareUrl, sharePayload } from "@/features/sharing/ShareLink";
 import { Spacing, Type, useTheme } from "@/constants/Theme";
+import { LiveCurveChart } from "@/features/strategy/chart/LiveCurveChart";
+
+// Card padding (Spacing.lg + Spacing.md on each side) plus the card border; the chart is about 2:1.3.
+const CURVE_WIDTH = Dimensions.get("window").width - 2 * (Spacing.lg + Spacing.md) - 2;
+const CURVE_HEIGHT = Math.round(CURVE_WIDTH * 0.62);
 
 
 export default function ViewStrategy() {
@@ -200,6 +205,23 @@ export default function ViewStrategy() {
                     </>
                 }
 
+                <ThemedText style={styles.sectionTitle}>Strategy curve</ThemedText>
+                {strategy.equityCurve.length >= 2 ?
+                    <Card style={styles.curveCard}>
+                        <LiveCurveChart curve={strategy.equityCurve} trades={strategy.trades} width={CURVE_WIDTH} height={CURVE_HEIGHT} />
+                        <ThemedText type="muted" style={styles.curveNote}>
+                            {"The strategy's value since its first buy, after its trades closed. The asset's return is the total above."}
+                        </ThemedText>
+                    </Card>
+                    :
+                    <EmptyState
+                        title="No curve yet"
+                        message={strategy.active
+                            ? "The curve appears once your strategy has bought, and grows as it trades."
+                            : "Start tracking to see the strategy's curve."}
+                    />
+                }
+
                 <ThemedText style={styles.sectionTitle}>
                     {`Trades${strategy.trades.length > 0 ? ` (${strategy.trades.length})` : ""}`}
                 </ThemedText>
@@ -305,6 +327,16 @@ const styles = StyleSheet.create({
 
     sectionTitle: {
         ...Type.subtitle,
+    },
+
+    curveCard: {
+        gap: Spacing.sm,
+        padding: Spacing.md,
+    },
+
+    curveNote: {
+        fontSize: 13,
+        paddingTop: Spacing.xs,
     },
 
     tradesCard: {
