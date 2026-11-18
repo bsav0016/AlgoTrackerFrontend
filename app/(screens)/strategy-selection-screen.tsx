@@ -29,6 +29,8 @@ import { EditIndicator } from "@/features/strategy/components/editIndicator";
 import { Interval } from "@/features/strategy/dtos/SymbolsAndIntervalsResponseDTO";
 import { useUser } from "@/contexts/UserContext";
 import { builderSeedFrom } from "@/features/strategy/rerun";
+import { StarterIdeas } from "@/features/strategy/components/starterIdeas";
+import { StarterIdea } from "@/features/strategy/starterIdeas";
 import { ExitRulesSection } from "@/features/strategy/components/exitRulesSection";
 import { EMPTY_EXIT_RULE_INPUTS, ExitRuleInputs, parseExitRules } from "@/features/strategy/classes/ExitRules";
 
@@ -68,6 +70,15 @@ export default function StrategySelectionScreen() {
     const changeBuySignals = (next: Signal[]) => setBuySignals(next.length > 0 ? next : [newSignal(true)]);
     const changeSellSignals = (next: Signal[]) => setSellSignals(next.length > 0 ? next : [newSignal(false)]);
     const [exitRuleInputs, setExitRuleInputs] = useState<ExitRuleInputs>(seed?.exitRuleInputs ?? EMPTY_EXIT_RULE_INPUTS);
+    const [pickedIdea, setPickedIdea] = useState<string | null>(null);
+    // Choosing an idea replaces the signals and exit rules (the symbol, interval and dates are left alone).
+    const pickIdea = (idea: StarterIdea) => {
+        const built = idea.build();
+        setBuySignals(built.buySignals);
+        setSellSignals(built.sellSignals);
+        setExitRuleInputs(built.exitRuleInputs);
+        setPickedIdea(idea.id);
+    };
     const [loading, setLoading] = useState<boolean>(false);
     const [loadingMessage, setLoadingMessage] = useState<string | null>(null);
     const [startDateMonth, setStartDateMonth] = useState<string>(seed?.startDate.month ?? '');
@@ -290,6 +301,8 @@ export default function StrategySelectionScreen() {
                             value={functionType}
                             onChange={setFunctionType}
                         />
+
+                        {!seed && <StarterIdeas pickedId={pickedIdea} onPick={pickIdea} />}
 
                         <Card style={styles.marketCard}>
                             {functionType === StrategyType.Subscription &&
