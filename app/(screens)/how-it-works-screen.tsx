@@ -148,7 +148,9 @@ const backtestDetails: HowItWorksDetails = {
     description: "Backtesting takes uses a given strategy to analyzes its performance on historical data."
         + " One of the benefits is that it provides insight as to how effective a strategy MAY be."
         + " Please understand that just because a strategy performs well during backtesting, that DOES NOT guarantee it will perform well in the future."
-        + " Market trends change over time and it is important to understand the risks associated with algorithmic trading.",
+        + " Market trends change over time and it is important to understand the risks associated with algorithmic trading."
+        + " Every backtest you run is saved under My backtests (your newest 50), where you can open it again for free, give it a name, or pick two to compare side by side."
+        + " Tweak and rerun on a result opens the builder with the same settings; running it again is a new backtest and uses credits.",
     link: "https://www.investopedia.com/terms/b/backtesting.asp"
 }
 
