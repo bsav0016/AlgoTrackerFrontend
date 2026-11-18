@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { PanResponder, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop, Text as SvgText } from "react-native-svg";
 import { ThemedText } from "@/components/ThemedText";
 import { Spacing, useTheme } from "@/constants/Theme";
@@ -8,6 +8,7 @@ import {
     MarkerKind, SeriesPoint, formatDay, formatMonth, formatPercent, formatPercentTick, glyphPath, linePath, makeScales,
     nearestIndex, percentSeries, reduceSeries, tradeGlyphs, tradeMarkers,
 } from "./chartMath";
+import { createScrubResponder } from "./scrubResponder";
 
 interface BacktestChartProps {
     points: SeriesPoint[];
@@ -42,15 +43,7 @@ export function BacktestChart({ points, trades, showSignals, width, height }: Ba
             const index = nearestIndex(drawn, scales.timeStart + share * (scales.timeEnd - scales.timeStart));
             setActive(index >= 0 ? index : null);
         };
-        return PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderTerminationRequest: () => false, // keep the finger on the chart, not the page behind it
-            onPanResponderGrant: (event) => scrubTo(event.nativeEvent.locationX),
-            onPanResponderMove: (event) => scrubTo(event.nativeEvent.locationX),
-            onPanResponderRelease: () => setActive(null),
-            onPanResponderTerminate: () => setActive(null),
-        });
+        return createScrubResponder({ scrubTo, end: () => setActive(null) });
     }, [drawn, scales]);
 
     if (drawn.length === 0) return <ThemedText type="muted">No data to chart</ThemedText>;
