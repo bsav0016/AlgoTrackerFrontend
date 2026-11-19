@@ -15,6 +15,7 @@ export enum Routes {
     Leaderboard = 'leaderboard-screen',
     MyBacktests = 'my-backtests-screen',
     CompareBacktests = 'compare-backtests-screen',
+    EditStrategy = 'edit-strategy-screen',
 }
 
 //Only used to get rid of the warning

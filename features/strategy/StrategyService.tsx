@@ -2,7 +2,7 @@ import { RequestMethod } from "@/lib/networkRequests/RequestMethod";
 import { HEADERS, URL_EXT } from "@/lib/networkRequests/NetworkConstants";
 import { networkRequest } from "@/lib/networkRequests/NetworkRequest";
 import { Backtest, BacktestResponseDataFormat } from "./classes/Backtest";
-import { Strategy } from "./classes/Strategy";
+import { Strategy, StrategyData } from "./classes/Strategy";
 import { SymbolsAndIntervalsResponseData, SymbolsAndIntervalsResponseDTO } from "./dtos/SymbolsAndIntervalsResponseDTO";
 
 export interface ReturnedBacktest {
@@ -57,6 +57,17 @@ export const StrategyService = {
         } catch (error) {
             throw(error);
         }
+    },
+
+    /** Changes a strategy's title, signals or exit rules (`body` is built by buildEditBody). Returns the strategy as it is now. */
+    async updateStrategy(id: number, body: string, token: string): Promise<Strategy> {
+        const response = await networkRequest(
+            URL_EXT.STRATEGY + `${id}/`,
+            RequestMethod.PATCH,
+            { ...HEADERS().JSON, ...HEADERS(token).AUTH },
+            body
+        );
+        return Strategy.fromData(response.data as StrategyData);
     },
 
     async unsubscribeStrategy(strategy: Strategy, token: string): Promise<boolean> {

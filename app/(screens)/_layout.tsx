@@ -40,6 +40,7 @@ export default function PagesLayout() {
                                             <Stack.Screen name={Routes.Leaderboard} options={{ headerShown: false }} />
                                             <Stack.Screen name={Routes.MyBacktests} options={{ headerShown: false }} />
                                             <Stack.Screen name={Routes.CompareBacktests} options={{ headerShown: false }} />
+                                            <Stack.Screen name={Routes.EditStrategy} options={{ headerShown: false }} />
                                         </Stack>
                                     </SafeAreaView>
                                 </ThemedView>

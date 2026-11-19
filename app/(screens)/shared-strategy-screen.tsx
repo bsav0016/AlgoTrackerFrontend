@@ -148,6 +148,12 @@ export default function SharedStrategyScreen() {
                             </>
                         )}
 
+                        {shared.rulesChangedAt !== null && (
+                            <ThemedText type="muted" style={styles.disclaimer}>
+                                {`The owner last changed these rules on ${shared.rulesChangedAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}. The returns above include the time before that.`}
+                            </ThemedText>
+                        )}
+
                         <ThemedText type="muted" style={styles.disclaimer}>{SHARE_DISCLAIMER}</ThemedText>
 
                         <ThemedText type="muted" style={styles.disclaimer}>
