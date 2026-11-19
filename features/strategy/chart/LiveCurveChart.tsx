@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { PanResponder, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop, Text as SvgText } from "react-native-svg";
 import { ThemedText } from "@/components/ThemedText";
 import { Spacing, useTheme } from "@/constants/Theme";
@@ -8,6 +8,7 @@ import { EquityPoint, curveGlyphs, curveReadout, curveSeries } from "../liveCurv
 import {
     MarkerKind, formatDay, formatMonth, formatPercent, formatPercentTick, glyphPath, linePath, makeScalesFor,
 } from "./chartMath";
+import { createScrubResponder } from "./scrubResponder";
 
 interface LiveCurveChartProps {
     curve: EquityPoint[];
@@ -47,15 +48,7 @@ export function LiveCurveChart({ curve, trades, width, height }: LiveCurveChartP
             const share = Math.min(1, Math.max(0, (x - plot.left) / (plot.right - plot.left)));
             setTouched(timeStart + share * (timeEnd - timeStart));
         };
-        return PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderTerminationRequest: () => false, // keep the finger on the chart, not the page behind it
-            onPanResponderGrant: (event) => scrubTo(event.nativeEvent.locationX),
-            onPanResponderMove: (event) => scrubTo(event.nativeEvent.locationX),
-            onPanResponderRelease: () => setTouched(null),
-            onPanResponderTerminate: () => setTouched(null),
-        });
+        return createScrubResponder({ scrubTo, end: () => setTouched(null) });
     }, [scales]);
 
     const readout = curveReadout(series, touched);

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { PanResponder, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Svg, { Circle, Line, Path, Text as SvgText } from "react-native-svg";
 import { ThemedText } from "@/components/ThemedText";
 import { Spacing, useTheme } from "@/constants/Theme";
@@ -8,6 +8,7 @@ import {
     Scales, SeriesPoint, formatDay, formatElapsed, formatMonth, formatPercent, formatPercentTick, linePath,
     makeScalesFor, reduceSeries,
 } from "./chartMath";
+import { createScrubResponder } from "./scrubResponder";
 
 interface CompareChartProps {
     plan: ComparePlan;
@@ -55,15 +56,7 @@ export function CompareChart({ plan, width, height }: CompareChartProps) {
             const share = Math.min(1, Math.max(0, (x - plot.left) / (plot.right - plot.left)));
             setActiveTime(timeStart + share * (timeEnd - timeStart));
         };
-        return PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderTerminationRequest: () => false, // keep the finger on the chart, not the page behind it
-            onPanResponderGrant: (event) => scrubTo(event.nativeEvent.locationX),
-            onPanResponderMove: (event) => scrubTo(event.nativeEvent.locationX),
-            onPanResponderRelease: () => setActiveTime(null),
-            onPanResponderTerminate: () => setActiveTime(null),
-        });
+        return createScrubResponder({ scrubTo, end: () => setActiveTime(null) });
     }, [scales]);
 
     if (a.length === 0 || b.length === 0) return <ThemedText type="muted">No data to chart</ThemedText>;
