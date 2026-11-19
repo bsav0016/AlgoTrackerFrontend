@@ -9,6 +9,9 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { GeneralButton } from "@/components/GeneralButton";
 import { Card } from "@/components/Card";
 import { describeExitRules, exitReasonLabel } from "@/features/strategy/classes/ExitRules";
+import { describeSignal } from "@/features/sharing/SharedStrategy";
+import { describeEditRecord, tradeRows } from "@/features/strategy/strategyEdit";
+import { Routes } from "@/app/Routes";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { StrategyService } from "@/features/strategy/StrategyService";
@@ -17,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUser } from "@/contexts/UserContext";
 import { ShareService } from "@/features/sharing/ShareService";
 import { SHARE_DISCLAIMER, shareUrl, sharePayload } from "@/features/sharing/ShareLink";
-import { Spacing, Type, useTheme } from "@/constants/Theme";
+import { Radius, Spacing, Type, useTheme } from "@/constants/Theme";
 import { LiveCurveChart } from "@/features/strategy/chart/LiveCurveChart";
 
 // Card padding (Spacing.lg + Spacing.md on each side) plus the card border; the chart is about 2:1.3.
@@ -30,7 +33,7 @@ export default function ViewStrategy() {
     const { accessToken } = useAuth()
     const { updateUserData } = useUser();
     const [busy, setBusy] = useState<boolean>(false);
-    const { routeBack } = useRouteTo();
+    const { routeBack, routeTo } = useRouteTo();
     const { addToast } = useToast();
     const theme = useTheme();
 
@@ -194,6 +197,23 @@ export default function ViewStrategy() {
                     }
                 </Card>
 
+                <ThemedText style={styles.sectionTitle}>Rules</ThemedText>
+                <Card style={styles.rulesCard}>
+                    <ThemedText type="defaultSemiBold">Buy when</ThemedText>
+                    {strategy.buySignals.length > 0
+                        ? strategy.buySignals.map((signal, index) => <ThemedText key={`b${index}`}>{describeSignal(signal)}</ThemedText>)
+                        : <ThemedText type="muted">No buy rules</ThemedText>}
+                    <ThemedText type="defaultSemiBold" style={styles.rulesGap}>Sell when</ThemedText>
+                    {strategy.sellSignals.length > 0
+                        ? strategy.sellSignals.map((signal, index) => <ThemedText key={`s${index}`}>{describeSignal(signal)}</ThemedText>)
+                        : <ThemedText type="muted">No sell rules: it buys and holds</ThemedText>}
+                    {strategy.rulesChangedAt !== null &&
+                        <ThemedText type="muted" style={styles.rulesGap}>
+                            {`Rules last changed ${formattedDate(strategy.rulesChangedAt)}. The leaderboard counts results from then.`}
+                        </ThemedText>
+                    }
+                </Card>
+
                 {describeExitRules(strategy.exitRules).length > 0 &&
                     <>
                         <ThemedText style={styles.sectionTitle}>Exit rules</ThemedText>
@@ -234,18 +254,24 @@ export default function ViewStrategy() {
                             <ThemedText type="muted" style={[styles.actionCell, styles.headerText]}>Action</ThemedText>
                         </View>
 
-                        {strategy.trades.map((trade, index) => (
+                        {tradeRows(strategy.trades, strategy.edits).map((row, position, rows) => row.kind === "edit" ? (
+                            <View key={`e${position}`} style={[styles.editRow, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+                                <ThemedText type="muted" style={styles.editText}>
+                                    {`${formattedDate(row.edit.date)} · ${describeEditRecord(row.edit)}`}
+                                </ThemedText>
+                            </View>
+                        ) : (
                             <View
-                                key={index}
+                                key={row.index}
                                 style={[
                                     styles.tradeRow,
-                                    index < strategy.trades.length - 1 && { borderColor: theme.border, borderBottomWidth: StyleSheet.hairlineWidth },
+                                    position < rows.length - 1 && { borderColor: theme.border, borderBottomWidth: StyleSheet.hairlineWidth },
                                 ]}
                             >
-                                <ThemedText style={styles.dateCell}>{formattedDate(trade.date)}</ThemedText>
-                                <ThemedText style={styles.priceCell}>{formattedPrice(trade.price)}</ThemedText>
+                                <ThemedText style={styles.dateCell}>{formattedDate(row.trade.date)}</ThemedText>
+                                <ThemedText style={styles.priceCell}>{formattedPrice(row.trade.price)}</ThemedText>
                                 <View style={styles.actionCell}>
-                                    <Badge label={trade.isBuy ? "Buy" : exitReasonLabel(trade.exitReason) ?? "Sell"} tone={trade.isBuy ? "gain" : "loss"} />
+                                    <Badge label={row.trade.isBuy ? "Buy" : exitReasonLabel(row.trade.exitReason) ?? "Sell"} tone={row.trade.isBuy ? "gain" : "loss"} />
                                 </View>
                             </View>
                         ))}
@@ -258,6 +284,7 @@ export default function ViewStrategy() {
                     {!strategy.active &&
                         <GeneralButton title="Start tracking" onPress={startTracking} loading={busy} disabled={busy} autoWidth={false} />
                     }
+                    <GeneralButton title="Edit rules" variant="outline" onPress={() => routeTo(Routes.EditStrategy)} autoWidth={false} />
                     <GeneralButton title="Share" variant="outline" onPress={shareStrategy} autoWidth={false} />
                     <GeneralButton title="Stop sharing" variant="ghost" onPress={confirmStopSharing} autoWidth={false} />
                     <ThemedText type="muted" style={styles.shareNote}>{SHARE_DISCLAIMER}</ThemedText>
@@ -337,6 +364,26 @@ const styles = StyleSheet.create({
     curveNote: {
         fontSize: 13,
         paddingTop: Spacing.xs,
+    },
+
+    rulesCard: {
+        gap: Spacing.xs,
+    },
+
+    rulesGap: {
+        paddingTop: Spacing.sm,
+    },
+
+    editRow: {
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.sm,
+        marginVertical: Spacing.xs,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderRadius: Radius.sm,
+    },
+
+    editText: {
+        fontSize: 13,
     },
 
     tradesCard: {

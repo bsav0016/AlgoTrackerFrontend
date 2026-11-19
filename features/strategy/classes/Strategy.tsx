@@ -2,6 +2,7 @@ import { CURRENT_SIGNAL_VERSION, LEGACY_SIGNAL_VERSION, Signal, SignalData } fro
 import { Trade, TradeData } from "./Trade";
 import { ExitRules, exitRulesFromData, exitRulesToJSON, hasExitRules } from "./ExitRules";
 import { EquityPoint, curveFromData } from "../liveCurve";
+import { EditRecord, editsFromData } from "../strategyEdit";
 
 export interface StrategyData {
     id: number;
@@ -14,6 +15,9 @@ export interface StrategyData {
     exit_rules?: ExitRules;
     // The strategy's value over time (see liveCurve.ts). Older servers do not send it.
     equity_curve?: { date: string; multiple: number }[];
+    // When the rules were last edited, and the last few edits. Older servers do not send them.
+    rules_changed_at?: string | null;
+    edits?: { date: string; changes?: Record<string, unknown> }[];
     trades: TradeData[];
     strategy_return: number;
     asset_return: number;
@@ -53,6 +57,8 @@ export class Strategy {
     lastProcessedAt: Date | null;
     exitRules: ExitRules;
     equityCurve: EquityPoint[];
+    rulesChangedAt: Date | null;
+    edits: EditRecord[];
 
     constructor(
         id: number,
@@ -69,7 +75,9 @@ export class Strategy {
         active: boolean = true,
         lastProcessedAt: Date | null = null,
         exitRules: ExitRules = {},
-        equityCurve: EquityPoint[] = []
+        equityCurve: EquityPoint[] = [],
+        rulesChangedAt: Date | null = null,
+        edits: EditRecord[] = []
     ) {
         this.id = id;
         this.title = title;
@@ -86,6 +94,8 @@ export class Strategy {
         this.lastProcessedAt = lastProcessedAt;
         this.exitRules = exitRules;
         this.equityCurve = equityCurve;
+        this.rulesChangedAt = rulesChangedAt;
+        this.edits = edits;
     }
 
     /** The server accepts one version per strategy, so a strategy holding any old rule stays on the old definitions. */
@@ -141,7 +151,9 @@ export class Strategy {
             stored.active,
             stored.lastProcessedAt ? new Date(stored.lastProcessedAt) : null,
             exitRulesFromData(stored.exitRules),
-            curveFromData(stored.equityCurve)
+            curveFromData(stored.equityCurve),
+            stored.rulesChangedAt ? new Date(stored.rulesChangedAt) : null,
+            editsFromData(stored.edits)
         );
     }
 
@@ -180,7 +192,9 @@ export class Strategy {
             data.active,
             data.last_processed_ts != null ? new Date(data.last_processed_ts * 1000) : null,
             exitRulesFromData(data.exit_rules),
-            curveFromData(data.equity_curve)
+            curveFromData(data.equity_curve),
+            data.rules_changed_at ? new Date(data.rules_changed_at) : null,
+            editsFromData(data.edits)
         )
     }
 }

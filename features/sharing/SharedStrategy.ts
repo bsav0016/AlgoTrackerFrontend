@@ -9,6 +9,8 @@ export interface SharedStrategyData {
     buy_signals: SignalData[];
     sell_signals: SignalData[];
     exit_rules?: ExitRules;
+    // When the owner last changed the rules; null if they never have. Older servers do not send it.
+    rules_changed_at?: string | null;
     strategy_return: number | string;
     asset_return: number | string;
 }
@@ -20,6 +22,7 @@ export interface SharedStrategy {
     buySignals: Signal[];
     sellSignals: Signal[];
     exitRules: ExitRules;
+    rulesChangedAt: Date | null;
     strategyReturn: number;
     assetReturn: number;
 }
@@ -33,6 +36,7 @@ export function sharedStrategyFromData(data: SharedStrategyData): SharedStrategy
         buySignals: data.buy_signals.map((signal) => Signal.fromData(signal)),
         sellSignals: data.sell_signals.map((signal) => Signal.fromData(signal)),
         exitRules: exitRulesFromData(data.exit_rules),
+        rulesChangedAt: data.rules_changed_at ? new Date(data.rules_changed_at) : null,
         // The backend sends decimals as strings.
         strategyReturn: Number(data.strategy_return),
         assetReturn: Number(data.asset_return),
