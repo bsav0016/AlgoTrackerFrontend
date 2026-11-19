@@ -160,7 +160,11 @@ const strategySubscriptionDetails: HowItWorksDetails = {
     description: "When subscribing to a strategy, you will be provided notifications when the strategy triggers a buy or sell signal."
         + " Data is obtained through a webhook from Twelve Data, analyzed in real time on our servers."
         + " When our servers indicate a buy or sell signal, we will send you a notification and udpate your homepage to reflect the update."
-        + " This way, you save time while still reaping the potential benefits of algorithmic trading.",
+        + " This way, you save time while still reaping the potential benefits of algorithmic trading."
+        + " Edit rules on a strategy lets you change its name, signals and exit rules (not its market or candle interval); you see each change before it is saved, and editing costs no credits."
+        + " The new rules apply from the next candle, and a position you already hold stays open and is judged by them."
+        + " Because the leaderboard measures a strategy by the rules it is running, changing the rules starts its leaderboard results again from that moment."
+        + " Its own history and returns are kept, and a name change alone does not restart anything.",
     link: "https://www.investopedia.com/articles/active-trading/101014/basics-algorithmic-trading-concepts-and-examples.asp"
 } 
 
