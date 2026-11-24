@@ -1,8 +1,8 @@
 import { ThemedText } from "@/components/ThemedText";
-import { Signal } from "../classes/Signal";
+import { CURRENT_SIGNAL_VERSION, Signal, SignalComparison } from "../classes/Signal";
 import { ThemedView } from "@/components/ThemedView";
 import { StyleSheet } from "react-native";
-import { indicators, defaultParams, fastWindowString, signalWindowString, slowWindowString, targetValueString, windowString, IndicatorName } from "../enums/Indicator";
+import { indicators, comparableIndicators, defaultParams, fastWindowString, signalWindowString, slowWindowString, targetValueString, windowString, IndicatorName, DEFAULT_SLOW_WINDOW } from "../enums/Indicator";
 import { GeneralButton } from "@/components/GeneralButton";
 import { useEffect, useState } from "react";
 import { TextField } from "@/components/TextField";
@@ -28,6 +28,7 @@ export function EditIndicator({
 }: EditIndicatorProps) {  
     const { addToast } = useToast();
     const [modal, setModal] = useState<boolean>(false);
+    const [compareModal, setCompareModal] = useState<boolean>(false);
     const signal = signals[indicatorIndex];
     const [formInput, setFormInput] = useState<string>(String(signals[indicatorIndex]?.targetValue ?? ''));
     // Picking a different indicator resets the text box to that signal's target (React's pattern for resetting
@@ -46,6 +47,7 @@ export function EditIndicator({
         fastWindow: number | null;
         slowWindow: number | null;
         signalWindow: number | null;
+        compareTo: SignalComparison | null;
     }>) => {
         const merged = { ...signal, ...changes };
         const newSignal = new Signal(
@@ -55,7 +57,9 @@ export function EditIndicator({
             merged.window,
             merged.fastWindow,
             merged.slowWindow,
-            merged.signalWindow
+            merged.signalWindow,
+            CURRENT_SIGNAL_VERSION,
+            merged.compareTo
         );
         const newSignals = [...signals];
         newSignals[indicatorIndex] = newSignal;
@@ -66,6 +70,20 @@ export function EditIndicator({
     const validateInput = (targetValue: number) => {
         if (signal.window !== null && (signal.window < 1 || signal.window > maxWindow)) {
             addToast(`Window size must be between 1 and ${maxWindow}`);
+            return;
+        }
+
+        // A rule that compares two averages has no target number to check; it needs two different averages.
+        if (signal.compareTo) {
+            if (signal.compareTo.window < 1 || signal.compareTo.window > maxWindow) {
+                addToast(`Window size must be between 1 and ${maxWindow}`);
+                return;
+            }
+            if (signal.compareTo.indicator.name === signal.indicator.name && signal.compareTo.window === signal.window) {
+                addToast("Pick two different averages: an average is never above or below itself");
+                return;
+            }
+            setIndicatorIndex(null);
             return;
         }
 
@@ -185,19 +203,43 @@ export function EditIndicator({
                     )
                 ))}
 
-                <TextField
-                    label="Target value"
-                    keyboardType={[IndicatorName.macd, IndicatorName.bbp].includes(signal.indicator.name) ? "default" : "numeric"}
-                    returnKeyType="done"
-                    value={formInput}
-                    onChangeText={setFormInput}
-                    onBlur={commitTargetValue}
-                />
+                {signal.compareTo ? (
+                    <>
+                        <SelectField
+                            label="Compared with"
+                            value={signal.compareTo.indicator.displayName}
+                            onPress={() => setCompareModal(true)}
+                        />
+                        <TextField
+                            label="Window of the average it is compared with"
+                            keyboardType="numeric"
+                            returnKeyType="done"
+                            value={String(signal.compareTo.window)}
+                            onChangeText={(text) => {
+                                const cleanedText = text.replace(/\D/g, '').slice(0, 3);
+                                const newNumber = cleanedText === '' ? 0 : parseInt(cleanedText, 10);
+                                updateSignal({ compareTo: { ...signal.compareTo!, window: newNumber } });
+                            }}
+                        />
+                    </>
+                ) : (
+                    <TextField
+                        label="Target value"
+                        keyboardType={[IndicatorName.macd, IndicatorName.bbp].includes(signal.indicator.name) ? "default" : "numeric"}
+                        returnKeyType="done"
+                        value={formInput}
+                        onChangeText={setFormInput}
+                        onBlur={commitTargetValue}
+                    />
+                )}
 
                 <ThemedView style={styles.triggerGroup}>
                     <ThemedText type="muted" style={styles.triggerLabel}>Trigger when the signal is</ThemedText>
                     <SegmentedControl
-                        options={[
+                        options={signal.compareTo ? [
+                            { value: "above", label: "Above the other average" },
+                            { value: "below", label: "Below the other average" },
+                        ] : [
                             { value: "above", label: "Greater than target" },
                             { value: "below", label: "Less than target" },
                         ]}
@@ -227,9 +269,25 @@ export function EditIndicator({
                         fastWindow: defaultParams[indicator.name][fastWindowString],
                         slowWindow: defaultParams[indicator.name][slowWindowString],
                         signalWindow: defaultParams[indicator.name][signalWindowString],
+                        // A price average is compared with a slower average of the same kind, so the rule is complete at once.
+                        compareTo: indicator.comparable ? { indicator, window: DEFAULT_SLOW_WINDOW } : null,
                     });
                 }}
                 onClose={() => setModal(false)}
+            />
+
+            <OptionModal
+                visible={compareModal}
+                title="Compare with"
+                options={comparableIndicators.map((indicator) => ({ key: indicator.name, label: indicator.displayName }))}
+                selectedKey={signal.compareTo?.indicator.name}
+                onSelect={(key) => {
+                    const indicator = comparableIndicators.find((i) => i.name === key);
+                    if (indicator && signal.compareTo) {
+                        updateSignal({ compareTo: { ...signal.compareTo, indicator } });
+                    }
+                }}
+                onClose={() => setCompareModal(false)}
             />
         </ThemedView>
     )
