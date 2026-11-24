@@ -43,8 +43,13 @@ export function sharedStrategyFromData(data: SharedStrategyData): SharedStrategy
     };
 }
 
-/** One rule in words, e.g. "RSI (14) is below 30". */
+/** One rule in words, e.g. "RSI (14) is below 30", or "The 20-candle simple average is above the 50-candle simple average". */
 export function describeSignal(signal: Signal): string {
+    if (signal.compareTo) {
+        const word = (indicator: Signal["indicator"]) => indicator.averageWord ?? indicator.displayName;
+        return `The ${signal.window}-candle ${word(signal.indicator)} is ${signal.aboveTarget ? "above" : "below"} `
+            + `the ${signal.compareTo.window}-candle ${word(signal.compareTo.indicator)}`;
+    }
     const windows = [signal.window, signal.fastWindow, signal.slowWindow, signal.signalWindow].filter((w) => w !== null);
     const args = windows.length ? ` (${windows.join(", ")})` : "";
     return `${signal.indicator.displayName}${args} is ${signal.aboveTarget ? "above" : "below"} ${signal.targetValue}`;

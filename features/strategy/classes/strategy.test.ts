@@ -10,7 +10,8 @@ import { defaultParams, IndicatorName, indicators } from "../enums/Indicator";
 const BACKEND_SIGNAL_KEYS = [
   "above_target", "buy_signal", "fast_window", "name", "signal_window", "slow_window", "target_value", "version", "window",
 ];
-const BACKEND_INDICATOR_NAMES = ["ADX", "BBP", "EMA", "MACD", "RSI", "SMA", "SO"];
+// The two *_PRICE averages are the ones a rule can be compared with (SignalSerializer.COMPARISONS).
+const BACKEND_INDICATOR_NAMES = ["ADX", "BBP", "EMA", "EMA_PRICE", "MACD", "RSI", "SMA", "SMA_PRICE", "SO"];
 
 const indicator = (name: IndicatorName) => indicators.find(i => i.name === name)!;
 

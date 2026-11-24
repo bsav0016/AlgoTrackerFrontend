@@ -1,6 +1,6 @@
 import { EMPTY_EXIT_RULE_INPUTS, ExitRuleInputs } from "./classes/ExitRules";
-import { Signal } from "./classes/Signal";
-import { IndicatorName, indicators } from "./enums/Indicator";
+import { CURRENT_SIGNAL_VERSION, Signal } from "./classes/Signal";
+import { DEFAULT_FAST_WINDOW, DEFAULT_SLOW_WINDOW, IndicatorName, indicators } from "./enums/Indicator";
 
 /**
  * Ready-made starting points for the builder. They are ideas to learn from, not recommendations: choosing one only
@@ -30,6 +30,12 @@ const indicator = (name: IndicatorName) => {
 
 const single = (name: IndicatorName, target: number, aboveTarget: boolean, window: number) =>
     new Signal(indicator(name), target, aboveTarget, window, null, null, null);
+
+const averageCrossover = (aboveTarget: boolean) =>
+    new Signal(
+        indicator(IndicatorName.smaPrice), 0, aboveTarget, DEFAULT_FAST_WINDOW, null, null, null, CURRENT_SIGNAL_VERSION,
+        { indicator: indicator(IndicatorName.smaPrice), window: DEFAULT_SLOW_WINDOW },
+    );
 
 const trend = () => ({
     buySignals: [single(IndicatorName.sma, 1, false, 50)], // average / price below 1: the price is above its average
@@ -82,5 +88,20 @@ export const STARTER_IDEAS: StarterIdea[] = [
             "The same trend idea, plus a 5% trailing stop: it also sells early if the price falls 5% below its highest point "
             + "since the buy, even while the price is still above its average.",
         build: () => ({ ...trend(), exitRuleInputs: { ...EMPTY_EXIT_RULE_INPUTS, trailing_stop: "5" } }),
+    },
+    {
+        id: "average-crossover",
+        name: "Moving-average crossover",
+        summary: "Buy when a fast average rises above a slow one",
+        howItWorks:
+            "A moving average smooths the price over a number of candles. A fast one (20 candles) follows the price closely and a "
+            + "slow one (50 candles) follows it loosely. When the fast average rises above the slow one, the price has been climbing "
+            + "lately. This idea buys then, and sells when the fast average falls back below the slow one. Because averages look "
+            + "back, it tends to buy and sell after the price has already turned.",
+        build: () => ({
+            buySignals: [averageCrossover(true)],
+            sellSignals: [averageCrossover(false)],
+            exitRuleInputs: { ...EMPTY_EXIT_RULE_INPUTS },
+        }),
     },
 ];

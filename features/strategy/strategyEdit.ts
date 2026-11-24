@@ -29,7 +29,10 @@ export function startingFields(strategy: Strategy): EditedFields {
  * Signals are all required at once, so the same set in another order is the same rules.
  */
 const signalKey = (signal: Signal): string =>
-    JSON.stringify([signal.indicator.name, signal.aboveTarget, signal.targetValue, signal.window, signal.fastWindow, signal.slowWindow, signal.signalWindow]);
+    JSON.stringify([
+        signal.indicator.name, signal.aboveTarget, signal.targetValue, signal.window, signal.fastWindow, signal.slowWindow,
+        signal.signalWindow, signal.compareTo ? [signal.compareTo.indicator.name, signal.compareTo.window] : null,
+    ]);
 
 export function sameSignals(a: Signal[], b: Signal[]): boolean {
     const keys = (list: Signal[]) => list.map(signalKey).sort();

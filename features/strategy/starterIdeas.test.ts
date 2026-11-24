@@ -11,12 +11,12 @@ jest.mock("expo-constants", () => ({
 }));
 
 // What the server accepts (SignalSerializer in AlgoTrackerBackend): known indicators, a window of 1 to 500, a finite target.
-const SERVER_INDICATORS = ["RSI", "SMA", "EMA", "MACD", "SO", "BBP", "ADX"];
+const SERVER_INDICATORS = ["RSI", "SMA", "EMA", "MACD", "SO", "BBP", "ADX", "SMA_PRICE", "EMA_PRICE"];
 
 describe("the starter ideas", () => {
-  it("are four, each with a unique id, a name, a one-line summary and an explanation", () => {
-    expect(STARTER_IDEAS.map((idea) => idea.id)).toEqual(["rsi-bounce", "bollinger-bounce", "trend", "trend-trailing-stop"]);
-    expect(new Set(STARTER_IDEAS.map((idea) => idea.id)).size).toBe(4);
+  it("are five, each with a unique id, a name, a one-line summary and an explanation", () => {
+    expect(STARTER_IDEAS.map((idea) => idea.id)).toEqual(["rsi-bounce", "bollinger-bounce", "trend", "trend-trailing-stop", "average-crossover"]);
+    expect(new Set(STARTER_IDEAS.map((idea) => idea.id)).size).toBe(5);
     for (const idea of STARTER_IDEAS) {
       expect(idea.name.length).toBeGreaterThan(0);
       expect(idea.summary.length).toBeGreaterThan(0);
@@ -34,6 +34,14 @@ describe("the starter ideas", () => {
         expect(Number.isFinite(signal.targetValue)).toBe(true);
         expect(signal.window).toBeGreaterThanOrEqual(1);
         expect(signal.window).toBeLessThanOrEqual(500);
+        if (signal.compareTo) {
+          // SignalSerializer: only price averages can be compared, with a window of 1 to 500, never with themselves.
+          expect(["SMA_PRICE", "EMA_PRICE"]).toContain(signal.indicator.name);
+          expect(["SMA_PRICE", "EMA_PRICE"]).toContain(signal.compareTo.indicator.name);
+          expect(signal.compareTo.window).toBeGreaterThanOrEqual(1);
+          expect(signal.compareTo.window).toBeLessThanOrEqual(500);
+          expect(signal.compareTo.window === signal.window && signal.compareTo.indicator.name === signal.indicator.name).toBe(false);
+        }
         expect(signal.version).toBe(CURRENT_SIGNAL_VERSION);
       }
     }
@@ -57,6 +65,10 @@ describe("the starter ideas", () => {
     expect(read(byId["bollinger-bounce"].sellSignals)).toEqual([[IndicatorName.bbp, true, 0.5, 20]]);
     expect(read(byId["trend"].buySignals)).toEqual([[IndicatorName.sma, false, 1, 50]]);
     expect(read(byId["trend"].sellSignals)).toEqual([[IndicatorName.sma, true, 1, 50]]);
+    const cross = (signals: ReturnType<typeof STARTER_IDEAS[0]["build"]>["buySignals"]) =>
+      signals.map((s) => [s.indicator.name, s.aboveTarget, s.window, s.compareTo?.indicator.name, s.compareTo?.window]);
+    expect(cross(byId["average-crossover"].buySignals)).toEqual([[IndicatorName.smaPrice, true, 20, IndicatorName.smaPrice, 50]]);
+    expect(cross(byId["average-crossover"].sellSignals)).toEqual([[IndicatorName.smaPrice, false, 20, IndicatorName.smaPrice, 50]]);
   });
 
   it("only the trailing-stop idea has an exit rule, and its boxes parse to 5 percent", () => {
@@ -121,6 +133,17 @@ describe("the wording", () => {
     expect(STARTER_IDEAS[1].howItWorks).toContain("0.5");
     expect(STARTER_IDEAS[2].howItWorks).toContain("50-candle");
     expect(STARTER_IDEAS[3].howItWorks).toContain("5%");
+    expect(STARTER_IDEAS[4].howItWorks).toContain("20 candles");
+    expect(STARTER_IDEAS[4].howItWorks).toContain("50 candles");
+  });
+
+  it("the crossover idea is sent to the server as a comparison, with no target number", () => {
+    const { buySignals, sellSignals } = STARTER_IDEAS[4].build();
+    expect(buySignals[0].toJSON(true)).toMatchObject({
+      name: "SMA_PRICE", above_target: true, buy_signal: true, window: 20, target_value: 0,
+      compare_to: { name: "SMA_PRICE", window: 50 },
+    });
+    expect(sellSignals[0].toJSON(false)).toMatchObject({ above_target: false, buy_signal: false, compare_to: { name: "SMA_PRICE", window: 50 } });
   });
 
   it("is honest about the trend idea: it can trade often and many trades may lose a little", () => {

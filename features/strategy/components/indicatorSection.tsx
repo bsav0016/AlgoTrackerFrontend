@@ -36,7 +36,11 @@ export function IndicatorSection({
     const signalParameterString = (signal: Signal) => {
         const windows = [signal.window, signal.fastWindow, signal.slowWindow, signal.signalWindow]
             .filter((value) => value);
-        const target = `${signal.aboveTarget ? "Above" : "Below"} ${signal.targetValue}`;
+        const side = signal.aboveTarget ? "Above" : "Below";
+        // A rule that compares two averages names the other one instead of a number.
+        const target = signal.compareTo
+            ? `${side} the ${signal.compareTo.indicator.averageWord ?? signal.compareTo.indicator.displayName} (${signal.compareTo.window})`
+            : `${side} ${signal.targetValue}`;
         return windows.length > 0 ? `Window ${windows.join("/")} · ${target}` : target;
     }
 
