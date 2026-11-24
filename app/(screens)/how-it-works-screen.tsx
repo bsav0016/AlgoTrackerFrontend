@@ -182,6 +182,17 @@ const inputsDetails: HowItWorksDetails[] = [
     },
 
     {
+        title: "Comparing averages",
+        description: "A rule can compare two moving averages with each other instead of comparing one indicator with a number."
+            + " Choose \"Simple average of price\" or \"Exponential average of price\" as the indicator, then the average it is compared with and that average's window."
+            + " For example, \"the 20-candle average is above the 50-candle average\" is true while the recent price has been higher than the longer-term price."
+            + " A fast average (a short window) reacts quickly and a slow one (a long window) reacts slowly, so the rule turns true after the price has already been rising for a while."
+            + " The rule is a state, not a one-time event: it stays true for as long as the first average stays above (or below) the second, which is why buying when it turns true and selling when it turns false gives the usual crossover."
+            + " Only these two kinds of average can be compared with each other, and an average cannot be compared with itself.",
+        link: "https://www.investopedia.com/terms/g/goldencross.asp"
+    },
+
+    {
         title: "SMA",
         description: "The simple moving average (SMA) is a lagging indicator."
             + " It simply averages the most recent x number of data points."
